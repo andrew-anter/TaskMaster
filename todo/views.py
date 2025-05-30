@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .models import TodoItem
 from .forms import TodoItemForm
 from django.contrib import messages
+from django.utils import timezone
 
 
 def todo_list_view(request):
@@ -46,8 +47,12 @@ def add_todo_view(request):
 def toggle_todo_view(request, item_id):
     item = get_object_or_404(TodoItem, id=item_id)
     if request.method == "POST":
-        item.completed = not item.completed
-        item.save()
+        if item.completed:
+            item.completed = None
+            item.save()
+        else:
+            item.completed = timezone.now()
+            item.save()
         messages.info(request, f"Task '{item.title}' status updated.")
         return HttpResponseRedirect(reverse("todo_list"))
     return HttpResponseRedirect(reverse("todo_list"))

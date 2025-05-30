@@ -93,8 +93,8 @@
                                     <p class="text-sm text-base-content text-opacity-70 mt-1">{{ item.description|linebreaksbr }}</p>
                                 {% endif %}
                                 <p class="text-xs text-base-content text-opacity-50 mt-1">
-                                    Created: {{ item.created_at|date:"Y-m-d H:i" }}
-                                    {% if item.completed %}(Completed){% endif %}
+                                    Created: {{ item.created_at|date:"H:i d-m-Y" }}
+                                    {% if item.completed %}(Completed: {{ item.completed|date:"H:i d-m-Y" }}){% endif %}
                                 </p>
                             </div>
                             <div class="card-actions justify-end items-center space-x-2 shrink-0 ml-2">
