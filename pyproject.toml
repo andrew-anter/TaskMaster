@@ -1,0 +1,23 @@
+[project]
+name = "todo"
+version = "0.1.0"
+description = "ToDo App"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "django>=5.2.1",
+  "django-environ>=0.12.0",
+]
+authors = [
+{ name = "Andrew Anter", email = "andrew.anter@gmail.com" },
+]
+license = { text = "MIT" } 
+
+
+dev = [
+  "ruff>=0.4.0",         
+  "pyright>=1.1.360",
+  "django-stubs>=4.2.0", 
+  "mypy-extensions>=0.4.3", 
+  "django-debug-toolbar>=5.2.0",
+]
