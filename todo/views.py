@@ -7,14 +7,15 @@ from .forms import TodoItemForm
 from .models import TodoItem
 
 from .services import add_todo_service
+from .selectors import get_todo_items
 
 
 def todo_list_view(request):
-    items = TodoItem.objects.all()
+    todo_items = get_todo_items()
     form = TodoItemForm()
 
     context = {
-        "items": items,
+        "items": todo_items,
         "form": form,
         "page_title": "My ToDo List",
     }
@@ -41,9 +42,7 @@ def add_todo_view(request):
                 messages.error(request, f"Could not add task: {e}")
         else:
             messages.error(request, "Please correct the errors below.")
-            items = TodoItem.objects.all()
             context = {
-                "items": items,
                 "form": form,
                 "page_title": "My To-Do List",
             }
