@@ -90,6 +90,18 @@ wheels = [
 ]
 
 [[package]]
+name = "django-unfold"
+version = "0.59.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fd/3b/bf66269ed66ba31ce7fd05927d657889ab9282637467c7bb03e46d83122c/django_unfold-0.59.0.tar.gz", hash = "sha256:ae252a1df8c09394dd66871dcf657d8001543b30920e63743ebce7f5f4ea0e6e", size = 1060771, upload-time = "2025-05-26T06:19:45.23Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/26/4b1ada40884cf8863c06a01636c32157f59b36d91500f1db0e9a9896f3bc/django_unfold-0.59.0-py3-none-any.whl", hash = "sha256:ddd00241d84ec8ad337ce07666ede5dded8812279ed70b0eca45f65382492e06", size = 1163352, upload-time = "2025-05-26T06:19:43.519Z" },
+]
+
+[[package]]
 name = "sqlparse"
 version = "0.5.3"
 source = { registry = "https://pypi.org/simple" }
@@ -107,6 +119,7 @@ dependencies = [
     { name = "django-environ" },
     { name = "django-htmx" },
     { name = "django-stubs-ext" },
+    { name = "django-unfold" },
 ]
 
 [package.dev-dependencies]
@@ -122,6 +135,7 @@ requires-dist = [
     { name = "django-environ", specifier = ">=0.12.0" },
     { name = "django-htmx", specifier = ">=1.23.0" },
     { name = "django-stubs-ext", specifier = ">=5.2.0" },
+    { name = "django-unfold", specifier = ">=0.59.0" },
 ]
 
 [package.metadata.requires-dev]

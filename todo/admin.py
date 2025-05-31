@@ -1,10 +1,11 @@
 from django.contrib import admin
 from django.utils import timezone
 from .models import Task
+from unfold.admin import ModelAdmin
 
 
 @admin.register(Task)
-class TaskAdmin(admin.ModelAdmin):
+class TaskAdmin(ModelAdmin):
     list_display = (
         "title",
         "status",

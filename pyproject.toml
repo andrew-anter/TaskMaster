@@ -9,6 +9,7 @@ dependencies = [
   "django-environ>=0.12.0",
   "django-htmx>=1.23.0",
   "django-stubs-ext>=5.2.0",
+  "django-unfold>=0.59.0",
 ]
 authors = [
 { name = "Andrew Anter", email = "andrew.anter@gmail.com" },
