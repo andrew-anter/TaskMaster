@@ -26,3 +26,13 @@ def add_task_service(
         scheduled_date=scheduled_date,
     )
     return todo_item
+
+
+@transaction.atomic
+def toggle_task_status_service(*, task: Task) -> Task:
+    if task.status == Task.Status.COMPLETED:
+        task.status = Task.Status.TODO
+    else:
+        task.status = Task.Status.COMPLETED
+    task.save()
+    return task

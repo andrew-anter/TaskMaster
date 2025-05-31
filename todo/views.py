@@ -1,4 +1,4 @@
-from .services import add_task_service
+from .services import add_task_service, toggle_task_status_service
 from .selectors import get_today_tasks, get_upcoming_tasks
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -27,7 +27,21 @@ def task_list_view(request):
     return render(request, "todo/task_list.html", context)
 
 
-def task_add_view(request):
+def task_list_partial_view(request):
+    today_tasks = get_today_tasks()
+    upcoming_tasks = get_upcoming_tasks()
+
+    context = {
+        "today_tasks": today_tasks,
+        "upcoming_tasks": upcoming_tasks,
+        "page_title": "My Tasks",
+        "Status": Task.Status,
+        "Priority": Task.Priority,
+    }
+    return render(request, "todo/partials/_task_list.html", context)
+
+
+def task_add_partial_view(request):
     if request.method == "POST":
         form = TaskForm(request.POST)
         if form.is_valid():
@@ -42,10 +56,8 @@ def task_add_view(request):
 
             if request.htmx:
                 response = HttpResponse()  # Empty response is fine
-                response["HX-Redirect"] = reverse("task_list")
-                messages.success(
-                    request, "Task added successfully via HTMX!"
-                )  # Message will show on redirected page
+                response["HX-Location"] = reverse("task_list")
+                messages.success(request, "Task added successfully")
                 return response
             else:
                 messages.success(request, "Task added successfully!")
@@ -53,34 +65,24 @@ def task_add_view(request):
         else:  # Form is invalid
             if request.htmx:
                 context = {"form": form, "page_title": "Add New Task (Errors)"}
-                return render(
-                    request, "todo/partials/_add_task_form_wrapper.html", context
-                )
+                return render(request, "todo/partials/_add_task.html", context)
 
     else:  # GET request
         form = TaskForm()
 
     context = {"form": form, "page_title": "Add New Task"}
-    return render(request, "todo/add_task.html", context)
+    return render(request, "todo/partials/_add_task.html", context)
 
 
 def task_update_status_view(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     if request.method == "POST":
-        if task.status == Task.Status.COMPLETED:
-            task.status = (
-                Task.Status.TODO
-            )  # Or your preferred default incomplete status
-        else:
-            task.status = Task.Status.COMPLETED
-        # task.modified_at = timezone.now() # auto_now=True on modified_at handles this on save()
-        task.save()
+        toggle_task_status_service(task=task)
 
         if request.htmx:
-            # Return the partial template for the updated task item
             context = {
                 "task": task,
-                "Status": Task.Status,  # Pass enums if used in partial for comparison
+                "Status": Task.Status,
                 "Priority": Task.Priority,
             }
             return render(request, "todo/partials/_task_list_item.html", context)

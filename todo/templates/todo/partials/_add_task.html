@@ -1,27 +1,4 @@
-{% extends "base.html" %}
-{% load static %}
-
-{% block title %}Add Task - TaskMaster{% endblock title %}
-
-{% block head_extra %}
-{{ block.super }}
-<style>
-  :root { /* Make sure this SVG arrow matches your latest design's color: rgb(155,132,75) */
-    --select-button-svg: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(155,132,75)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e');
-  }
-  .custom-select {
-    background-image: var(--select-button-svg);
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center; /* Adjust px-4 (p-[15px]) from input for right padding */
-    background-size: 1.5em 1.5em; /* Adjust size as needed */
-    /* appearance-none is now set in forms.py widget attrs */
-    padding-right: 3rem !important; /* Ensure enough space for arrow, adjust if p-[15px] is different */
-  }
-</style>
-{% endblock head_extra %}
-
-{% block content %}
-<div class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
+<div id="add-task-container" class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
     <div class="flex flex-wrap justify-between items-center gap-3 p-4">
         <h1 class="text-[#1c170d] tracking-light text-[32px] font-bold leading-tight">Add Task</h1>
         {# The "X" button from your design's header could be a "Cancel" action here #}
@@ -106,7 +83,9 @@
                 {# You would add them to models.py, forms.py, and then here if needed. #}
 
                 <div class="flex justify-end gap-3 pt-3"> {# Buttons at the bottom #}
-                    <a href="{% url 'task_list' %}"
+                    <a hx-get="{% url 'task-list-partial' %}"
+                       hx-target="#add-task-container"
+                       hx-swap="outerHTML"
                        class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#f3f0e7] text-[#1c170d] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-colors">
                         <span class="truncate">Cancel</span>
                     </a>
@@ -121,4 +100,3 @@
         </form>
     </div>
 </div>
-{% endblock content %}

@@ -45,7 +45,7 @@ class TaskForm(forms.ModelForm):
                 }
             ),
             "due_date": DateTimeInput(
-                attrs={  # Using the custom DateTimeInput
+                attrs={
                     "class": DESIGN_INPUT_CLASSES,  # Styled like other inputs
                     "placeholder": "Select due date & time",
                 }

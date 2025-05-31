@@ -3,7 +3,8 @@ from . import views
 
 urlpatterns = [
     path("", views.task_list_view, name="task_list"),
-    path("add/", views.task_add_view, name="task_add"),
+    path("tasks", views.task_list_partial_view, name="task-list-partial"),
+    path("add/", views.task_add_partial_view, name="task_add"),
     path(
         "complete/<int:item_id>/",
         views.task_mark_as_completed_view,
