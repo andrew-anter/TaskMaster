@@ -1,6 +1,6 @@
 # todo/forms.py
 from django import forms
-from .models import TodoItem
+from .models import Task
 
 
 # Custom widgets for better date/time input experience
@@ -18,9 +18,9 @@ BASE_INPUT_CLASSES = "form-input flex w-full min-w-0 flex-1 resize-none overflow
 DATE_INPUT_IN_GROUP_CLASSES = "form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-[#1a170f] focus:outline-0 focus:ring-0 border-none bg-transparent focus:border-none h-14 placeholder:text-[#8f7f56] p-4 rounded-r-none border-r-0 pr-2 text-base font-normal leading-normal"
 
 
-class TodoItemForm(forms.ModelForm):
+class TaskForm(forms.ModelForm):
     class Meta:
-        model = TodoItem
+        model = Task
         fields = [
             "title",
             "description",

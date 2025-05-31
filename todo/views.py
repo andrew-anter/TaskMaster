@@ -3,31 +3,31 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 
-from .forms import TodoItemForm
-from .models import TodoItem
+from .forms import TaskForm
+from .models import Task
 
 from .services import add_todo_service
 from .selectors import get_todo_items, get_upcoming_tasks
 
 
-def todo_list_view(request):
+def task_list_view(request):
     my_tasks = get_todo_items()
     upcoming_tasks = get_upcoming_tasks()
 
     context = {
         "my_tasks": my_tasks,
         "upcoming_tasks": upcoming_tasks,
-        "Priority": TodoItem.Priority,
-        "Status": TodoItem.Status,
+        "Priority": Task.Priority,
+        "Status": Task.Status,
         "page_title": "My Tasks",
     }
     return render(request, "todo/todo_list.html", context)
 
 
-def add_todo_view(request):
-    form = TodoItemForm()
+def task_add_view(request):
+    form = TaskForm()
     if request.method == "POST":
-        form = TodoItemForm(request.POST)
+        form = TaskForm(request.POST)
         if form.is_valid():
             try:
                 add_todo_service(
@@ -52,18 +52,18 @@ def add_todo_view(request):
     return render(request=request, template_name="todo/add_task.html", context=context)
 
 
-def mark_item_as_completed(request, item_id):
-    item = get_object_or_404(TodoItem, id=item_id)
+def task_mark_as_completed_view(request, item_id):
+    item = get_object_or_404(Task, id=item_id)
     if request.method == "POST":
-        item.status = TodoItem.Status.COMPLETED
+        item.status = Task.Status.COMPLETED
         item.save()
         messages.info(request, f"Task '{item.title}' status updated.")
         return HttpResponseRedirect(reverse("todo_list"))
     return HttpResponseRedirect(reverse("todo_list"))
 
 
-def delete_todo_view(request, item_id):
-    item = get_object_or_404(TodoItem, id=item_id)
+def task_delete_view(request, item_id):
+    item = get_object_or_404(Task, id=item_id)
     if request.method == "POST":
         item_title = item.title
         item.delete()

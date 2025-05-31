@@ -40,20 +40,20 @@
                 <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
               </div>
               <h2 class="text-[#1a170f] text-lg font-bold leading-tight tracking-[-0.015em]">
-                <a href="{% block brand_link %}{% url 'todo_list' %}{% endblock brand_link %}">
+                <a href="{% block brand_link %}{% url 'task_list' %}{% endblock brand_link %}">
                   {% block brand_name %}TaskMaster{% endblock brand_name %}
                 </a>
               </h2>
             </div>
             <nav class="flex flex-1 justify-end gap-8 items-center">
               <div class="flex items-center gap-9">
-                <a class="text-[#1a170f] text-sm font-medium leading-normal" href="{% url 'todo_list' %}">My Tasks</a>
+                <a class="text-[#1a170f] text-sm font-medium leading-normal" href="{% url 'task_list' %}">My Tasks</a>
                 <a class="text-[#1a170f] text-sm font-medium leading-normal" href="#">Shared</a>
                 <a class="text-[#1a170f] text-sm font-medium leading-normal" href="#">Templates</a>
               </div>
               <button
                 class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 bg-[#f2efe9] text-[#1a170f] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5"
-                onclick="window.location.href='{% url 'add_todo' %}';"
+                onclick="window.location.href='{% url 'task_list' %}';"
               >
                 <div class="text-[#1a170f]" data-icon="Plus" data-size="20px" data-weight="regular">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">

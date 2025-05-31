@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class TodoItem(models.Model):
+class Task(models.Model):
     class Priority(models.IntegerChoices):
         LOW = 3, "Low"
         MEDIUM = 2, "Medium"

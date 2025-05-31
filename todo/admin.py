@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import TodoItem
+from .models import Task
 
 
-@admin.register(TodoItem)
-class TodoItemAdmin(admin.ModelAdmin):
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "status",
@@ -46,28 +46,28 @@ class TodoItemAdmin(admin.ModelAdmin):
     # Custom Admin Actions to update status
     def mark_as_todo(self, request, queryset):
         queryset.update(
-            status=TodoItem.Status.TODO, modified_at=timezone.now()
+            status=Task.Status.TODO, modified_at=timezone.now()
         )  # Changed to modified_at
 
     mark_as_todo.short_description = "Mark selected as To Do"
 
     def mark_as_in_progress(self, request, queryset):
         queryset.update(
-            status=TodoItem.Status.IN_PROGRESS, modified_at=timezone.now()
+            status=Task.Status.IN_PROGRESS, modified_at=timezone.now()
         )  # Changed to modified_at
 
     mark_as_in_progress.short_description = "Mark selected as In Progress"
 
     def mark_as_on_hold(self, request, queryset):
         queryset.update(
-            status=TodoItem.Status.ON_HOLD, modified_at=timezone.now()
+            status=Task.Status.ON_HOLD, modified_at=timezone.now()
         )  # Changed to modified_at
 
     mark_as_on_hold.short_description = "Mark selected as On Hold"
 
     def mark_as_completed(self, request, queryset):
         queryset.update(
-            status=TodoItem.Status.COMPLETED, modified_at=timezone.now()
+            status=Task.Status.COMPLETED, modified_at=timezone.now()
         )  # Changed to modified_at
 
     mark_as_completed.short_description = "Mark selected as Completed"
