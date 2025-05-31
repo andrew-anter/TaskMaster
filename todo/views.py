@@ -1,5 +1,5 @@
 from .services import add_task_service
-from .selectors import get_tasks, get_upcoming_tasks
+from .selectors import get_today_tasks, get_upcoming_tasks
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import (
@@ -14,16 +14,15 @@ from .forms import TaskForm
 
 
 def task_list_view(request):
-    today_tasks = get_tasks()
+    today_tasks = get_today_tasks()
     upcoming_tasks = get_upcoming_tasks()
 
     context = {
-        "my_tasks": today_tasks,  # Ensure this variable name is what your main list page expects, or adjust
         "today_tasks": today_tasks,
         "upcoming_tasks": upcoming_tasks,
         "page_title": "My Tasks",
-        "Status": Task.Status,  # Pass the Status enum
-        "Priority": Task.Priority,  # Pass the Priority enum
+        "Status": Task.Status,
+        "Priority": Task.Priority,
     }
     return render(request, "todo/task_list.html", context)
 
