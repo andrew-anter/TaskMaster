@@ -7,20 +7,21 @@ from .forms import TodoItemForm
 from .models import TodoItem
 
 from .services import add_todo_service
-from .selectors import get_todo_items
+from .selectors import get_todo_items, get_upcoming_tasks
 
 
 def todo_list_view(request):
-    todo_items = get_todo_items()
-    form = TodoItemForm()
+    my_tasks = get_todo_items()
+    upcoming_tasks = get_upcoming_tasks()
 
     context = {
-        "my_tasks": todo_items,
-        "form": form,
-        "page_title": "My ToDo List",
+        "my_tasks": my_tasks,
+        "upcoming_tasks": upcoming_tasks,
+        "Priority": TodoItem.Priority,
+        "Status": TodoItem.Status,
+        "page_title": "My Tasks",
     }
-
-    return render(request=request, template_name="todo/todo_list.html", context=context)
+    return render(request, "todo/todo_list.html", context)
 
 
 def add_todo_view(request):
