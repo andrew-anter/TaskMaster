@@ -4,7 +4,7 @@ from django.db import transaction
 
 
 @transaction.atomic
-def add_todo_service(
+def add_task_service(
     *,
     title: str,
     description: str | None,

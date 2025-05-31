@@ -2,7 +2,7 @@ from django.db.models import QuerySet
 from .models import Task
 
 
-def get_todo_items() -> QuerySet[Task]:
+def get_tasks() -> QuerySet[Task]:
     return Task.objects.all()
 
 

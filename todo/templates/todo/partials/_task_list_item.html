@@ -1,0 +1,29 @@
+<div id="task-{{ task.id }}-item" class="flex items-center gap-4 bg-[#fcfbf8] px-4 min-h-[72px] py-2 border-b border-[#f3f0e7]">
+    <form hx-post="{% url 'update_task_status' task.id %}"
+          hx-target="#task-{{ task.id }}-item"
+          hx-swap="outerHTML"
+          class="contents"> {# Use 'contents' to prevent form from breaking flex layout if it's a block element #}
+        {% csrf_token %}
+        <button type="submit" 
+                class="text-[#1c170d] flex items-center justify-center rounded-lg bg-[#f3f0e7] hover:bg-[#e8e1cf] transition-colors shrink-0 size-12 cursor-pointer p-0 border-none appearance-none"
+                title="Toggle status for '{{ task.title }}'">
+            {% if task.status == Status.COMPLETED %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+            {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z"></path></svg>
+            {% endif %}
+        </button>
+    </form>
+    <div class="flex flex-col justify-center flex-grow">
+        <p class="text-[#1c170d] text-base font-medium leading-normal line-clamp-1 {% if task.status == Status.COMPLETED %}line-through text-opacity-60{% endif %}">{{ task.title }}</p>
+        <p class="text-[#9b844b] text-sm font-normal leading-normal line-clamp-2 {% if task.status == Status.COMPLETED %}line-through text-opacity-60{% endif %}">
+            {% if task.due_date %}
+                Due: {{ task.due_date|date:"F j, Y" }}
+                {% if task.due_date.time %} (at {{ task.due_date|time:"H:i" }}){% endif %}
+            {% else %}
+                No due date
+            {% endif %}
+        </p>
+    </div>
+    {# You can add other details like priority here if desired later #}
+</div>
