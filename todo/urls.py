@@ -6,11 +6,6 @@ urlpatterns = [
     path("tasks", views.task_list_partial_view, name="task-list-partial"),
     path("add/", views.task_add_partial_view, name="task_add"),
     path(
-        "complete/<int:item_id>/",
-        views.task_mark_as_completed_view,
-        name="task_mark_as_completed",
-    ),
-    path(
         "update-status/<int:task_id>/",
         views.task_update_status_view,
         name="update_task_status",

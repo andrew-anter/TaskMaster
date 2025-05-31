@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import (
     HttpResponse,
     HttpResponseRedirect,
-)  # HttpResponse for HX-Redirect
+)
 from django.urls import reverse
 from django.contrib import messages
 
@@ -45,7 +45,7 @@ def task_add_partial_view(request):
     if request.method == "POST":
         form = TaskForm(request.POST)
         if form.is_valid():
-            add_task_service(  # Call your service function
+            add_task_service(
                 title=form.cleaned_data["title"],
                 description=form.cleaned_data.get("description"),
                 status=form.cleaned_data["status"],
@@ -67,7 +67,7 @@ def task_add_partial_view(request):
                 context = {"form": form, "page_title": "Add New Task (Errors)"}
                 return render(request, "todo/partials/_add_task.html", context)
 
-    else:  # GET request
+    else:
         form = TaskForm()
 
     context = {"form": form, "page_title": "Add New Task"}
@@ -93,16 +93,6 @@ def task_update_status_view(request, task_id):
 
     # GET requests to this URL are not typical for this action, redirect or show error
     return redirect(reverse("task_list"))
-
-
-def task_mark_as_completed_view(request, item_id):
-    item = get_object_or_404(Task, id=item_id)
-    if request.method == "POST":
-        item.status = Task.Status.COMPLETED
-        item.save()
-        messages.info(request, f"Task '{item.title}' status updated.")
-        return HttpResponseRedirect(reverse("task_list"))
-    return HttpResponseRedirect(reverse("task_list"))
 
 
 def task_delete_view(request, item_id):
