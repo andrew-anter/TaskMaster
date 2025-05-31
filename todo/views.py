@@ -15,7 +15,7 @@ def todo_list_view(request):
     form = TodoItemForm()
 
     context = {
-        "items": todo_items,
+        "my_tasks": todo_items,
         "form": form,
         "page_title": "My ToDo List",
     }
@@ -24,6 +24,7 @@ def todo_list_view(request):
 
 
 def add_todo_view(request):
+    form = TodoItemForm()
     if request.method == "POST":
         form = TodoItemForm(request.POST)
         if form.is_valid():
@@ -42,13 +43,12 @@ def add_todo_view(request):
                 messages.error(request, f"Could not add task: {e}")
         else:
             messages.error(request, "Please correct the errors below.")
-            context = {
-                "form": form,
-                "page_title": "My To-Do List",
-            }
-            return render(request, "todo/todo_list.html", context)
 
-    return HttpResponseRedirect(reverse("todo_list"))
+    context = {
+        "form": form,
+        "page_title": "Add task",
+    }
+    return render(request=request, template_name="todo/add_task.html", context=context)
 
 
 def mark_item_as_completed(request, item_id):

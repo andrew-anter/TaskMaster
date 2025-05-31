@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add New Task - TaskMaster{% endblock title %}
+
+{% block head_extra %}
+{{ block.super }}
+<style>
+  :root { /* Or a more specific selector if needed for the current page */
+    --select-button-svg: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(143,127,86)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e');
+  }
+  .custom-select {
+    background-image: var(--select-button-svg);
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.5em 1.5em;
+    /* appearance: none; is now set in forms.py widget attrs */
+    padding-right: 2.5rem !important; /* Ensure space for arrow, !important might be needed if base_input_classes has conflicting padding */
+  }
+</style>
+{% endblock head_extra %}
+
+{% block content %}
+<div class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
+    <div class="flex flex-wrap justify-between gap-3 p-4">
+        <h1 class="text-[#1a170f] tracking-light text-[32px] font-bold leading-tight min-w-72">Add Task</h1>
+    </div>
+
+    <form method="post" action="{% url 'add_todo' %}">
+        {% csrf_token %}
+        <div class="flex flex-col gap-3 px-4 py-3">
+            
+            <label class="flex flex-col w-full">
+                <span class="text-[#1a170f] text-base font-medium leading-normal pb-2">{{ form.title.label_tag }}</span>
+                {{ form.title }} {# Widget classes and placeholder are now from forms.py #}
+                {% for error in form.title.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </label>
+
+            <label class="flex flex-col w-full">
+                <span class="text-[#1a170f] text-base font-medium leading-normal pb-2">{{ form.description.label_tag }}</span>
+                {{ form.description }}
+                {% for error in form.description.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </label>
+
+            <label class="flex flex-col w-full">
+                <span class="text-[#1a170f] text-base font-medium leading-normal pb-2">{{ form.due_date.label_tag }}</span>
+                <div class="flex w-full flex-1 items-stretch rounded-xl bg-[#f2efe9]"> {# Wrapper for icon #}
+                    {{ form.due_date }}
+                    <div class="text-[#8f7f56] flex border-none items-center justify-center pr-4 rounded-r-xl border-l-0 cursor-pointer" data-icon="Calendar" onclick="this.previousElementSibling.showPicker ? this.previousElementSibling.showPicker() : this.previousElementSibling.click()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-96-88v64a8,8,0,0,1-16,0V132.94l-4.42,2.22a8,8,0,0,1-7.16-14.32l16-8A8,8,0,0,1,112,120Zm59.16,30.45L152,176h16a8,8,0,0,1,0,16H136a8,8,0,0,1-6.4-12.8l28.78-38.37A8,8,0,1,0,145.07,132a8,8,0,1,1-13.85-8A24,24,0,0,1,176,136,23.76,23.76,0,0,1,171.16,150.45Z"></path></svg>
+                    </div>
+                </div>
+                {% for error in form.due_date.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </label>
+
+            <label class="flex flex-col w-full">
+                <span class="text-[#1a170f] text-base font-medium leading-normal pb-2">{{ form.scheduled_date.label_tag }}</span>
+                <div class="flex w-full flex-1 items-stretch rounded-xl bg-[#f2efe9]"> {# Wrapper for icon #}
+                    {{ form.scheduled_date }}
+                     <div class="text-[#8f7f56] flex border-none items-center justify-center pr-4 rounded-r-xl border-l-0 cursor-pointer" data-icon="Calendar" onclick="this.previousElementSibling.showPicker ? this.previousElementSibling.showPicker() : this.previousElementSibling.click()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-96-88v64a8,8,0,0,1-16,0V132.94l-4.42,2.22a8,8,0,0,1-7.16-14.32l16-8A8,8,0,0,1,112,120Zm59.16,30.45L152,176h16a8,8,0,0,1,0,16H136a8,8,0,0,1-6.4-12.8l28.78-38.37A8,8,0,1,0,145.07,132a8,8,0,1,1-13.85-8A24,24,0,0,1,176,136,23.76,23.76,0,0,1,171.16,150.45Z"></path></svg>
+                    </div>
+                </div>
+                {% for error in form.scheduled_date.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </label>
+
+            <label class="flex flex-col w-full">
+                <span class="text-[#1a170f] text-base font-medium leading-normal pb-2">{{ form.status.label_tag }}</span>
+                {{ form.status }}
+                {% for error in form.status.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </label>
+
+            <label class="flex flex-col w-full">
+                <span class="text-[#1a170f] text-base font-medium leading-normal pb-2">{{ form.priority.label_tag }}</span>
+                {{ form.priority }}
+                {% for error in form.priority.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </label>
+            
+            <div class="flex pt-3 justify-end">
+                <button
+                    type="submit"
+                    class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-[#f3e8cd] text-[#1a170f] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80"
+                >
+                    <span class="truncate">Add Task</span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock content %}
