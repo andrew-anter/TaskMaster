@@ -9,5 +9,10 @@ urlpatterns = [
         views.task_mark_as_completed_view,
         name="task_mark_as_completed",
     ),
+    path(
+        "update-status/<int:task_id>/",
+        views.task_update_status_view,
+        name="update_task_status",
+    ),
     path("delete/<int:item_id>/", views.task_delete_view, name="task_delete"),
 ]
