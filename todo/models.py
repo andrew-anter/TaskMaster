@@ -1,5 +1,5 @@
 from django.db import models
-from accounts.models import User
+from django.conf import settings
 
 
 class Task(models.Model):
@@ -17,7 +17,7 @@ class Task(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.TODO
     )
