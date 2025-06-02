@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
-# from django.shortcuts import redirect
+from todo import views as todo_views
 
 from django.conf import settings  # For static files in DEBUG
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path("", todo_views.task_list_view, name="task_list"),
     path("admin/", admin.site.urls),
     path("tasks/", include("todo.urls")),
     path("accounts/", include("accounts.urls")),
