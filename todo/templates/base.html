@@ -29,7 +29,7 @@
 
     {% htmx_script %}
   </head>
-  <body hx-headers='{"x-csrftoken": "{{ csrf_token }}"}'>
+  <body hx-headers='{"x-csrftoken": "{{ csrf_token }}"}' hx-boost="true">
     <div class="relative flex size-full min-h-screen flex-col bg-[#fbfaf9] group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
       <div class="layout-container flex h-full grow flex-col">
 
