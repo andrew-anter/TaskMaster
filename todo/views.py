@@ -1,5 +1,5 @@
 from .services import add_task_service, toggle_task_status_service
-from .selectors import get_today_tasks, get_upcoming_tasks
+from .selectors import get_today_tasks, get_upcoming_tasks, get_all_tasks
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import (
@@ -103,3 +103,15 @@ def task_delete_view(request, item_id):
         messages.warning(request, f"Task '{item_title}' deleted.")
         return HttpResponseRedirect(reverse("task_list"))
     return HttpResponseRedirect(reverse("task_list"))
+
+
+def all_tasks_view(request):
+    tasks = get_all_tasks()
+
+    context = {
+        "all_tasks": tasks,
+        "page_title": "All Tasks",
+        "Status": Task.Status,
+        "Priority": Task.Priority,
+    }
+    return render(request, "todo/partials/_all_tasks_list.html", context)
