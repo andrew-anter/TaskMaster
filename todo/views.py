@@ -14,8 +14,8 @@ from .forms import TaskForm
 
 
 def task_list_view(request):
-    today_tasks = get_today_tasks()
-    upcoming_tasks = get_upcoming_tasks()
+    today_tasks = get_today_tasks(user=request.user)
+    upcoming_tasks = get_upcoming_tasks(user=request.user)
 
     context = {
         "today_tasks": today_tasks,
@@ -28,8 +28,8 @@ def task_list_view(request):
 
 
 def task_list_partial_view(request):
-    today_tasks = get_today_tasks()
-    upcoming_tasks = get_upcoming_tasks()
+    today_tasks = get_today_tasks(user=request.user)
+    upcoming_tasks = get_upcoming_tasks(user=request.user)
 
     context = {
         "today_tasks": today_tasks,
@@ -52,6 +52,7 @@ def task_add_partial_view(request):
                 priority=form.cleaned_data["priority"],
                 due_date=form.cleaned_data.get("due_date"),
                 scheduled_date=form.cleaned_data.get("scheduled_date"),
+                owner=request.user,
             )
 
             if request.htmx:
@@ -106,7 +107,7 @@ def task_delete_view(request, item_id):
 
 
 def all_tasks_view(request):
-    tasks = get_all_tasks()
+    tasks = get_all_tasks(user=request.user)
 
     context = {
         "all_tasks": tasks,

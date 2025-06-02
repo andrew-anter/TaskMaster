@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from .models import Task
 from django.db import transaction
+from django.contrib.auth.models import User
 
 
 @transaction.atomic
@@ -12,6 +13,7 @@ def add_task_service(
     priority: int,
     due_date: datetime | None,
     scheduled_date: date | None,
+    owner: User,
 ) -> Task:
     # TODO: Add validation checks
     # TODO: check for dates that they are in the future
@@ -24,6 +26,7 @@ def add_task_service(
         priority=priority,
         due_date=due_date,
         scheduled_date=scheduled_date,
+        owner=owner,
     )
     return todo_item
 
