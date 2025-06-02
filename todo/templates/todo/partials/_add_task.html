@@ -9,7 +9,7 @@
     <div id="add-task-form-wrapper">
         <form method="post" action="{% url 'task_add' %}"
               hx-post="{% url 'task_add' %}"
-              hx-target="#add-task-form-wrapper" 
+              hx-target="#add-task-container" 
               {# hx-swap="outerHTML" #} 
               class="mt-2">
             {% csrf_token %}
@@ -45,9 +45,9 @@
 
                 {# Due Date - Using Django's DateTimeField, styled like other inputs #}
                 <label class="flex flex-col w-full">
-                    <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.due_date.label_tag }}</span>
-                    {{ form.due_date }}
-                    {% for error in form.due_date.errors %}
+                    <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.due_datetime.label_tag }}</span>
+                    {{ form.due_datetime }}
+                    {% for error in form.due_datetime.errors %}
                         <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
                     {% endfor %}
                 </label>
@@ -79,9 +79,6 @@
                     {% endfor %}
                 </label>
                 
-                {# Note: "Project" and "Labels" fields from your design are not yet in the Django model/form. #}
-                {# You would add them to models.py, forms.py, and then here if needed. #}
-
                 <div class="flex justify-end gap-3 pt-3"> {# Buttons at the bottom #}
                     <a hx-get="{% url 'task_list_partial' %}"
                        hx-target="#add-task-container"
