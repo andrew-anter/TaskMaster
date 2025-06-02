@@ -1,9 +1,14 @@
-from datetime import date, datetime
+from datetime import date, datetime, tzinfo
+
 from .models import Task
 from django.db import transaction
+from django.utils import timezone
+from .exceptions import DueDateInPastError
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
 
 @transaction.atomic
 def add_task_service(
@@ -17,8 +22,10 @@ def add_task_service(
     owner: User,
 ) -> Task:
     # TODO: Add validation checks
-    # TODO: check for dates that they are in the future
-    # TODO: if an optional value is not sent, then do not create the object with it
+
+    today = timezone.now().today().date()
+    if due_datetime and due_datetime.date() < today:
+        raise DueDateInPastError
 
     todo_item = Task.objects.create(
         title=title,

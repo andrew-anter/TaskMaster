@@ -1,16 +1,17 @@
-from .services import add_task_service, toggle_task_status_service
-from .selectors import get_today_tasks, get_upcoming_tasks, get_all_tasks
-
-from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.http import (
     HttpResponse,
     HttpResponseRedirect,
 )
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.contrib import messages
 
-from .models import Task
+from todo.exceptions import DueDateInPastError
+
 from .forms import TaskForm
+from .models import Task
+from .selectors import get_all_tasks, get_today_tasks, get_upcoming_tasks
+from .services import add_task_service, toggle_task_status_service
 
 
 def task_list_view(request):
@@ -45,15 +46,20 @@ def task_add_partial_view(request):
     if request.method == "POST":
         form = TaskForm(request.POST)
         if form.is_valid():
-            add_task_service(
-                title=form.cleaned_data["title"],
-                description=form.cleaned_data.get("description"),
-                status=form.cleaned_data["status"],
-                priority=form.cleaned_data["priority"],
-                due_date=form.cleaned_data.get("due_date"),
-                scheduled_date=form.cleaned_data.get("scheduled_date"),
-                owner=request.user,
-            )
+            try:
+                add_task_service(
+                    title=form.cleaned_data["title"],
+                    description=form.cleaned_data.get("description"),
+                    status=form.cleaned_data["status"],
+                    priority=form.cleaned_data["priority"],
+                    due_datetime=form.cleaned_data.get("due_datetime"),
+                    scheduled_date=form.cleaned_data.get("scheduled_date"),
+                    owner=request.user,
+                )
+            except DueDateInPastError as e:
+                form.add_error(None, f"{e}")
+                context = {"form": form, "page_title": "Add New Task (Errors)"}
+                return render(request, "todo/partials/_add_task.html", context)
 
             if request.htmx:
                 response = HttpResponse()  # Empty response is fine
