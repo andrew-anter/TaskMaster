@@ -1,7 +1,10 @@
+from django.contrib.auth import get_user_model
+from django.db.models import Q, QuerySet
 from django.utils import timezone
-from django.db.models import QuerySet
+
 from .models import Task
-from django.contrib.auth.models import User
+
+User = get_user_model()
 
 
 def get_all_tasks(*, user: User) -> QuerySet[Task]:

@@ -1,8 +1,9 @@
 from datetime import date, datetime
 from .models import Task
 from django.db import transaction
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 @transaction.atomic
 def add_task_service(
