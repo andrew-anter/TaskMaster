@@ -11,7 +11,7 @@ def add_task_service(
     description: str | None,
     status: str,
     priority: int,
-    due_date: datetime | None,
+    due_datetime: datetime | None,
     scheduled_date: date | None,
     owner: User,
 ) -> Task:
@@ -24,7 +24,7 @@ def add_task_service(
         description=description,
         status=status,
         priority=priority,
-        due_date=due_date,
+        due_datetime=due_datetime,
         scheduled_date=scheduled_date,
         owner=owner,
     )

@@ -17,9 +17,9 @@
     <div class="flex flex-col justify-center flex-grow">
         <p class="text-[#1c170d] text-base font-medium leading-normal line-clamp-1 {% if task.status == Status.COMPLETED %}line-through text-opacity-60{% endif %}">{{ task.title }}</p>
         <p class="text-[#9b844b] text-sm font-normal leading-normal line-clamp-2 {% if task.status == Status.COMPLETED %}line-through text-opacity-60{% endif %}">
-            {% if task.due_date %}
-                Due: {{ task.due_date|date:"F j, Y" }}
-                {% if task.due_date.time %} (at {{ task.due_date|time:"H:i" }}){% endif %}
+            {% if task.due_datetime %}
+                Due: {{ task.due_datetime|date:"F j, Y" }}
+                {% if task.due_datetime.time %} (at {{ task.due_datetime|time:"P" }}){% endif %}
             {% else %}
                 No due date
             {% endif %}

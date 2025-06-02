@@ -10,7 +10,7 @@ class TaskAdmin(ModelAdmin):
         "title",
         "status",
         "priority",
-        "due_date",
+        "due_datetime",
         "scheduled_date",
         "created_at",
         "modified_at",  # Changed from updated_at
@@ -18,7 +18,7 @@ class TaskAdmin(ModelAdmin):
     list_filter = (
         "status",
         "priority",
-        "due_date",
+        "due_datetime",
         "scheduled_date",
         "created_at",
         "modified_at",  # Changed from updated_at
@@ -32,7 +32,7 @@ class TaskAdmin(ModelAdmin):
         (
             "Important Dates",
             {
-                "fields": ("due_date", "scheduled_date"),
+                "fields": ("due_datetime", "scheduled_date"),
             },
         ),
         (

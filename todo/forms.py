@@ -26,7 +26,7 @@ class TaskForm(forms.ModelForm):
             "description",
             "status",
             "priority",
-            "due_date",
+            "due_datetime",
             "scheduled_date",
         ]
 
@@ -44,7 +44,7 @@ class TaskForm(forms.ModelForm):
                     "rows": 5,  # Design has min-h-36, rows is a suggestion
                 }
             ),
-            "due_date": DateTimeInput(
+            "due_datetime": DateTimeInput(
                 attrs={
                     "class": DESIGN_INPUT_CLASSES,  # Styled like other inputs
                     "placeholder": "Select due date & time",
@@ -70,7 +70,7 @@ class TaskForm(forms.ModelForm):
         labels = {
             "title": "Task Title",
             "description": "Description",
-            "due_date": "Due Date",  # Matches design
+            "due_datetime": "Due Date & Time",  # Matches design
             "scheduled_date": "Scheduled Date",  # Adding this, was not in new design form explicitly
             "status": "Status",  # Adding this
             "priority": "Priority",  # Adding this
