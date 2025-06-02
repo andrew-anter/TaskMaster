@@ -22,9 +22,8 @@ class Task(models.Model):
         max_length=20, choices=Status.choices, default=Status.TODO
     )
     priority = models.IntegerField(choices=Priority.choices, default=Priority.MEDIUM)
-    due_date = models.DateTimeField(
-        null=True,
-        blank=True,
+    due_datetime = models.DateTimeField(
+        null=True, blank=True, verbose_name="Due date & time"
     )
     scheduled_date = models.DateField(
         null=True,
@@ -37,6 +36,6 @@ class Task(models.Model):
         return str(self.title)
 
     class Meta:
-        ordering = ["status", "priority", "due_date"]
+        ordering = ["status", "priority", "due_datetime"]
         verbose_name = "To-Do Item"
         verbose_name_plural = "To-Do Items"
