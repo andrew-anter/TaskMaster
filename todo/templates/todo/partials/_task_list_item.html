@@ -16,9 +16,14 @@
   </form>
   <div class="flex flex-col justify-center flex-grow">
     <p class="text-[#1c170d] text-base font-medium leading-normal line-clamp-1 {% if task.status == Status.COMPLETED %}line-through text-opacity-60{% endif %}">
-    <button hx-get="{% url 'task_update' task.id %}" hx-target="#main-content">
-      {{ task.title }}
-    </button>
+<button
+    hx-get="{% url 'task_update' task.id %}"
+    hx-target="#main-content"
+    class="
+        bg-transparent border-none p-0 m-0 text-left cursor-pointer text-[#1c170d] font-medium hover:text-[#f3c144] hover:underline      
+        focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#f3c144] focus:text-[#f3c144] focus:underline transition-colors duration-200 ease-in-out" >
+    {{ task.title }}
+</button>
     </p>
     <p class="text-[#9b844b] text-sm font-normal leading-normal line-clamp-2 {% if task.status == Status.COMPLETED %}line-through text-opacity-60{% endif %}">
     {% if task.due_datetime %}
