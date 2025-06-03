@@ -10,7 +10,12 @@ from todo.exceptions import DueDateInPastError
 
 from .forms import TaskForm
 from .models import Task
-from .selectors import get_all_tasks, get_today_tasks, get_upcoming_tasks
+from .selectors import (
+    get_all_tasks,
+    get_task_for_user,
+    get_today_tasks,
+    get_upcoming_tasks,
+)
 from .services import add_task_service, toggle_task_status_service
 
 
@@ -100,6 +105,23 @@ def task_update_status_view(request, task_id):
 
     # GET requests to this URL are not typical for this action, redirect or show error
     return redirect(reverse("task_list"))
+
+
+def task_update_view(request, task_id):
+    task = get_task_for_user(user=request.user, task_id=task_id)
+
+    if request.method == "POST":
+        pass
+
+    if not task:
+        response = HttpResponse()  # Empty response is fine
+        response["HX-Location"] = reverse("task_list")
+        messages.error(request, "No task assiociated with this id.")
+        return response
+
+    form = TaskForm(instance=task)
+    context = {"form": form, "page_title": "Update Task"}
+    return render(request, "todo/partials/_add_task.html", context)
 
 
 def task_delete_view(request, item_id):
