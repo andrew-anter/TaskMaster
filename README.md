@@ -49,8 +49,8 @@ TaskMaster is a modern web-based task management application built with Django a
 
 1.  **Clone the Repository (Example):**
     ```bash
-    git clone <your-repository-url>
-    cd <repository-name>
+    git clone https://github.com/andrew-anter/todo.git
+    cd todo
     ```
 
 2.  **Create and Activate Virtual Environment (using `uv`):**
