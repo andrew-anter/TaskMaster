@@ -1,5 +1,7 @@
 from datetime import date, datetime
 
+from todo.selectors import get_task_for_user
+
 from .models import Task
 from django.db import transaction
 from django.utils import timezone
@@ -52,7 +54,8 @@ def toggle_task_status_service(*, task: Task) -> Task:
 @transaction.atomic
 def task_update_service(
     *,
-    task: Task,
+    task_id: int,
+    user: User,
     title: str | None = None,
     description: str | None = None,
     status: str | None = None,
@@ -68,6 +71,10 @@ def task_update_service(
     that is either true when there's an update happened
     or false if there is not any updates
     """
+    task = get_task_for_user(user=user, task_id=task_id)
+    if not task:
+        raise Task.DoesNotExist
+
     # A flag to check if we need to save
     fields_updated = False
 
@@ -100,7 +107,7 @@ def task_update_service(
                     due_datetime, timezone.get_current_timezone()
                 )
 
-        if due_datetime < timezone.now():
+        if due_datetime != task.due_datetime and due_datetime < timezone.now():
             raise DueDateInPastError(
                 f"The due date {due_datetime.strftime('%Y-%m-%d %H:%M')} cannot be in the past."
             )
