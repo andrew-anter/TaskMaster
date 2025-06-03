@@ -6,7 +6,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from todo.exceptions import DueDateInPastError
+from todo.exceptions import DueDateInPastError, ScheduledDateInPastError
 
 from .forms import TaskForm
 from .models import Task
@@ -16,7 +16,7 @@ from .selectors import (
     get_today_tasks,
     get_upcoming_tasks,
 )
-from .services import add_task_service, toggle_task_status_service
+from .services import add_task_service, task_update_service, toggle_task_status_service
 
 
 def task_list_view(request):
@@ -109,18 +109,64 @@ def task_update_status_view(request, task_id):
 
 def task_update_view(request, task_id):
     task = get_task_for_user(user=request.user, task_id=task_id)
+    form = TaskForm(instance=task)
+    page_title = "Update Task"
 
     if request.method == "POST":
-        pass
+        form = TaskForm(request.POST, instance=task)
+        if form.is_valid():
+            try:
+                task, success = task_update_service(
+                    user=request.user,
+                    task_id=task_id,
+                    title=form.cleaned_data["title"],
+                    description=form.cleaned_data.get("description"),
+                    status=form.cleaned_data["status"],
+                    priority=form.cleaned_data["priority"],
+                    due_datetime=form.cleaned_data.get("due_datetime"),
+                    scheduled_date=form.cleaned_data.get("scheduled_date"),
+                )
+                if success:
+                    messages.success(request, "Task have been updated successfully.")
+
+                else:
+                    messages.warning(
+                        request,
+                        "Task update failed. Maybe all the task attributes are still the same",
+                    )
+                response = HttpResponse()
+                response["HX-Location"] = reverse("task_list")
+                return response
+
+            except Task.DoesNotExist:
+                response = HttpResponse()
+                response["HX-Location"] = reverse("task_list")
+                messages.error(request, "No task assiociated with this id.")
+                return response
+
+            except DueDateInPastError as e:
+                form.add_error(None, f"{e}")
+                page_title = "Update Task (Errors)"
+
+            except ScheduledDateInPastError as e:
+                form.add_error(None, f"{e}")
+                page_title = "Update Task (Errors)"
+
+            except Exception:
+                # TODO: Log error message here
+                pass
 
     if not task:
-        response = HttpResponse()  # Empty response is fine
+        response = HttpResponse()
         response["HX-Location"] = reverse("task_list")
         messages.error(request, "No task assiociated with this id.")
         return response
 
-    form = TaskForm(instance=task)
-    context = {"form": form, "page_title": "Update Task"}
+    context = {
+        "form": form,
+        "task_id": task_id,
+        "page_title": page_title,
+    }
     return render(request, "todo/partials/_add_task.html", context)
 
 
