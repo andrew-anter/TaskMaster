@@ -130,3 +130,17 @@ def task_update_service(
         return (task, True)
 
     return (task, False)
+
+
+@transaction.atomic
+def task_delete_service(*, user: User, task_id: int) -> bool:
+    task = get_task_for_user(user=user, task_id=task_id)
+    if task:
+        try:
+            task.delete()
+            return True
+        except Exception:
+            # TODO: log the error
+            pass
+            return False
+    return False
