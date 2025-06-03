@@ -11,5 +11,5 @@ urlpatterns = [
         views.task_update_status_view,
         name="update_task_status",
     ),
-    path("delete/<int:item_id>/", views.task_delete_view, name="task_delete"),
+    path("delete/<int:task_id>/", views.task_delete_view, name="task_delete"),
 ]

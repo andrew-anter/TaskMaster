@@ -16,7 +16,12 @@ from .selectors import (
     get_today_tasks,
     get_upcoming_tasks,
 )
-from .services import add_task_service, task_update_service, toggle_task_status_service
+from .services import (
+    add_task_service,
+    task_delete_service,
+    task_update_service,
+    toggle_task_status_service,
+)
 
 
 def task_list_view(request):
@@ -170,14 +175,17 @@ def task_update_view(request, task_id):
     return render(request, "todo/partials/_add_task.html", context)
 
 
-def task_delete_view(request, item_id):
-    item = get_object_or_404(Task, id=item_id)
+def task_delete_view(request, task_id):
     if request.method == "POST":
-        item_title = item.title
-        item.delete()
-        messages.warning(request, f"Task '{item_title}' deleted.")
-        return HttpResponseRedirect(reverse("task_list"))
-    return HttpResponseRedirect(reverse("task_list"))
+        deleted = task_delete_service(user=request.user, task_id=task_id)
+        if deleted:
+            messages.success(request, "Task deleted successfully.")
+        else:
+            messages.warning(request, "An error occurred, no changes have been made")
+
+    response = HttpResponse()
+    response["HX-Location"] = reverse("task_list")
+    return response
 
 
 def all_tasks_view(request):
