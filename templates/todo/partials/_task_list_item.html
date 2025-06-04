@@ -27,14 +27,7 @@ Context variables expected:
   {# Task Title and Due Date #}
   <div class="flex flex-col justify-center flex-grow min-w-0"> {# Added min-w-0 for proper truncation with flex #}
     <p class="text-base-content text-base font-medium leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
-    <a  hx-get="{% url 'task_update' task.id %}" 
-        hx-target="#main-content" 
-          
-        class="link link-hover hover:text-primary" 
-        title="Edit task '{{ task.title|escapejs }}'"
-        >
         {{ task.title }}
-    </a>
     </p>
     <p class="text-base-content opacity-70 text-sm font-normal leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
     {% if task.due_date %}
@@ -46,19 +39,28 @@ Context variables expected:
     </p>
   </div>
 
-  {# Delete Task Button #}
-  <form hx-post="{% url 'task_delete' task.id %}"
-        hx-target="#task-{{ task.id }}-item"
-        hx-swap="outerHTML"
-        hx-confirm="Are you sure you want to delete '{{ task.title|escapejs }}'?"
-        class="ml-auto pl-2 shrink-0">
-    {% csrf_token %}
-    <button type="submit"
-            class="btn btn-ghost btn-circle btn-sm text-base-content/70 hover:bg-error hover:text-error-content focus:bg-error focus:text-error-content"
-            title="Delete task '{{ task.title|escapejs }}'">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
-        <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path>
-      </svg>
+  <div class="ml-auto flex items-center gap-1 md:gap-2 pl-2 shrink-0">
+    {# Edit Task Button #}
+    <button hx-get="{% url 'task_update' task.id %}" {# Use context var for URL name #}
+            hx-target="#main-content" {# Or your preferred target for edit form #}
+            class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-primary focus:bg-primary"
+            {# btn-square for a consistent square shape if not btn-circle #}
+            title="Edit task '{{ task.title|escapejs }}'">
+      <i class="nf nf-fa-edit text-lg"></i> {# Nerd Font icon #}
     </button>
-  </form>
+
+    {# Delete Task Form #}
+    <form hx-post="{% url 'task_delete' task.id %}" {# Use context var for URL name #}
+          hx-target="#task-{{ task.id }}-item"
+          hx-swap="outerHTML"
+          hx-confirm="Are you sure you want to delete '{{ task.title|escapejs }}'?"
+          class="contents"> {# 'contents' display property for form if it only wraps button in a flex context #}
+          {% csrf_token %}
+          <button type="submit"
+                  class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-error hover:text-error-content focus:bg-error focus:text-error-content"
+                  title="Delete task '{{ task.title|escapejs }}'">
+            <i class="nf nf-cod-trash text-lg"></i> {# Nerd Font icon #}
+          </button>
+    </form>
+  </div>
 </div>
