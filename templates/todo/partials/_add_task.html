@@ -1,0 +1,106 @@
+<div id="add-task-container" class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
+  <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+    <h1 class="text-[#1c170d] tracking-light text-[32px] font-bold leading-tight">{{ page_title }}</h1>
+  </div>
+
+  {# This div can be targeted by HTMX to replace the form or show messages #}
+  <div id="add-task-form-wrapper">
+    <form method="post" 
+          {% if task_id %}
+            hx-post="{% url 'task_update' task_id %}"
+          {% else %}
+            hx-post="{% url 'task_add' %}"
+          {% endif %}
+          hx-target="#add-task-container" 
+          class="mt-2">
+      {% csrf_token %}
+      <div class="flex flex-col gap-4 px-4 py-3"> {# Adjusted gap for consistency #}
+
+        {% if form.non_field_errors %}
+        <div class="p-3 bg-red-100 text-red-700 rounded-xl text-sm border border-red-200">
+          {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div id="success-message-area"></div>
+
+
+        {# Task Title #}
+        <label class="flex flex-col w-full">
+          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.title.label_tag }}</span>
+          {{ form.title }} {# Widget classes and placeholder are from forms.py #}
+          {% for error in form.title.errors %}
+          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+          {% endfor %}
+        </label>
+
+        {# Description #}
+        <label class="flex flex-col w-full">
+          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.description.label_tag }}</span>
+          {{ form.description }}
+          {% for error in form.description.errors %}
+          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+          {% endfor %}
+        </label>
+
+        {# Due Date - Using Django's DateTimeField, styled like other inputs #}
+        <label class="flex flex-col w-full">
+          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.due_datetime.label_tag }}</span>
+          {{ form.due_datetime }}
+          {% for error in form.due_datetime.errors %}
+          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+          {% endfor %}
+        </label>
+
+        {# Scheduled Date - Added based on our form, styled like other inputs #}
+        <label class="flex flex-col w-full">
+          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.scheduled_date.label_tag }}</span>
+          {{ form.scheduled_date }}
+          {% for error in form.scheduled_date.errors %}
+          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+          {% endfor %}
+        </label>
+
+        {# Status - Added based on our form, styled as select #}
+        <label class="flex flex-col w-full">
+          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.status.label_tag }}</span>
+          {{ form.status }}
+          {% for error in form.status.errors %}
+          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+          {% endfor %}
+        </label>
+
+        {# Priority - Added based on our form, styled as select #}
+        <label class="flex flex-col w-full">
+          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.priority.label_tag }}</span>
+          {{ form.priority }}
+          {% for error in form.priority.errors %}
+          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+          {% endfor %}
+        </label>
+
+        <div class="flex justify-end gap-3 pt-3"> {# Buttons at the bottom #}
+          <a hx-get="{% url 'task_list_partial' %}"
+             hx-target="#add-task-container"
+             hx-swap="outerHTML"
+             class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#f3f0e7] text-[#1c170d] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-colors">
+            <span class="truncate">Cancel</span>
+          </a>
+          <button
+              type="submit"
+              class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-[#f4c653] text-[#1c170d] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-colors"
+              >
+              <span class="truncate">
+                {% if task_id %}
+                  update
+                {% else %}
+                  Add 
+                {% endif %}
+                Task</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
