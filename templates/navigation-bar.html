@@ -47,9 +47,10 @@
                 </a>
             </li>
             <li><a href="#">Settings</a></li> {# TODO: Link to settings page #}
-            {# For HTMX logout, you might need a form or specific hx-post attributes #}
-            {# Simple link logout: #}
-            {# <li><a href="{% url 'logout' %}">Logout</a></li> {# Assuming 'logout' is a standard Django logout URL #}
+            <li>
+            <li><a hx-post="{% url 'logout' %}"  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
+            </li> 
+
         </ul>
     </div>
     {% endblock user_profile %}
@@ -65,9 +66,10 @@
             <li><button class="w-full text-left justify-start" hx-get="{% url 'task_list' %}" hx-target="#main-content"  >My Tasks</button></li>
             <li><button class="w-full text-left justify-start" hx-get="#" hx-target="#main-content"  >All Tasks</button></li> {# TODO: Update URL #}
             <li><a href="#">Templates</a></li> {# TODO: Update URL #}
-            {# Add other links from your main nav if they should appear in mobile menu #}
+
             <li><hr class="my-1"></li>
-            {# <li><a href="{% url 'logout' %}">Logout</a></li> #}
+
+            <li><a hx-post="{% url 'logout' %}"  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
         </ul>
     </div>
 </div>
