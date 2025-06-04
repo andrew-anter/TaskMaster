@@ -1,11 +1,12 @@
+# todo/forms.py
 from django import forms
 from .models import Task
 
-DESIGN_INPUT_CLASSES = "form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#1c170d] focus:outline-0 focus:ring-0 border border-[#e8e1cf] bg-[#fcfbf8] focus:border-[#e8e1cf] h-14 placeholder:text-[#9b844b] p-[15px] text-base font-normal leading-normal"
-DESIGN_TEXTAREA_CLASSES = f"{DESIGN_INPUT_CLASSES} min-h-36"
-DESIGN_SELECT_CLASSES = (
-    f"{DESIGN_INPUT_CLASSES} custom-select appearance-none"  # For select elements
+
+FORM_FIELD_CLASSES = (
+    "input input-bordered w-full h-14 p-[15px] text-base focus:outline-offset-0"
 )
+SELECT_FIELD_CLASSES = "select select-bordered w-full h-14 text-base custom-select"
 
 
 class DateInput(forms.DateInput):
@@ -17,8 +18,6 @@ class DateTimeInput(forms.DateTimeInput):
 
 
 class TaskForm(forms.ModelForm):
-    # New base classes from your latest design
-
     class Meta:
         model = Task
         fields = [
@@ -33,45 +32,45 @@ class TaskForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(
                 attrs={
-                    "class": DESIGN_INPUT_CLASSES,
+                    "class": FORM_FIELD_CLASSES,
                     "placeholder": "Enter task title",
                 }
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": DESIGN_TEXTAREA_CLASSES,
+                    "class": f"{FORM_FIELD_CLASSES} min-h-36",  # Keep min-h-36 for textarea
                     "placeholder": "Add a description",
-                    "rows": 5,  # Design has min-h-36, rows is a suggestion
+                    "rows": 5,
                 }
             ),
             "due_datetime": DateTimeInput(
                 attrs={
-                    "class": DESIGN_INPUT_CLASSES,  # Styled like other inputs
-                    "placeholder": "Select due date & time",
+                    "class": FORM_FIELD_CLASSES,
+                    "placeholder": "Select due date & time",  # Placeholder might not show for datetime-local
                 }
             ),
             "scheduled_date": DateInput(
-                attrs={  # Using the custom DateInput
-                    "class": DESIGN_INPUT_CLASSES,  # Styled like other inputs
-                    "placeholder": "Select scheduled date",
+                attrs={
+                    "class": FORM_FIELD_CLASSES,
+                    "placeholder": "Select scheduled date",  # Placeholder might not show for date
                 }
             ),
             "status": forms.Select(
                 attrs={
-                    "class": DESIGN_SELECT_CLASSES,
+                    "class": SELECT_FIELD_CLASSES,
                 }
             ),
             "priority": forms.Select(
                 attrs={
-                    "class": DESIGN_SELECT_CLASSES,
+                    "class": SELECT_FIELD_CLASSES,
                 }
             ),
         }
-        labels = {
+        labels = {  # Using more concise labels that Django's form rendering can use by default
             "title": "Task Title",
             "description": "Description",
-            "due_datetime": "Due Date & Time",  # Matches design
-            "scheduled_date": "Scheduled Date",  # Adding this, was not in new design form explicitly
-            "status": "Status",  # Adding this
-            "priority": "Priority",  # Adding this
+            "due_datetime": "Due Date & Time",
+            "scheduled_date": "Scheduled Date",
+            "status": "Status",
+            "priority": "Priority",
         }

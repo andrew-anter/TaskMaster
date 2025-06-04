@@ -3,7 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 
 class CustomLoginForm(AuthenticationForm):
-    login_input_classes = "form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#1c170d] focus:outline-0 focus:ring-0 border border-[#e8e1cf] bg-[#fcfbf8] focus:border-[#e8e1cf] h-14 placeholder:text-[#9b844b] p-[15px] text-base font-normal leading-normal"
+    login_input_classes = "input input-bordered w-full h-14 p-[15px] text-base"
 
     username = forms.CharField(
         widget=forms.TextInput(

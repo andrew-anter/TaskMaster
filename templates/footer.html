@@ -1,3 +1,16 @@
-<footer class="text-center py-5 border-t border-solid border-t-[#f2efe9] mt-auto">
-  <p class="text-sm text-[#1a170f]/70">&copy; {% now "Y" %} TaskMaster. All rights reserved.</p>
+<footer class="footer footer-center p-4 md:p-6 bg-base-100 text-base-content border-t border-base-200 mt-auto">
+    <aside> {# DaisyUI often uses <aside> for simple content sections within footers #}
+        <p class="text-sm opacity-80"> {# Using opacity on the theme's base content color #}
+            &copy; {% now "Y" %} TaskMaster. All rights reserved.
+        </p>
+        {# TODO: add more links or info here if needed later, e.g.: #}
+        {% comment %}
+        <nav class="grid grid-flow-col gap-4">
+            <a class="link link-hover">About us</a>
+            <a class="link link-hover">Contact</a>
+            <a class="link link-hover">Privacy Policy</a>
+        </nav>
+        {% endcomment %}
+      </aside>
+
 </footer>

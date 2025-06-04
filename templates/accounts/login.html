@@ -3,102 +3,98 @@
 
 {% block title %}Log In - TaskMaster{% endblock title %}
 
-{# This login page will use its own simpler header #}
+{# This login page uses its own simpler header, overriding the default from base.html #}
 {% block site_header %}
-<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#f3f0e7] px-10 py-3">
-    <div class="flex items-center gap-4 text-[#1c170d]">
-        <div class="size-4">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
-        </div>
-        <h2 class="text-[#1c170d] text-lg font-bold leading-tight tracking-[-0.015em]">
-            <a href="{% url 'task_list' %}">TaskMaster</a> {# Or a public home page URL #}
-        </h2>
+<header class="navbar bg-base-100 border-b border-base-300 px-4 md:px-10"> {# DaisyUI navbar with theme background and border #}
+    <div class="navbar-start">
+        <a href="{% url 'task_list' %}" class="flex items-center gap-3 normal-case text-xl font-bold"> {# Link on brand #}
+            <div class="size-5 text-primary"> {# Logo with primary theme color #}
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
+            </div>
+            TaskMaster
+        </a>
     </div>
-    <nav class="flex flex-1 justify-end gap-8 items-center"> {# Wrapped in nav for semantics #}
-        <div class="flex items-center gap-9">
-            {# TODO: Update hrefs with actual URLs if these pages exist #}
-            <a class="text-[#1c170d] text-sm font-medium leading-normal" href="#">Features</a>
-            <a class="text-[#1c170d] text-sm font-medium leading-normal" href="#">Pricing</a>
-            <a class="text-[#1c170d] text-sm font-medium leading-normal" href="#">Support</a>
+    <div class="navbar-end">
+        <div class="hidden sm:flex items-center gap-2"> {# Hide on extra-small screens #}
+            {# TODO: Update hrefs with actual URLs #}
+            <a class="btn btn-ghost btn-sm normal-case" href="#">Features</a>
+            <a class="btn btn-ghost btn-sm normal-case" href="#">Pricing</a>
+            <a class="btn btn-ghost btn-sm normal-case" href="#">Support</a>
         </div>
         {# TODO: Link to your signup page URL #}
-        <a href="#" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#f3f0e7] text-[#1c170d] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-colors">
-            <span class="truncate">Sign up</span>
-        </a>
-    </nav>
+        <a href="#" class="btn btn-ghost btn-sm normal-case ml-2">Sign up</a> {# Simpler button style for "Sign up" #}
+    </div>
 </header>
 {% endblock site_header %}
 
 {% block content %}
-{# The main content wrapper from base.html is: #}
-{# <main class="px-10 md:px-40 flex flex-1 justify-center py-5"> #}
-{#   <div class="layout-content-container flex flex-col max-w-[960px] flex-1 w-full"> #}
-{# To center the login box within this, we ensure the container inside main allows for centering. #}
-{# The design already has w-[512px] max-w-[512px] for the form area. #}
-{# The parent `flex justify-center` from base.html will horizontally center it. #}
-{# For vertical centering, we can add `items-center` to the `main` tag's direct child if this is the only content. #}
-{# However, since base.html's main also hosts messages, this structure is fine. #}
-
-<div class="flex flex-col w-full items-center justify-center py-5 md:py-10"> {# Wrapper to help center content #}
-    <div class="layout-form-container flex flex-col w-full md:w-[450px] max-w-[512px]"> {# Adjusted width slightly #}
-        <h2 class="text-[#1c170d] tracking-light text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5">Log in to TaskMaster</h2>
+<div class="flex flex-col w-full items-center justify-center py-8 md:py-12">
+    <div class="card w-full md:w-[450px] max-w-md bg-base-100 shadow-xl p-6 md:p-8"> {# DaisyUI card for the form container #}
+        <h2 class="text-2xl font-bold text-center mb-6 text-base-content">Log in to TaskMaster</h2>
         
-        <form method="post" action="{% url 'login' %}"> {# Ensure 'login' is your login URL name #}
+        <form method="post" action="{% url 'login' %}">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
-            <div class="px-4 py-2">
-                <div class="p-3 bg-red-100 text-red-700 rounded-xl text-sm border border-red-200">
-                    {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                    {% endfor %}
+            <div class="mb-4">
+                {# Using DaisyUI alert for errors #}
+                <div role="alert" class="alert alert-error text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div>
+                        {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
             {% endif %}
+            
             {% if request.GET.next %}
                 <input type="hidden" name="next" value="{{ request.GET.next }}">
             {% endif %}
 
-            <div class="flex flex-col gap-4 px-4 py-3"> {# Changed max-w, flex-wrap removed as it's flex-col now #}
-                <label class="flex flex-col w-full">
-                    <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">
-                        {{ form.username.label_tag }}
-                    </span>
+            <div class="space-y-4"> {# Using space-y for consistent gap #}
+                <div class="form-control w-full"> {# DaisyUI form-control for proper label/input spacing #}
+                    <label class="label pb-1" for="{{ form.username.id_for_label }}">
+                        <span class="label-text text-base-content text-base font-medium">{{ form.username.label|default:"Email or Username" }}</span>
+                    </label>
                     {{ form.username }} {# Styled via CustomLoginForm in forms.py #}
                     {% for error in form.username.errors %}
-                        <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+                        <label class="label pt-1">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </label>
                     {% endfor %}
-                </label>
+                </div>
 
-                <label class="flex flex-col w-full">
-                    <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">
-                        {{ form.password.label_tag }}
-                    </span>
+                <div class="form-control w-full">
+                    <label class="label pb-1" for="{{ form.password.id_for_label }}">
+                        <span class="label-text text-base-content text-base font-medium">{{ form.password.label|default:"Password" }}</span>
+                    </label>
                     {{ form.password }} {# Styled via CustomLoginForm in forms.py #}
                      {% for error in form.password.errors %}
-                        <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
+                        <label class="label pt-1">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </label>
                     {% endfor %}
-                </label>
+                </div>
             </div>
 
-            {# TODO: Link to your password reset URL #}
-            <p class="text-[#9b844b] text-sm font-normal leading-normal pb-3 pt-1 px-4 underline hover:text-[#1c170d] transition-colors">
-                <a href="#">Forgot password?</a>
-            </p>
+            <div class="text-sm mt-3 text-right">
+                {# TODO: Link to your password reset URL #}
+                <a href="#" class="link link-hover text-neutral">Forgot password?</a>
+            </div>
             
-            <div class="flex px-4 py-3">
-                <button
-                    type="submit"
-                    class="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 flex-1 bg-[#f4c653] text-[#1c170d] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-colors"
-                >
-                    <span class="truncate">Log in</span>
+            <div class="form-control mt-6">
+                <button type="submit" class="btn btn-primary w-full rounded-full normal-case"> {# DaisyUI primary button for login #}
+                    Log in
                 </button>
             </div>
-            {# TODO: Link to your signup page URL #}
-            <p class="text-[#9b844b] text-sm font-normal leading-normal pb-3 pt-1 px-4 text-center">
-                Don't have an account? 
-                <a href="#" class="underline hover:text-[#1c170d] transition-colors">Sign up</a>
-            </p>
+            
+            <div class="text-center mt-4 text-sm">
+                <span class="text-neutral-focus">Don't have an account?</span>
+                {# TODO: Link to your signup page URL #}
+                <a href="#" class="link link-hover text-primary font-medium ml-1">Sign up</a>
+            </div>
         </form>
     </div>
 </div>

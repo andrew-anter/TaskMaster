@@ -1,7 +1,6 @@
+<!DOCTYPE html>
 {% load static %}
 {% load django_htmx %}
-
-<!DOCTYPE html>
 <html lang="en" data-theme="bumblebee"> {# DaisyUI theme set here #}
 <head>
     <meta charset="UTF-8">
@@ -18,7 +17,7 @@
     {% endblock head_extra %}
     {% htmx_script %}
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-boost="true" class="bg-base-200 font-sans"> 
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-boost="true" class="bg-base-200"> 
 
     <div class="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
         <div class="layout-container flex h-full grow flex-col">

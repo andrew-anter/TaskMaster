@@ -1,15 +1,23 @@
-<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#f2efe9] px-10 py-3">
-  <div class="flex items-center gap-4 text-[#1a170f]">
-    <div class="size-4">
-      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
+{% load static %} 
+
+<header class="navbar bg-base-100 shadow-sm px-4 md:px-10 py-2">
+    {# Navbar Start - Logo and Brand Name #}
+    <div class="navbar-start">
+        <a href="{% block brand_link %}{% url 'task_list' %}{% endblock brand_link %}" class="flex items-center gap-3">
+            <div class="size-6 text-primary"> {# DaisyUI 'primary' color for the logo from Bumblebee #}
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
+            </div>
+            <button 
+                hx-get="{% url 'task_list' %}" {# Assuming task_list_partial was a mistake and it should load the main task_list view/content #}
+                hx-target="#main-content"
+                  {# Optional: if you want the URL to update #}
+                class="btn btn-ghost normal-case text-xl font-bold tracking-tight">
+                {% block brand_name %}TaskMaster{% endblock brand_name %}
+            </button>
+        </a>
     </div>
-    <h2 class="text-[#1a170f] text-lg font-bold leading-tight tracking-[-0.015em]">
-      <button hx-get="{% block brand_link %}{% url 'task_list_partial' %}{% endblock brand_link %}"
-        hx-target="#main-content"
-      >
-        {% block brand_name %}TaskMaster{% endblock brand_name %}
-      </button>
-    </h2>
-  </div>
-  {% include 'navigation-bar.html' %}
+
+    <div class="navbar-end">
+        {% include "navigation-bar.html" %}
+    </div>
 </header>

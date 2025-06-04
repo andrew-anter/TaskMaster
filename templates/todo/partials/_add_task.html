@@ -1,106 +1,114 @@
-<div id="add-task-container" class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
-  <div class="flex flex-wrap justify-between items-center gap-3 p-4">
-    <h1 class="text-[#1c170d] tracking-light text-[32px] font-bold leading-tight">{{ page_title }}</h1>
-  </div>
+<div id="task-form-container" class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
+    <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+        <h1 class="text-3xl font-bold text-base-content">{{ page_title|default:"Manage Task" }}</h1>
+        {# The "X" button from design's header could be a "Cancel" action. We have a Cancel button at the bottom. #}
+    </div>
 
-  {# This div can be targeted by HTMX to replace the form or show messages #}
-  <div id="add-task-form-wrapper">
-    <form method="post" 
-          {% if task_id %}
-            hx-post="{% url 'task_update' task_id %}"
-          {% else %}
-            hx-post="{% url 'task_add' %}"
-          {% endif %}
-          hx-target="#add-task-container" 
-          class="mt-2">
-      {% csrf_token %}
-      <div class="flex flex-col gap-4 px-4 py-3"> {# Adjusted gap for consistency #}
+    <div id="task-form-wrapper"> 
+        <form method="post"
+              {% if task_id %}
+                hx-post="{% url 'task_update' task_id %}" 
+              {% else %}
+                hx-post="{% url 'task_add' %}"
+              {% endif %}
+              hx-target="#task-form-container" {# Swaps the whole container including title #}
+              hx-swap="innerHTML" {# Replaces content of task-form-container; outerHTML would replace the container itself #}
+              class="mt-2">
+            {% csrf_token %}
+            <div class="card-body p-4 space-y-4"> {# DaisyUI card-body for padding and structure, space-y for field gap #}
 
-        {% if form.non_field_errors %}
-        <div class="p-3 bg-red-100 text-red-700 rounded-xl text-sm border border-red-200">
-          {% for error in form.non_field_errors %}
-          <p>{{ error }}</p>
-          {% endfor %}
-        </div>
-        {% endif %}
-        <div id="success-message-area"></div>
-
-
-        {# Task Title #}
-        <label class="flex flex-col w-full">
-          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.title.label_tag }}</span>
-          {{ form.title }} {# Widget classes and placeholder are from forms.py #}
-          {% for error in form.title.errors %}
-          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
-          {% endfor %}
-        </label>
-
-        {# Description #}
-        <label class="flex flex-col w-full">
-          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.description.label_tag }}</span>
-          {{ form.description }}
-          {% for error in form.description.errors %}
-          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
-          {% endfor %}
-        </label>
-
-        {# Due Date - Using Django's DateTimeField, styled like other inputs #}
-        <label class="flex flex-col w-full">
-          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.due_datetime.label_tag }}</span>
-          {{ form.due_datetime }}
-          {% for error in form.due_datetime.errors %}
-          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
-          {% endfor %}
-        </label>
-
-        {# Scheduled Date - Added based on our form, styled like other inputs #}
-        <label class="flex flex-col w-full">
-          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.scheduled_date.label_tag }}</span>
-          {{ form.scheduled_date }}
-          {% for error in form.scheduled_date.errors %}
-          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
-          {% endfor %}
-        </label>
-
-        {# Status - Added based on our form, styled as select #}
-        <label class="flex flex-col w-full">
-          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.status.label_tag }}</span>
-          {{ form.status }}
-          {% for error in form.status.errors %}
-          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
-          {% endfor %}
-        </label>
-
-        {# Priority - Added based on our form, styled as select #}
-        <label class="flex flex-col w-full">
-          <span class="text-[#1c170d] text-base font-medium leading-normal pb-2">{{ form.priority.label_tag }}</span>
-          {{ form.priority }}
-          {% for error in form.priority.errors %}
-          <p class="text-red-500 text-xs mt-1 pl-1">{{ error }}</p>
-          {% endfor %}
-        </label>
-
-        <div class="flex justify-end gap-3 pt-3"> {# Buttons at the bottom #}
-          <a hx-get="{% url 'task_list_partial' %}"
-             hx-target="#add-task-container"
-             hx-swap="outerHTML"
-             class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#f3f0e7] text-[#1c170d] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-colors">
-            <span class="truncate">Cancel</span>
-          </a>
-          <button
-              type="submit"
-              class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-[#f4c653] text-[#1c170d] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-opacity-80 transition-colors"
-              >
-              <span class="truncate">
-                {% if task_id %}
-                  update
-                {% else %}
-                  Add 
+                {% if form.non_field_errors %}
+                <div role="alert" class="alert alert-error text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div>
+                        {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
                 {% endif %}
-                Task</span>
-          </button>
-        </div>
-      </div>
-    </form>
-  </div>
+                
+                <div id="success-message-area"></div>
+
+                {# Task Title #}
+                <div class="form-control w-full">
+                    <label class="label pb-1" for="{{ form.title.id_for_label }}">
+                        <span class="label-text text-base font-medium">{{ form.title.label|default:"Task Title" }}</span>
+                    </label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}
+                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                    {% endfor %}
+                </div>
+
+                {# Description #}
+                <div class="form-control w-full">
+                    <label class="label pb-1" for="{{ form.description.id_for_label }}">
+                        <span class="label-text text-base font-medium">{{ form.description.label|default:"Description" }}</span>
+                    </label>
+                    {{ form.description }}
+                    {% for error in form.description.errors %}
+                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                    {% endfor %}
+                </div>
+
+                {# Due Date #}
+                <div class="form-control w-full">
+                    <label class="label pb-1" for="{{ form.due_date.id_for_label }}">
+                        <span class="label-text text-base font-medium">{{ form.due_date.label|default:"Due Date" }}</span>
+                    </label>
+                    {{ form.due_date }} {# Corrected from due_datetime #}
+                    {% for error in form.due_date.errors %}
+                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                    {% endfor %}
+                </div>
+                
+                {# Scheduled Date #}
+                <div class="form-control w-full">
+                    <label class="label pb-1" for="{{ form.scheduled_date.id_for_label }}">
+                        <span class="label-text text-base font-medium">{{ form.scheduled_date.label|default:"Scheduled Date" }}</span>
+                    </label>
+                    {{ form.scheduled_date }}
+                    {% for error in form.scheduled_date.errors %}
+                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                    {% endfor %}
+                </div>
+
+                {# Status #}
+                <div class="form-control w-full">
+                    <label class="label pb-1" for="{{ form.status.id_for_label }}">
+                        <span class="label-text text-base font-medium">{{ form.status.label|default:"Status" }}</span>
+                    </label>
+                    {{ form.status }}
+                    {% for error in form.status.errors %}
+                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                    {% endfor %}
+                </div>
+
+                {# Priority #}
+                <div class="form-control w-full">
+                    <label class="label pb-1" for="{{ form.priority.id_for_label }}">
+                        <span class="label-text text-base font-medium">{{ form.priority.label|default:"Priority" }}</span>
+                    </label>
+                    {{ form.priority }}
+                    {% for error in form.priority.errors %}
+                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                    {% endfor %}
+                </div>
+                
+                {# Note: "Project" and "Labels" fields from your design are not yet in the Django model/form. #}
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <a hx-get="{% url 'task_list_partial' %}" {# Assuming task_list renders the main content #}
+                       hx-target="#main-content" {# Target the main content area defined in base.html or a parent #}
+                       class="btn btn-ghost rounded-full normal-case"> {# DaisyUI ghost button for cancel #}
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary rounded-full normal-case"> {# DaisyUI primary button #}
+                        {% if task_id %}Update{% else %}Add{% endif %} Task
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
