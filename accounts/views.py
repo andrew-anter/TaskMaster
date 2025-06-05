@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_not_required
-from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib.auth import login, logout
 from django.http import HttpResponseNotAllowed, HttpResponse
@@ -20,7 +19,6 @@ def login_view(request):
             response = HttpResponse()
             response["HX-Location"] = reverse("task_list")
             return response
-            return redirect(reverse("task_list"))
     else:
         form = CustomLoginForm()
 
