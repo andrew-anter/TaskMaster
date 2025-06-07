@@ -54,11 +54,11 @@
 
                 {# Due Date #}
                 <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.due_date.id_for_label }}">
-                        <span class="label-text text-base font-medium">{{ form.due_date.label|default:"Due Date" }}</span>
+                    <label class="label pb-1" for="{{ form.due_datetime.id_for_label }}">
+                        <span class="label-text text-base font-medium">{{ form.due_datetime.label|default:"Due Date" }}</span>
                     </label>
-                    {{ form.due_date }} {# Corrected from due_datetime #}
-                    {% for error in form.due_date.errors %}
+                    {{ form.due_datetime }} {# Corrected from due_datetime #}
+                    {% for error in form.due_datetime.errors %}
                     <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
                     {% endfor %}
                 </div>
