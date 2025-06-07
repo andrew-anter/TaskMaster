@@ -1,77 +1,85 @@
 <!DOCTYPE html>
 {% load static %}
 {% load django_htmx %}
-<html lang="en" data-theme="bumblebee"> {# DaisyUI theme set here #}
-<head>
+<html lang="en" data-theme="customBumblebee"> 
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}"> 
 
     <title>{% block title %}TaskMaster{% endblock title %}</title>
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,"> {# TODO: use {% static 'images/favicon.ico' %} #}
-    
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}"> 
+
     <link rel="stylesheet" href="{% static 'css/output.css' %}">
     <link rel="stylesheet" href="https://www.nerdfonts.com/assets/css/webfont.css">
+
+    {# Alpine.js Script - Defer makes it run after the page is parsed #}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     {% block head_extra %}
     {% endblock head_extra %}
     {% htmx_script %}
-</head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-boost="true" class="bg-base-200"> 
+  </head>
+  <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' hx-boost="true" class="bg-base-200">
+    {# The DaisyUI toast container. It sits in a corner of the screen. #}
+    {# You can change toast-end to toast-start, toast-top, toast-bottom etc. #}
+    <div class="toast toast-top toast-end z-50">
+      {% if messages %}
+      {% for message in messages %}
+      {# Each message becomes an Alpine.js component #}
+      <div x-data="{ show: true }"
+           x-init="setTimeout(() => show = false, 4000)" {# Hide after 4 seconds #}
+           x-show="show"
+           x-transition:leave="transition ease-in duration-300"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0 translate-x-8"
+           class="alert 
+                  {% if message.tags == 'success' %} alert-success 
+                  {% elif message.tags == 'error' %} alert-error 
+                  {% elif message.tags == 'warning' %} alert-warning 
+                  {% else %} alert-info {% endif %}
+                  shadow-md text-sm">
+                  <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      {% if message.tags == 'success' %}
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      {% elif message.tags == 'error' %}
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      {% elif message.tags == 'warning' %}
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      {% else %} {# Info or default #}
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      {% endif %}
+                    </svg>
+                    <span>{{ message }}</span>
+                  </div>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
 
     <div class="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
-        <div class="layout-container flex h-full grow flex-col">
+      <div class="layout-container flex h-full grow flex-col">
+        {% block site_header %}
+        {% include "header.html" %}
+        {% endblock site_header %}
 
-            {% block site_header %}
-                {% include "header.html" %} 
-            {% endblock site_header %}
+        <main class="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
+          <div class="layout-content-container flex flex-col max-w-[960px] flex-1 w-full">
+            {% block content %}
+            {# Child template content will be injected here #}
+            {% endblock content %}
+          </div>
+        </main>
 
-            <main class="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-5"> 
-                <div class="layout-content-container flex flex-col max-w-[960px] flex-1 w-full">
-                    
-                    {% block messages %}
-                        {% if messages %}
-                        <div class="mb-4 space-y-2">
-                            {% for message in messages %}
-                            {# Using DaisyUI Alert Component #}
-                            <div role="alert" class="alert 
-                                {% if message.tags == 'success' %} alert-success 
-                                {% elif message.tags == 'error' %} alert-error 
-                                {% elif message.tags == 'warning' %} alert-warning 
-                                {% else %} alert-info {% endif %}
-                                shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                                    {% if message.tags == 'success' %}
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    {% elif message.tags == 'error' %}
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    {% elif message.tags == 'warning' %}
-                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    {% else %} {# Info or default #}
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    {% endif %}
-                                </svg>
-                                <span>{{ message }}</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    {% endblock messages %}
-
-                    {% block content %}
-                    {# Child template content will be injected here #}
-                    {% endblock content %}
-                </div>
-            </main>
-
-            {% block footer %}
-                {% include "footer.html" %} 
-            {% endblock footer %}
-        </div>
+        {% block footer %}
+        {% include "footer.html" %}
+        {% endblock footer %}
+      </div>
     </div>
 
     {% block body_scripts %}
     {% endblock body_scripts %}
-</body>
+  </body>
 </html>

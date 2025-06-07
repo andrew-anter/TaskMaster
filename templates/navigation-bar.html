@@ -3,8 +3,8 @@
 {# Main navigation links - hidden on small screens, visible on larger ones #}
 <nav class="hidden md:flex items-center gap-2 lg:gap-4">
     <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'task_list_partial' %}" hx-target="#main-content"  >My Tasks</button>
-    <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'all_tasks' %}" hx-target="#main-content"  >All Tasks</button> {# TODO: Update URL for 'all_tasks' #}
-    <a class="btn btn-ghost btn-sm normal-case" href="#">Templates</a> {# TODO: Update URL #}
+    <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'all_tasks' %}" hx-target="#main-content">All Tasks</button> 
+    <a class="btn btn-ghost btn-sm normal-case" href="#">Labels</a> {# TODO: Update URL #}
 </nav>
 
 {# Actions - Add Task, Notifications, User Profile #}
@@ -61,8 +61,8 @@
         </label>
         <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
             <li><button class="w-full text-left justify-start" hx-get="{% url 'task_list' %}" hx-target="#main-content"  >My Tasks</button></li>
-            <li><button class="w-full text-left justify-start" hx-get="#" hx-target="#main-content"  >All Tasks</button></li> {# TODO: Update URL #}
-            <li><a href="#">Templates</a></li> {# TODO: Update URL #}
+            <li><button class="w-full text-left justify-start" hx-get="#" hx-target="#main-content"  >All Tasks</button></li> 
+            <li><a href="#">Labels</a></li> {# TODO: Update Link to labels page #}
 
             <li><hr class="my-1"></li>
 

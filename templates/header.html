@@ -4,13 +4,12 @@
     {# Navbar Start - Logo and Brand Name #}
     <div class="navbar-start">
         <a href="{% block brand_link %}{% url 'task_list' %}{% endblock brand_link %}" class="flex items-center gap-3">
-            <div class="size-6 text-primary"> {# DaisyUI 'primary' color for the logo from Bumblebee #}
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
+            <div class="size-6 text-primary"> 
+              <i class="nf nf-fa-hourglass_o text-primary text-xl"></i>
             </div>
             <button 
-                hx-get="{% url 'task_list' %}" {# Assuming task_list_partial was a mistake and it should load the main task_list view/content #}
+                hx-get="{% url 'task_list' %}" 
                 hx-target="#main-content"
-                  {# Optional: if you want the URL to update #}
                 class="btn btn-ghost normal-case text-xl font-bold tracking-tight">
                 {% block brand_name %}TaskMaster{% endblock brand_name %}
             </button>
