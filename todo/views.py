@@ -150,11 +150,11 @@ def task_update_view(request, task_id):
                 return response
 
             except DueDateInPastError as e:
-                form.add_error(None, f"{e}")
+                form.add_error("due_datetime", f"{e}")
                 page_title = "Update Task (Errors)"
 
             except ScheduledDateInPastError as e:
-                form.add_error(None, f"{e}")
+                form.add_error("scheduled_date", f"{e}")
                 page_title = "Update Task (Errors)"
 
             except Exception:
