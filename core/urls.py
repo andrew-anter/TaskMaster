@@ -10,7 +10,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("tasks/", include("todo.urls")),
     path("accounts/", include("accounts.urls")),
-    # path("", lambda _: redirect("task_list", permanent=False)),
+    path("api-auth/", include("rest_framework.urls")),
 ]
 
 # Serve static and media files during development
