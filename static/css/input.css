@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @plugin "./daisyui.js" {
   themes: light --default, dark --prefersdark, bumblebee;
-};
+}
 
 @plugin "./daisyui-theme.js" {
   name: "bumblebee";
@@ -36,7 +36,7 @@
   --border: 1px;
   --depth: 1;
   --noise: 0;
-};
+}
 
 @source "**/../templates";
 @source "../**/templates";
