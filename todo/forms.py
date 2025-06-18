@@ -1,12 +1,9 @@
-# todo/forms.py
 from django import forms
 from .models import Task
 
 
-FORM_FIELD_CLASSES = (
-    "input input-bordered w-full h-14 p-[15px] text-base focus:outline-offset-0"
-)
-SELECT_FIELD_CLASSES = "select select-bordered w-full h-14 text-base custom-select"
+FORM_FIELD_CLASSES = "input w-full"
+SELECT_FIELD_CLASSES = "select w-full"
 
 
 class DateInput(forms.DateInput):
@@ -38,7 +35,7 @@ class TaskForm(forms.ModelForm):
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": f"{FORM_FIELD_CLASSES} min-h-36",  # Keep min-h-36 for textarea
+                    "class": "textarea h-36 w-full",  # Keep min-h-36 for textarea
                     "placeholder": "Add a description",
                     "rows": 5,
                 }

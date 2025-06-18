@@ -31,71 +31,56 @@
                 <div id="success-message-area"></div>
 
                 {# Task Title #}
-                <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.title.id_for_label }}">
-                        <span class="label-text text-base font-medium">{{ form.title.label|default:"Task Title" }}</span>
-                    </label>
-                    {{ form.title }}
-                    {% for error in form.title.errors %}
-                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                    {% endfor %}
-                </div>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{{ form.title.label|default:"Task Title" }}</legend>
+                  {{ form.title }}
+                  <div class="label">Required</div>
+                  {% for error in form.title.errors %}
+                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                  {% endfor %}
+                </fieldset>
 
                 {# Description #}
-                <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.description.id_for_label }}">
-                        <span class="label-text text-base font-medium">{{ form.description.label|default:"Description" }}</span>
-                    </label>
-                    {{ form.description }}
-                    {% for error in form.description.errors %}
-                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                    {% endfor %}
-                </div>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{{ form.description.label|default:"Description" }}</legend>
+                  {{ form.description }}
+                  {% for error in form.description.errors %}
+                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                  {% endfor %}
+                </fieldset>
 
-                {# Due Date #}
-                <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.due_datetime.id_for_label }}">
-                        <span class="label-text text-base font-medium">{{ form.due_datetime.label|default:"Due Date" }}</span>
-                    </label>
-                    {{ form.due_datetime }} {# Corrected from due_datetime #}
-                    {% for error in form.due_datetime.errors %}
-                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                    {% endfor %}
-                </div>
+                {# Due Date & Time #}
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{{ form.due_datetime.label|default:"Due Date & Time" }}</legend>
+                  {{ form.due_datetime }}
+                  {% for error in form.due_datetime.errors %}
+                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                  {% endfor %}
+                </fieldset>
+
                 
                 {# Scheduled Date #}
-                <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.scheduled_date.id_for_label }}">
-                        <span class="label-text text-base font-medium">{{ form.scheduled_date.label|default:"Scheduled Date" }}</span>
-                    </label>
-                    {{ form.scheduled_date }}
-                    {% for error in form.scheduled_date.errors %}
-                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                    {% endfor %}
-                </div>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{{ form.scheduled_date.label|default:"Scheduled Date" }}</legend>
+                  {{ form.scheduled_date }}
+                  {% for error in form.scheduled_date.errors %}
+                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
+                  {% endfor %}
+                </fieldset>
+
 
                 {# Status #}
-                <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.status.id_for_label }}">
-                        <span class="label-text text-base font-medium">{{ form.status.label|default:"Status" }}</span>
-                    </label>
-                    {{ form.status }}
-                    {% for error in form.status.errors %}
-                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                    {% endfor %}
-                </div>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{{ form.status.label|default:"Status" }}</legend>
+                  {{ form.scheduled_date }}
+                </fieldset>
 
                 {# Priority #}
-                <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.priority.id_for_label }}">
-                        <span class="label-text text-base font-medium">{{ form.priority.label|default:"Priority" }}</span>
-                    </label>
-                    {{ form.priority }}
-                    {% for error in form.priority.errors %}
-                    <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                    {% endfor %}
-                </div>
-                
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{{ form.priority.label|default:"Priority" }}</legend>
+                  {{ form.priority }}
+                </fieldset>
+
                 {# Note: "Project" and "Labels" fields from your design are not yet in the Django model/form. #}
 
                 <div class="flex justify-end gap-3 pt-4">
