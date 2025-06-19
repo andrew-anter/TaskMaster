@@ -9,7 +9,7 @@ TaskMaster is a modern web-based task management application built with Django a
     * Tasks include: title, description, status (To Do, In Progress, On Hold, Completed), priority (Low, Medium, High, None), due date & time, and scheduled date.
     * Timestamps for task creation and last modification.
 * **User Interface:**
-    * Clean, modern UI styled with Tailwind CSS (currently via CDN).
+    * Clean, modern UI styled with Tailwind CSS .
     * Dynamic task list updates and form submissions powered by HTMX.
     * Dedicated page for adding new tasks.
     * Homepage/Tasks page displaying "Today" and "Upcoming" tasks.
@@ -30,8 +30,8 @@ TaskMaster is a modern web-based task management application built with Django a
 ## Tech Stack
 
 * **Backend:** Python 3.13, Django
-* **Frontend:** HTML, Tailwind CSS (via CDN), HTMX
-* **Database:** SQLite (default, configurable via `DATABASE_URL`)
+* **Frontend:** HTML, Tailwind CSS, HTMX, daisyUI
+* **Database:** SQLite (default, support will be added to be configurable via `DATABASE_URL`)
 * **Key Django Packages:**
     * `django-htmx`
     * `django-environ`
@@ -69,7 +69,7 @@ TaskMaster is a modern web-based task management application built with Django a
     ```
 
 4.  **Set Up Environment Variables:**
-    Create a `.env` file in the project root (alongside `manage.py`). You can copy `.env.example` if provided, or use the following template:
+    Create a `.env` file in the project root in the core directory (alongside `manage.py`). You can copy `.env.example` in core directory, or use the following template:
     ```env
     # .env
 
