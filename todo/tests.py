@@ -3,7 +3,7 @@ from django.test import TestCase
 from todo.exceptions import DueDateInPastError
 from todo.models import Task
 from accounts.models import User
-from todo.services import add_task_service
+from todo.services import add_task_service, toggle_task_status_service
 
 
 class AddTaskServiceTestCase(TestCase):
@@ -54,5 +54,43 @@ class AddTaskServiceTestCase(TestCase):
 
         # --- Assert for Side Effects ---
         # After confirming the exception was raised, we assert that NO task
-        # was created in the database. This is a very important check!
+        # was created in the database.
         self.assertEqual(Task.objects.count(), 0)
+
+
+class ToggleTaskStatusServiceTestCase(TestCase):
+    def setUp(self):
+        title = "Test title"
+        description = "Test Description"
+        status = Task.Status.IN_PROGRESS
+        priority = Task.Priority.MEDIUM
+        due_datetime = timezone.now()
+        scheduled_date = timezone.now().date()
+        owner, _ = User.objects.get_or_create(username="testuser")
+
+        self.task = add_task_service(
+            title=title,
+            description=description,
+            status=status,
+            priority=priority,
+            due_datetime=due_datetime,
+            scheduled_date=scheduled_date,
+            owner=owner,
+        )
+
+    def test_toggling_between_completed_and_todo(self):
+        task = toggle_task_status_service(task=self.task)
+        self.task.refresh_from_db()
+        self.assertEqual(task, self.task)
+
+        toggle_task_status_service(task=self.task)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, Task.Status.TODO)
+
+        toggle_task_status_service(task=self.task)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, Task.Status.COMPLETED)
+
+
+# TODO: test for updating task service
+# TODO: test for deleting task service
