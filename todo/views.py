@@ -11,7 +11,7 @@ from todo.exceptions import DueDateInPastError, ScheduledDateInPastError
 from .forms import TaskForm
 from .models import Task
 from .selectors import (
-    get_all_tasks,
+    get_all_tasks_for_user,
     get_task_for_user,
     get_today_tasks,
     get_upcoming_tasks,
@@ -189,7 +189,7 @@ def task_delete_view(request, task_id):
 
 
 def all_tasks_view(request):
-    tasks = get_all_tasks(user=request.user)
+    tasks = get_all_tasks_for_user(user=request.user)
 
     context = {
         "all_tasks": tasks,

@@ -14,17 +14,17 @@ def get_task_for_user(*, user: User, task_id: int) -> Task | None:
         return None
 
 
-def get_all_tasks(*, user: User) -> QuerySet[Task]:
+def get_all_tasks_for_user(*, user: User) -> QuerySet[Task]:
     return Task.objects.filter(owner=user)
 
 
 def get_upcoming_tasks(*, user: User) -> QuerySet[Task]:
-    tasks = get_all_tasks(user=user)
+    tasks = get_all_tasks_for_user(user=user)
     return tasks.filter(due_datetime__isnull=False).order_by("due_datetime")[:5]
 
 
 def get_today_tasks(*, user: User) -> QuerySet[Task]:
-    tasks = get_all_tasks(user=user)
+    tasks = get_all_tasks_for_user(user=user)
     today = timezone.now().date()
     return tasks.filter(
         Q(due_datetime__date=today)
