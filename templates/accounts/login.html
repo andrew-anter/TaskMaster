@@ -69,12 +69,10 @@
                 <div class="form-control w-full">
                     <label class="label pb-1" for="{{ form.password.id_for_label }}">
                         <span class="label-text text-base-content text-base font-medium">{{ form.password.label|default:"Password" }}</span>
-                    </label>
                     {{ form.password }} {# Styled via CustomLoginForm in forms.py #}
+                    </label>
                      {% for error in form.password.errors %}
-                        <label class="label pt-1">
-                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
-                        </label>
+                        <span class="label pt-1 label-text-alt text-error text-xs">{{ error }}</span>
                     {% endfor %}
                 </div>
             </div>
