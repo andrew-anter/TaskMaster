@@ -19,8 +19,6 @@ def login_view(request):
             response = HttpResponse()
             response["HX-Location"] = reverse("task_list")
             return response
-    else:
-        form = CustomLoginForm()
 
     context = {"form": form, "page_title": "Log In to TaskMaster"}
     return render(request=request, template_name="accounts/login.html", context=context)
