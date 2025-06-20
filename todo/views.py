@@ -17,7 +17,7 @@ from .selectors import (
     get_upcoming_tasks,
 )
 from .services import (
-    add_task_service,
+    task_add_service,
     task_delete_service,
     task_update_service,
     toggle_task_status_service,
@@ -57,7 +57,7 @@ def task_add_partial_view(request):
         form = TaskForm(request.POST)
         if form.is_valid():
             try:
-                add_task_service(
+                task_add_service(
                     title=form.cleaned_data["title"],
                     description=form.cleaned_data.get("description"),
                     status=form.cleaned_data["status"],

@@ -18,7 +18,7 @@ TaskMaster is a modern web-based task management application built with Django a
     * Login page (foundation for user accounts).
 * **Backend:**
     * Built with Django.
-    * Service layer for encapsulating business logic (e.g., `add_task_service`, `task_delete_service`).
+    * Service layer for encapsulating business logic (e.g., `task_add_service`, `task_delete_service`).
     * Custom exceptions for specific error handling (e.g., `DueDateInPastError`).
     * Admin interface for managing tasks.
 * **Development & Tooling:**

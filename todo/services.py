@@ -13,7 +13,7 @@ User = get_user_model()
 
 
 @transaction.atomic
-def add_task_service(
+def task_add_service(
     *,
     title: str,
     description: str | None,

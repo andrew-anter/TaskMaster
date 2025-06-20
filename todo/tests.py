@@ -3,7 +3,7 @@ from django.test import TestCase
 from todo.exceptions import DueDateInPastError
 from todo.models import Task
 from accounts.models import User
-from todo.services import add_task_service, toggle_task_status_service
+from todo.services import task_add_service, toggle_task_status_service
 
 
 class AddTaskServiceTestCase(TestCase):
@@ -17,7 +17,7 @@ class AddTaskServiceTestCase(TestCase):
         self.owner, _ = User.objects.get_or_create(username="testuser")
 
     def test_create_task_with_valid_data(self):
-        task_item = add_task_service(
+        task_item = task_add_service(
             title=self.title,
             description=self.description,
             status=self.status,
@@ -42,7 +42,7 @@ class AddTaskServiceTestCase(TestCase):
     def test_create_task_with_invalid_duedatetime(self):
         past_due_datetime = timezone.now() - timezone.timedelta(days=10)  # type:ignore
         with self.assertRaises(DueDateInPastError):
-            add_task_service(
+            task_add_service(
                 title=self.title,
                 description=self.description,
                 status=self.status,
@@ -68,7 +68,7 @@ class ToggleTaskStatusServiceTestCase(TestCase):
         scheduled_date = timezone.now().date()
         owner, _ = User.objects.get_or_create(username="testuser")
 
-        self.task = add_task_service(
+        self.task = task_add_service(
             title=title,
             description=description,
             status=status,
