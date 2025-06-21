@@ -8,11 +8,13 @@ from .models import Task
 from .selectors import get_all_tasks_for_user
 
 
-# TODO: add support for token authentication
-class ListTasksAPI(APIView):
+class BaseAPIView(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
+
+# TODO: add support for token authentication
+class ListTasksAPI(BaseAPIView):
     class TaskSerializer(serializers.ModelSerializer):
         class Meta:
             model = Task
@@ -37,7 +39,25 @@ class ListTasksAPI(APIView):
 
 
 # TODO: GetTaskAPI
+class GetTaskAPI(BaseAPIView):
+    pass
+
+
 # TODO: UpdateTakskAPI
+class UpdateTaskAPI(BaseAPIView):
+    pass
+
+
 # TODO: AddTaskAPI
+class AddTaskAPI(BaseAPIView):
+    pass
+
+
 # TODO: DeleteTaskAPI
+class DeleteTaskAPI(BaseAPIView):
+    pass
+
+
 # TODO: ToggleStatusAPI
+class ToggleStatusAPI(BaseAPIView):
+    pass
