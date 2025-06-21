@@ -11,6 +11,7 @@ urlpatterns = [
     path("tasks/", include("todo.urls")),
     path("accounts/", include("accounts.urls")),
     path("api-auth/", include("rest_framework.urls")),
+    path("api/v1/tasks/", include("todo.api-urls")),
 ]
 
 # Serve static and media files during development
