@@ -9,7 +9,7 @@ from .selectors import get_all_tasks_for_user
 
 
 # TODO: add support for token authentication
-class ListTasks(APIView):
+class ListTasksAPI(APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -34,3 +34,10 @@ class ListTasks(APIView):
         data = self.TaskSerializer(tasks, many=True).data
 
         return Response(data)
+
+
+# TODO: GetTaskAPI
+# TODO: UpdateTakskAPI
+# TODO: AddTaskAPI
+# TODO: DeleteTaskAPI
+# TODO: ToggleStatusAPI
