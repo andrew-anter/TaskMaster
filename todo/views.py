@@ -13,8 +13,8 @@ from .models import Task
 from .selectors import (
     get_all_tasks_for_user,
     get_task_for_user,
-    get_today_tasks,
-    get_upcoming_tasks,
+    get_today_tasks_for_user,
+    get_upcoming_tasks_for_user,
 )
 from .services import (
     task_add_service,
@@ -25,8 +25,8 @@ from .services import (
 
 
 def task_list_view(request):
-    today_tasks = get_today_tasks(user=request.user)
-    upcoming_tasks = get_upcoming_tasks(user=request.user)
+    today_tasks = get_today_tasks_for_user(user=request.user)
+    upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
 
     context = {
         "today_tasks": today_tasks,
@@ -39,8 +39,8 @@ def task_list_view(request):
 
 
 def task_list_partial_view(request):
-    today_tasks = get_today_tasks(user=request.user)
-    upcoming_tasks = get_upcoming_tasks(user=request.user)
+    today_tasks = get_today_tasks_for_user(user=request.user)
+    upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
 
     context = {
         "today_tasks": today_tasks,
