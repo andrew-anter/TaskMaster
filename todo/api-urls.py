@@ -3,5 +3,6 @@ from .api import DetailTaskAPI, ListTasksAPI
 
 urlpatterns = [
     path("", ListTasksAPI.as_view(), name="list-tasks-api"),
-    path("<int:pk>", DetailTaskAPI.as_view(), name="get-task-api"),
+    path("<int:pk>", DetailTaskAPI.as_view(), name="task-detail-api"),
+    # path("<int:pk>/update/", UpdateTaskAPI.as_view(), name="get-task-api"),
 ]
