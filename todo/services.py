@@ -1,13 +1,22 @@
+from __future__ import annotations
+
+# Standard Library Imports
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
-from todo.selectors import get_task_for_user
-
-from .models import Task
+# Django Imports
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+
+# Local Application Imports
+from todo.selectors import get_task_for_user
 from .exceptions import DueDateInPastError, ScheduledDateInPastError
 
-from django.contrib.auth import get_user_model
+# This block is only read by type-checkers, not at runtime.
+# It prevents circular import errors.
+if TYPE_CHECKING:
+    from .models import Task
 
 User = get_user_model()
 
@@ -23,11 +32,31 @@ def task_add_service(
     scheduled_date: date | None,
     owner: User,
 ) -> Task:
-    # TODO: Add validation checks
+    """
+    Creates a new task with the provided details.
 
-    today = timezone.now().today().date()
+    This service handles the business logic of creating a new task, including
+    initial validation. It is wrapped in a transaction to ensure atomicity.
+
+    Args:
+        title: The title of the task.
+        description: An optional longer description for the task.
+        status: The initial status (e.g., 'TODO', 'IN_PROGRESS').
+        priority: The priority level of the task.
+        due_datetime: An optional datetime for when the task is due.
+        scheduled_date: An optional date for when to work on the task.
+        owner: The user who owns this task.
+
+    Returns:
+        The newly created Task instance.
+
+    Raises:
+        DueDateInPastError: If the provided due_datetime is in the past.
+        # Note: Further validation for status, priority, etc., could be added here.
+    """
+    today = timezone.now().date()
     if due_datetime and due_datetime.date() < today:
-        raise DueDateInPastError
+        raise DueDateInPastError("Due date cannot be in the past.")
 
     todo_item = Task.objects.create(
         title=title,
@@ -43,11 +72,20 @@ def task_add_service(
 
 @transaction.atomic
 def toggle_task_status_service(*, task: Task) -> Task:
+    """
+    Toggles a task's status between 'TODO' and 'COMPLETED'.
+
+    Args:
+        task: The Task instance to be updated.
+
+    Returns:
+        The updated Task instance with the new status.
+    """
     if task.status == Task.Status.COMPLETED:
         task.status = Task.Status.TODO
     else:
         task.status = Task.Status.COMPLETED
-    task.save()
+    task.save(update_fields=["status"])
     return task
 
 
@@ -64,78 +102,97 @@ def task_update_service(
     scheduled_date: date | None = None,
 ) -> tuple[Task, bool]:
     """
-    Updates a task with the provided values.
-    Only fields that are not None will be updated.
+    Updates a task with the provided values, performing a partial update.
 
-    returns: (task, updated) where updated is a flag
-    that is either true when there's an update happened
-    or false if there is not any updates
+    This service fetches the relevant task, validates user ownership, and then
+    updates only the fields that are provided (not None). It reports back
+    whether any fields were actually changed.
+
+    Args:
+        task_id: The ID of the task to update.
+        user: The user performing the update, for permission checking.
+        title: The new title, if provided.
+        description: The new description, if provided.
+        status: The new status, if provided.
+        priority: The new priority, if provided.
+        due_datetime: The new due datetime, if provided.
+        scheduled_date: The new scheduled date, if provided.
+
+    Returns:
+        A tuple containing:
+            - task (Task): The updated task instance.
+            - updated (bool): True if any fields were changed, False otherwise.
+
+    Raises:
+        Task.DoesNotExist: If the task_id does not exist for the given user.
+        ValueError: If the provided status or priority is not a valid choice.
+        DueDateInPastError: If the provided due_datetime is in the past.
+        ScheduledDateInPastError: If the provided scheduled_date is in the past.
     """
     task = get_task_for_user(user=user, task_id=task_id)
 
-    # A flag to check if we need to save
-    fields_updated = False
-
+    fields_to_update = []
     if title is not None and task.title != title:
         task.title = title
-        fields_updated = True
+        fields_to_update.append("title")
 
     if description is not None and task.description != description:
         task.description = description
-        fields_updated = True
+        fields_to_update.append("description")
 
     if status is not None and task.status != status:
         if status not in [choice[0] for choice in Task.Status.choices]:
-            raise ValueError("Invalid status")
+            raise ValueError(f"'{status}' is not a valid status.")
         task.status = status
-        fields_updated = True
+        fields_to_update.append("status")
 
     if priority is not None and task.priority != priority:
-        # You might want to validate if 'priority' is a valid choice from Task.Priority
         if priority not in [choice[0] for choice in Task.Priority.choices]:
-            raise ValueError("Invalid priority")
+            raise ValueError(f"'{priority}' is not a valid priority.")
         task.priority = priority
-        fields_updated = True
+        fields_to_update.append("priority")
 
-    if due_datetime is not None:
-        # Check if the provided due_datetime is in the past
+    if due_datetime is not None and task.due_datetime != due_datetime:
         if due_datetime.tzinfo is None:
-            if timezone.get_current_timezone():
-                due_datetime = timezone.make_aware(
-                    due_datetime, timezone.get_current_timezone()
-                )
+            due_datetime = timezone.make_aware(due_datetime)
+        if due_datetime < timezone.now():
+            raise DueDateInPastError("The due date cannot be in the past.")
+        task.due_datetime = due_datetime
+        fields_to_update.append("due_datetime")
 
-        if due_datetime != task.due_datetime and due_datetime < timezone.now():
-            raise DueDateInPastError(
-                f"The due date {due_datetime.strftime('%Y-%m-%d %H:%M')} cannot be in the past."
-            )
-
-        if task.due_datetime != due_datetime:  # Model field is task.due_date
-            task.due_datetime = due_datetime
-            fields_updated = True
-
-    if scheduled_date is not None:
+    if scheduled_date is not None and task.scheduled_date != scheduled_date:
         if scheduled_date < timezone.now().date():
-            raise ScheduledDateInPastError(
-                f"The scheduled date {scheduled_date.strftime('%Y-%m-%d')} cannot be in the past."
-            )
-        if task.scheduled_date != scheduled_date:
-            task.scheduled_date = scheduled_date
-            fields_updated = True
+            raise ScheduledDateInPastError("The scheduled date cannot be in the past.")
+        task.scheduled_date = scheduled_date
+        fields_to_update.append("scheduled_date")
 
-    if fields_updated:
-        task.save()
-        return (task, True)
+    if fields_to_update:
+        task.save(update_fields=fields_to_update)
+        return task, True
 
-    return (task, False)
+    return task, False
 
 
 @transaction.atomic
-def task_delete_service(*, user: User, task_id: int) -> bool:
+def task_delete_service(*, user: User, task_id: int) -> None:
+    """
+    Deletes a task after verifying ownership.
+
+    Note:
+        This service follows a "succeed or raise" pattern. It returns nothing
+        (None) on success. If the task cannot be found for the user, the
+        underlying `get_task_for_user` will raise `Task.DoesNotExist`, which
+        should be handled by the calling view.
+
+    Args:
+        user: The user performing the delete action.
+        task_id: The ID of the task to be deleted.
+
+    Returns:
+        None on success.
+
+    Raises:
+        Task.DoesNotExist: If the task does not exist for the user.
+    """
     task = get_task_for_user(user=user, task_id=task_id)
-    try:
-        task.delete()
-        return True
-    except Exception:
-        # TODO: log the error
-        return False
+    task.delete()
