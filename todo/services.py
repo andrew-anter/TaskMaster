@@ -72,8 +72,6 @@ def task_update_service(
     or false if there is not any updates
     """
     task = get_task_for_user(user=user, task_id=task_id)
-    if not task:
-        raise Task.DoesNotExist
 
     # A flag to check if we need to save
     fields_updated = False
@@ -135,12 +133,9 @@ def task_update_service(
 @transaction.atomic
 def task_delete_service(*, user: User, task_id: int) -> bool:
     task = get_task_for_user(user=user, task_id=task_id)
-    if task:
-        try:
-            task.delete()
-            return True
-        except Exception:
-            # TODO: log the error
-            pass
-            return False
-    return False
+    try:
+        task.delete()
+        return True
+    except Exception:
+        # TODO: log the error
+        return False

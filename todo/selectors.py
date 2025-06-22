@@ -7,11 +7,8 @@ from .models import Task
 User = get_user_model()
 
 
-def get_task_for_user(*, user: User, task_id: int) -> Task | None:
-    try:
-        return Task.objects.get(pk=task_id, owner=user)
-    except Task.DoesNotExist:
-        return None
+def get_task_for_user(*, user: User, task_id: int) -> Task:
+    return Task.objects.get(pk=task_id, owner=user)
 
 
 def get_all_tasks_for_user(*, user: User) -> QuerySet[Task]:
