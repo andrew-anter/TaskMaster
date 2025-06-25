@@ -2,7 +2,6 @@ from __future__ import annotations
 
 # Standard Library Imports
 from datetime import date, datetime
-from typing import TYPE_CHECKING
 
 # Django Imports
 from django.db import transaction
@@ -15,8 +14,7 @@ from .exceptions import DueDateInPastError, ScheduledDateInPastError
 
 # This block is only read by type-checkers, not at runtime.
 # It prevents circular import errors.
-if TYPE_CHECKING:
-    from .models import Task
+from .models import Task
 
 User = get_user_model()
 
@@ -132,27 +130,27 @@ def task_update_service(
     task = get_task_for_user(user=user, task_id=task_id)
 
     fields_to_update = []
-    if title is not None and task.title != title:
+    if title and task.title != title:
         task.title = title
         fields_to_update.append("title")
 
-    if description is not None and task.description != description:
+    if description and task.description != description:
         task.description = description
         fields_to_update.append("description")
 
-    if status is not None and task.status != status:
+    if status and task.status != status:
         if status not in [choice[0] for choice in Task.Status.choices]:
             raise ValueError(f"'{status}' is not a valid status.")
         task.status = status
         fields_to_update.append("status")
 
-    if priority is not None and task.priority != priority:
+    if priority and task.priority != priority:
         if priority not in [choice[0] for choice in Task.Priority.choices]:
             raise ValueError(f"'{priority}' is not a valid priority.")
         task.priority = priority
         fields_to_update.append("priority")
 
-    if due_datetime is not None and task.due_datetime != due_datetime:
+    if due_datetime and task.due_datetime != due_datetime:
         if due_datetime.tzinfo is None:
             due_datetime = timezone.make_aware(due_datetime)
         if due_datetime < timezone.now():
@@ -160,7 +158,7 @@ def task_update_service(
         task.due_datetime = due_datetime
         fields_to_update.append("due_datetime")
 
-    if scheduled_date is not None and task.scheduled_date != scheduled_date:
+    if scheduled_date and task.scheduled_date != scheduled_date:
         if scheduled_date < timezone.now().date():
             raise ScheduledDateInPastError("The scheduled date cannot be in the past.")
         task.scheduled_date = scheduled_date
@@ -195,4 +193,4 @@ def task_delete_service(*, user: User, task_id: int) -> None:
         Task.DoesNotExist: If the task does not exist for the user.
     """
     task = get_task_for_user(user=user, task_id=task_id)
-    task.delete()
+    _ = task.delete()

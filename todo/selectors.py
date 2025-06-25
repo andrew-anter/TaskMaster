@@ -1,17 +1,13 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
+from django.contrib.auth.models import _AnyUser
 from django.db.models import Q, QuerySet
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 
-if TYPE_CHECKING:
-    from .models import Task
-
-User = get_user_model()
+from .models import Task
 
 
-def get_task_for_user(*, user: User, task_id: int) -> Task:
+def get_task_for_user(*, user: _AnyUser, task_id: int) -> Task:
     """
     Fetches a single task by its ID, ensuring it belongs to the specified user.
 
@@ -32,7 +28,7 @@ def get_task_for_user(*, user: User, task_id: int) -> Task:
     return Task.objects.get(pk=task_id, owner=user)
 
 
-def get_all_tasks_for_user(*, user: User) -> QuerySet[Task]:
+def get_all_tasks_for_user(*, user: _AnyUser) -> QuerySet[Task]:
     """
     Retrieves all tasks owned by a specific user.
 
@@ -48,7 +44,7 @@ def get_all_tasks_for_user(*, user: User) -> QuerySet[Task]:
     return Task.objects.filter(owner=user)
 
 
-def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
+def get_upcoming_tasks_for_user(*, user: _AnyUser) -> QuerySet[Task]:
     """
     Retrieves the next 5 upcoming tasks for a user that have a due date.
 
@@ -66,7 +62,7 @@ def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
     return tasks.filter(due_datetime__isnull=False).order_by("due_datetime")[:5]
 
 
-def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
+def get_today_tasks_for_user(*, user: _AnyUser) -> QuerySet[Task]:
     """
     Retrieves tasks for a user that are considered relevant for today.
 
