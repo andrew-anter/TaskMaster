@@ -1,3 +1,4 @@
+from django.http import HttpRequest
 from rest_framework import serializers
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +10,10 @@ from .models import Task
 from .services import task_update_service, task_delete_service
 from .selectors import get_all_tasks_for_user, get_task_for_user
 from .exceptions import ScheduledDateInPastError, DueDateInPastError
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 # TODO: add support for token authentication
@@ -33,7 +38,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class ListTasksAPI(BaseAPIView):
-    def get(self, request):
+    def get(self, request: HttpRequest):
         user = request.user
         tasks = get_all_tasks_for_user(user=user)
         data = TaskSerializer(tasks, many=True).data
@@ -41,13 +46,13 @@ class ListTasksAPI(BaseAPIView):
 
 
 class DetailTaskAPI(BaseAPIView):
-    def get(self, request, pk: int):
+    def get(self, request: HttpRequest, pk: int):
         """
         Get Details for a specific task
         """
 
         user = request.user
-        task = get_task_for_user(user=user, task_id=pk)
+        task: Task = get_task_for_user(user=user, task_id=pk)
         data = TaskSerializer(task).data
         return Response(data)
 
@@ -97,11 +102,6 @@ class DetailTaskAPI(BaseAPIView):
 
 # TODO: AddTaskAPI
 class AddTaskAPI(BaseAPIView):
-    pass
-
-
-# TODO: DeleteTaskAPI
-class DeleteTaskAPI(BaseAPIView):
     pass
 
 
