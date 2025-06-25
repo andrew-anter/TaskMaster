@@ -3,14 +3,13 @@ name = "todo-app"
 version = "0.1.1"
 description = "ToDo App"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
   "django>=5.2.1",
   "django-environ>=0.12.0",
   "django-extensions>=4.1",
   "django-filter>=25.1",
   "django-htmx>=1.23.0",
-  "django-stubs-ext>=5.2.0",
   "django-unfold>=0.59.0",
   "djangorestframework>=3.16.0",
   "drf-spectacular>=0.28.0",
@@ -20,7 +19,7 @@ authors = [
 { name = "Andrew Anter", email = "andrew.anter@gmail.com" },
 ]
 
-[tool.pyright]
+[tool.basedpyright]
 include = ["."] 
 exclude = [
     "**/node_modules",
@@ -28,18 +27,15 @@ exclude = [
     ".venv", 
     "**/migrations/*.py", 
 ]
-reportMissingTypeStubs = false 
-# reportUnknownMemberType = "warning"
-# reportUnknownVariableType = "warning"
-
-pythonVersion = "3.13" # Should match your project's Python version
-
-venvPath = "." # Directory where venv directory is located
-venv = ".venv"     # Name of the venv directory
+typeCheckingMode="standard"
+stubPath=[
+  './typings/'
+]
 
 
 [dependency-groups]
 dev = [
     "django-stubs>=5.2.0",
     "django-stubs-ext>=5.2.0",
+    "django-types>=0.21.0",
 ]
