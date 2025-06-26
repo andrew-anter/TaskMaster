@@ -7,7 +7,12 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from .models import Task
-from .services import task_update_service, task_delete_service, task_add_service
+from .services import (
+    task_update_service,
+    task_delete_service,
+    task_add_service,
+    toggle_task_status_service,
+)
 from .selectors import get_all_tasks_for_user, get_task_for_user
 from .exceptions import ScheduledDateInPastError, DueDateInPastError
 
@@ -132,6 +137,9 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# TODO: ToggleStatusAPI
 class ToggleStatusAPI(BaseAPIView):
-    pass
+    def post(self, request, pk: int) -> Response:
+        user = request.user
+        task = get_task_for_user(user=user, task_id=pk)
+        toggle_task_status_service(task=task)
+        return Response(status=status.HTTP_200_OK)
