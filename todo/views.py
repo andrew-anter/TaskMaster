@@ -22,6 +22,9 @@ from .services import (
     task_update_service,
     toggle_task_status_service,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def task_list_view(request):
@@ -157,9 +160,8 @@ def task_update_view(request, task_id):
                 form.add_error("scheduled_date", f"{e}")
                 page_title = "Update Task (Errors)"
 
-            except Exception:
-                # TODO: Log error message here
-                pass
+            except Exception as e:
+                logger.error(f"An excpetion occurred in task_update_view: {e}")
 
     if not task:
         response = HttpResponse()
@@ -172,16 +174,20 @@ def task_update_view(request, task_id):
         "task_id": task_id,
         "page_title": page_title,
     }
-    return render(request, "todo/partials/_add_task.html", context)
+    return render(
+        request, template_name="todo/partials/_add_task.html", context=context
+    )
 
 
 def task_delete_view(request, task_id):
     if request.method == "POST":
         deleted = task_delete_service(user=request.user, task_id=task_id)
         if deleted:
-            messages.success(request, "Task deleted successfully.")
+            messages.success(request, message="Task deleted successfully.")
         else:
-            messages.warning(request, "An error occurred, no changes have been made")
+            messages.warning(
+                request, message="An error occurred, no changes have been made"
+            )
 
     response = HttpResponse()
     response["HX-Location"] = reverse("task_list")
@@ -197,4 +203,8 @@ def all_tasks_view(request):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
-    return render(request, "todo/partials/_all_tasks_list.html", context)
+    return render(
+        request=request,
+        template_name="todo/partials/_all_tasks_list.html",
+        context=context,
+    )
