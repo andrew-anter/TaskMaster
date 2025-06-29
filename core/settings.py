@@ -14,7 +14,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 
 SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG")
+DEBUG = env(var="DEBUG")
 
 if DEBUG:
     import django_stubs_ext
@@ -37,6 +37,12 @@ INSTALLED_APPS = [
     "django_extensions",
     "rest_framework",
     "drf_spectacular",
+    # django allauth
+    "allauth",
+    "allauth.account",
+    # Social Accounts
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     # Main apps
     "todo",
     "accounts",
@@ -52,6 +58,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.LoginRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
 ]
 
@@ -72,6 +79,18 @@ TEMPLATES = [
         },
     },
 ]
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")  # type: ignore
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": GOOGLE_CLIENT_ID,
+            "secret": env("GOOGLE_SECRET", default=""),  # pyright: ignore
+            "key": env("GOOGLE_KEY", default=""),  # pyright: ignore
+        }
+    },
+}
+
 
 WSGI_APPLICATION = "core.wsgi.application"
 

@@ -10,6 +10,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("tasks/", include("todo.urls")),
     path("accounts/", include("accounts.urls")),
+    path("allauth/", include("allauth.urls")),
     path("api-auth/", include("rest_framework.urls")),
     path("api/v1/tasks/", include("todo.api-urls")),
 ]
