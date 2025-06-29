@@ -1,8 +1,10 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_not_required
-from django.urls import reverse
+from django.conf import settings
 from django.contrib.auth import login, logout
-from django.http import HttpResponseNotAllowed, HttpResponse
+from django.contrib.auth.decorators import login_not_required
+from django.http import HttpResponse, HttpResponseNotAllowed
+from django.shortcuts import render
+from django.urls import reverse
+
 from .forms import CustomLoginForm
 
 
@@ -20,7 +22,11 @@ def login_view(request):
             response["HX-Location"] = reverse("task_list")
             return response
 
-    context = {"form": form, "page_title": "Log In to TaskMaster"}
+    context = {
+        "form": form,
+        "page_title": "Log In to TaskMaster",
+        "google_client_id": settings.GOOGLE_CLIENT_ID,
+    }
     return render(request=request, template_name="accounts/login.html", context=context)
 
 
