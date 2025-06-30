@@ -145,3 +145,4 @@ STATICFILES_DIRS = [
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+SOCIALACCOUNT_LOGIN_ON_GET = True
