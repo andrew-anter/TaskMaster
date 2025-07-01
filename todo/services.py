@@ -1,22 +1,17 @@
 from __future__ import annotations
 
-# Standard Library Imports
 from datetime import date, datetime
 
-# Django Imports
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 
-# Local Application Imports
 from todo.selectors import get_task_for_user
-from .exceptions import DueDateInPastError, ScheduledDateInPastError
 
-# This block is only read by type-checkers, not at runtime.
-# It prevents circular import errors.
+from .exceptions import DueDateInPastError, ScheduledDateInPastError
 from .models import Task
 
-User = get_user_model()
+User = settings.AUTH_USER_MODEL
 
 
 @transaction.atomic
@@ -166,9 +161,9 @@ def task_update_service(
 
     if fields_to_update:
         task.save(update_fields=fields_to_update)
-        return task, True
+        return task, True  # pyright: ignore
 
-    return task, False
+    return task, False  # pyright: ignore
 
 
 @transaction.atomic
