@@ -1,11 +1,13 @@
 [project]
 name = "todo-app"
-version = "0.1.1"
+version = "0.1.2"
 description = "ToDo App"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
   "django>=5.2.1",
+  "django-allauth[socialaccount]>=65.9.0",
+  "django-cors-headers>=4.7.0",
   "django-environ>=0.12.0",
   "django-extensions>=4.1",
   "django-filter>=25.1",
@@ -15,27 +17,20 @@ dependencies = [
   "drf-spectacular>=0.28.0",
   "markdown>=3.8",
 ]
-authors = [
-{ name = "Andrew Anter", email = "andrew.anter@gmail.com" },
-]
+authors = [{ name = "Andrew Anter", email = "andrew.anter@gmail.com" }]
 
 [tool.basedpyright]
-include = ["."] 
-exclude = [
-    "**/node_modules",
-    "**/__pycache__",
-    ".venv", 
-    "**/migrations/*.py", 
-]
-typeCheckingMode="standard"
-stubPath=[
-  './typings/'
-]
+include = ["."]
+exclude = ["**/node_modules", "**/__pycache__", ".venv", "**/migrations/*.py"]
+typeCheckingMode = "standard"
+stubPath = ['./typings/']
 
 
 [dependency-groups]
 dev = [
-    "django-stubs>=5.2.0",
-    "django-stubs-ext>=5.2.0",
-    "django-types>=0.21.0",
+  "django-stubs>=5.2.0",
+  "django-stubs-ext>=5.2.0",
+  "django-types>=0.21.0",
+  "pyopenssl>=25.1.0",
+  "werkzeug>=3.1.3",
 ]

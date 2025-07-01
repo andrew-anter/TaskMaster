@@ -23,6 +23,7 @@ if DEBUG:
 
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
+CORS_ALLOWED_ORIGINS = env.list(var="CORS_ALLOWED_ORIGINS", default=[])
 
 INSTALLED_APPS = [
     "unfold",  # for admin site ui
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "rest_framework",
     "drf_spectacular",
+    "corsheaders",
     # django allauth
     "allauth",
     "allauth.account",
@@ -52,6 +54,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -86,7 +89,6 @@ SOCIALACCOUNT_PROVIDERS = {
         "APP": {
             "client_id": GOOGLE_CLIENT_ID,
             "secret": env("GOOGLE_SECRET", default=""),  # pyright: ignore
-            "key": env("GOOGLE_KEY", default=""),  # pyright: ignore
         }
     },
 }
@@ -132,7 +134,9 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
 LOGIN_URL = "accounts/login/"
+LOGIN_REDIRECT_URL = "/"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
