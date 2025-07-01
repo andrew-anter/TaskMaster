@@ -1,99 +1,106 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static socialaccount %}
 
 {% block title %}Log In - TaskMaster{% endblock title %}
 
 {# This login page uses its own simpler header, overriding the default from base.html #}
 {% block site_header %}
 <header class="navbar bg-base-100 border-b border-base-300 px-4 md:px-10"> {# DaisyUI navbar with theme background and border #}
-    <div class="navbar-start">
-        <a href="{% url 'task_list' %}" class="flex items-center gap-3 normal-case text-xl font-bold"> {# Link on brand #}
-            <div class="size-5 text-primary"> {# Logo with primary theme color #}
-                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
-            </div>
-            TaskMaster
-        </a>
-    </div>
-    <div class="navbar-end">
-        <div class="hidden sm:flex items-center gap-2"> {# Hide on extra-small screens #}
-            {# TODO: Update hrefs with actual URLs #}
-            <a class="btn btn-ghost btn-sm normal-case" href="#">Features</a>
-            <a class="btn btn-ghost btn-sm normal-case" href="#">Pricing</a>
-            <a class="btn btn-ghost btn-sm normal-case" href="#">Support</a>
-        </div>
-        {# TODO: Link to your signup page URL #}
-        <a href="#" class="btn btn-ghost btn-sm normal-case ml-2">Sign up</a> {# Simpler button style for "Sign up" #}
-    </div>
+  <div class="navbar-start">
+    <a href="{% url 'task_list' %}" class="flex items-center gap-3 normal-case text-xl font-bold"> {# Link on brand #}
+      <div class="size-5 text-primary"> {# Logo with primary theme color #}
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
+      </div>
+      TaskMaster
+    </a>
+  </div>
+  <div class="navbar-end">
+    {# TODO: signup page URL #}
+    <a href="#" class="btn btn-ghost btn-sm normal-case ml-2">Sign up</a> {# Simpler button style for "Sign up" #}
+  </div>
 </header>
 {% endblock site_header %}
 
 {% block content %}
 <div class="flex flex-col w-full items-center justify-center py-8 md:py-12">
-    <div class="card w-full md:w-[450px] max-w-md bg-base-100 shadow-xl p-6 md:p-8"> {# DaisyUI card for the form container #}
-        <h2 class="text-2xl font-bold text-center mb-6 text-base-content">Log in to TaskMaster</h2>
-        
-        <form method="post" action="{% url 'login' %}">
-            {% csrf_token %}
+  <div class="card w-full md:w-[450px] max-w-md bg-base-100 shadow-xl p-6 md:p-8"> {# DaisyUI card for the form container #}
+    <h2 class="text-2xl font-bold text-center mb-6 text-base-content">Log in to TaskMaster</h2>
 
-            {% if form.non_field_errors %}
-            <div class="mb-4">
-                {# Using DaisyUI alert for errors #}
-                <div role="alert" class="alert alert-error text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <div>
-                        {% for error in form.non_field_errors %}
-                        <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if request.GET.next %}
-                <input type="hidden" name="next" value="{{ request.GET.next }}">
-            {% endif %}
+    <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
 
-            <div class="space-y-4"> {# Using space-y for consistent gap #}
-                <div class="form-control w-full"> {# DaisyUI form-control for proper label/input spacing #}
-                    <label class="label pb-1" for="{{ form.username.id_for_label }}">
-                        <span class="label-text text-base-content text-base font-medium">{{ form.username.label|default:"Email or Username" }}</span>
-                    </label>
-                    {{ form.username }} {# Styled via CustomLoginForm in forms.py #}
-                    {% for error in form.username.errors %}
-                        <label class="label pt-1">
-                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
+      {% if form.non_field_errors %}
+      <div class="mb-4">
+        {# Using DaisyUI alert for errors #}
+        <div role="alert" class="alert alert-error text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div>
+            {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
-                <div class="form-control w-full">
-                    <label class="label pb-1" for="{{ form.password.id_for_label }}">
-                        <span class="label-text text-base-content text-base font-medium">{{ form.password.label|default:"Password" }}</span>
-                    {{ form.password }} {# Styled via CustomLoginForm in forms.py #}
-                    </label>
-                     {% for error in form.password.errors %}
-                        <span class="label pt-1 label-text-alt text-error text-xs">{{ error }}</span>
-                    {% endfor %}
-                </div>
-            </div>
+      {% if request.GET.next %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+      {% endif %}
 
-            <div class="text-sm mt-3 text-right">
-                {# TODO: Link to your password reset URL #}
-                <a href="#" class="link link-hover text-neutral">Forgot password?</a>
-            </div>
-            
-            <div class="form-control mt-6">
-                <button type="submit" class="btn btn-primary w-full rounded-full normal-case"> {# DaisyUI primary button for login #}
-                    Log in
-                </button>
-            </div>
-            
-            <div class="text-center mt-4 text-sm">
-                <span class="text-neutral-focus">Don't have an account?</span>
-                {# TODO: Link to your signup page URL #}
-                <a href="#" class="link link-hover text-primary font-medium ml-1">Sign up</a>
-            </div>
-        </form>
-    </div>
+      <div class="space-y-4"> {# Using space-y for consistent gap #}
+        <div class="form-control w-full"> {# DaisyUI form-control for proper label/input spacing #}
+          <label class="label pb-1" for="{{ form.username.id_for_label }}">
+            <span class="label-text text-base-content text-base font-medium">{{ form.username.label|default:"Email or Username" }}</span>
+          </label>
+          {{ form.username }} 
+          {% for error in form.username.errors %}
+          <label class="label pt-1">
+            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+          </label>
+          {% endfor %}
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label pb-1" for="{{ form.password.id_for_label }}">
+            <span class="label-text text-base-content text-base font-medium">{{ form.password.label|default:"Password" }}</span>
+          </label>
+          {{ form.password }} {# Styled via CustomLoginForm in forms.py #}
+          {% for error in form.password.errors %}
+          <span class="label pt-1 label-text-alt text-error text-xs">{{ error }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+
+      <div class="text-sm mt-3 text-right">
+        {# TODO: Link to your password reset URL #}
+        <a href="#" class="link link-hover text-neutral">Forgot password?</a>
+      </div>
+
+      <div class="form-control mt-6">
+        <button type="submit" class="btn btn-primary w-full rounded-full normal-case"> {# DaisyUI primary button for login #}
+          Log in
+        </button>
+
+        <div class="text-sm mt-3 text-right">
+          <a 
+             href="{% provider_login_url "google" %}"
+             hx-boost="false"
+             class="btn  w-full rounded-full "
+             >
+             <i class="nf nf-dev-google"></i>Sign in with Google 
+          </a>  
+        </div>
+      </div>
+
+      <div class="text-center mt-4 text-sm">
+        <span class="text-neutral-focus">Don't have an account?</span>
+        {# TODO: Link to your signup page URL #}
+        <a href="#" class="link link-hover text-primary font-medium ml-1">Sign up</a>
+      </div>
+    </form>
+  </div>
 </div>
+
+
 {% endblock content %}
