@@ -1,0 +1,9 @@
+.venv
+.git
+.gitignore
+db.sqlite3
+dockerfile
+.env
+.dokcerignore
+typings
+selftest-cert.*
