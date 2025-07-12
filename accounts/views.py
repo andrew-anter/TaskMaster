@@ -1,13 +1,15 @@
 from django.conf import settings
+from django.views.decorators.http import require_http_methods
 from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_not_required
+from django.contrib.auth.decorators import login_not_required  # type: ignore
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import render
 from django.urls import reverse
 
-from .forms import CustomLoginForm
+from .forms import CustomLoginForm, CustomRegisterForm
 
 
+@require_http_methods(request_method_list=["GET", "POST"])
 @login_not_required
 def login_view(request) -> HttpResponse:
     if request.method == "POST":
@@ -30,11 +32,22 @@ def login_view(request) -> HttpResponse:
     return render(request=request, template_name="accounts/login.html", context=context)
 
 
-def logout_view(request) -> HttpResponse:
-    if request.method == "POST":
-        logout(request=request)
+@require_http_methods(request_method_list=["GET"])
+@login_not_required
+def register_view(request) -> HttpResponse:
+    form = CustomRegisterForm()
+    context = {
+        "form": form,
+    }
+    return render(
+        request=request, template_name="accounts/register.html", context=context
+    )
 
-        response = HttpResponse()
-        response["HX-Location"] = reverse("login")
-        return response
-    return HttpResponseNotAllowed("POST")
+
+@require_http_methods(request_method_list=["POST"])
+def logout_view(request) -> HttpResponse:
+    logout(request=request)
+
+    response = HttpResponse()
+    response["HX-Location"] = reverse("login")
+    return response
