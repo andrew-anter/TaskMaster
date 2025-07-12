@@ -1,9 +1,10 @@
 from django.contrib import messages
+from django.views.decorators.http import require_http_methods
 from django.http import (
     HttpResponse,
     HttpResponseRedirect,
 )
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
 from todo.exceptions import DueDateInPastError, ScheduledDateInPastError
@@ -27,6 +28,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@require_http_methods(["GET"])
 def task_list_view(request):
     today_tasks = get_today_tasks_for_user(user=request.user)
     upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
@@ -41,6 +43,7 @@ def task_list_view(request):
     return render(request, "todo/task_list.html", context)
 
 
+@require_http_methods(["GET"])
 def task_list_partial_view(request):
     today_tasks = get_today_tasks_for_user(user=request.user)
     upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
@@ -55,6 +58,7 @@ def task_list_partial_view(request):
     return render(request, "todo/partials/_task_list.html", context)
 
 
+@require_http_methods(request_method_list=["GET", "POST"])
 def task_add_partial_view(request):
     if request.method == "POST":
         form = TaskForm(request.POST)
@@ -94,27 +98,25 @@ def task_add_partial_view(request):
     return render(request, "todo/partials/_add_task.html", context)
 
 
+@require_http_methods(request_method_list=["POST"])
 def task_update_status_view(request, task_id):
     task = get_object_or_404(Task, id=task_id)
-    if request.method == "POST":
-        toggle_task_status_service(task=task)
+    toggle_task_status_service(task=task)
 
-        if request.htmx:
-            context = {
-                "task": task,
-                "Status": Task.Status,
-                "Priority": Task.Priority,
-            }
-            return render(request, "todo/partials/_task_list_item.html", context)
-        else:
-            # Fallback for non-HTMX requests (though this view is primarily for HTMX now)
-            messages.info(request, f"Task '{task.title}' status updated.")
-            return HttpResponseRedirect(reverse("task_list"))
-
-    # GET requests to this URL are not typical for this action, redirect or show error
-    return redirect(reverse("task_list"))
+    if request.htmx:
+        context = {
+            "task": task,
+            "Status": Task.Status,
+            "Priority": Task.Priority,
+        }
+        return render(request, "todo/partials/_task_list_item.html", context)
+    else:
+        # Fallback for non-HTMX requests (though this view is primarily for HTMX now)
+        messages.info(request, f"Task '{task.title}' status updated.")
+        return HttpResponseRedirect(reverse("task_list"))
 
 
+@require_http_methods(request_method_list=["GET", "POST"])
 def task_update_view(request, task_id):
     task = get_task_for_user(user=request.user, task_id=task_id)
     form = TaskForm(instance=task)
@@ -179,21 +181,22 @@ def task_update_view(request, task_id):
     )
 
 
+@require_http_methods(request_method_list=["POST"])
 def task_delete_view(request, task_id):
-    if request.method == "POST":
-        deleted = task_delete_service(user=request.user, task_id=task_id)
-        if deleted:
-            messages.success(request, message="Task deleted successfully.")
-        else:
-            messages.warning(
-                request, message="An error occurred, no changes have been made"
-            )
+    deleted = task_delete_service(user=request.user, task_id=task_id)
+    if deleted:
+        messages.success(request, message="Task deleted successfully.")
+    else:
+        messages.warning(
+            request, message="An error occurred, no changes have been made"
+        )
 
     response = HttpResponse()
     response["HX-Location"] = reverse("task_list")
     return response
 
 
+@require_http_methods(request_method_list=["GET"])
 def all_tasks_view(request):
     tasks = get_all_tasks_for_user(user=request.user)
 
