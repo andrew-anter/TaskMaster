@@ -16,7 +16,7 @@ class Task(models.Model):
         COMPLETED = "COMPLETED", "Completed"
 
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.TODO
