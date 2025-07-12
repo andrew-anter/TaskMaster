@@ -117,54 +117,61 @@ def task_update_status_view(request, task_id):
         return HttpResponseRedirect(reverse("task_list"))
 
 
+def handle_valid_update_form(request, task_id, form):
+    page_title = "Update Task"
+    try:
+        task, success = task_update_service(
+            user=request.user,
+            task_id=task_id,
+            title=form.cleaned_data["title"],
+            description=form.cleaned_data.get("description"),
+            status=form.cleaned_data["status"],
+            priority=form.cleaned_data["priority"],
+            due_datetime=form.cleaned_data.get("due_datetime"),
+            scheduled_date=form.cleaned_data.get("scheduled_date"),
+        )
+        if success:
+            messages.success(request, "Task have been updated successfully.")
+
+        else:
+            messages.warning(
+                request,
+                "Task update failed. Maybe all the task attributes are still the same",
+            )
+        response = HttpResponse()
+        response["HX-Location"] = reverse("task_list")
+        return response
+
+    except Task.DoesNotExist:
+        response = HttpResponse()
+        response["HX-Location"] = reverse("task_list")
+        messages.error(request, "No task assiociated with this id.")
+        return response
+
+    except DueDateInPastError as e:
+        form.add_error("due_datetime", f"{e}")
+        page_title = "Update Task (Errors)"
+
+    except ScheduledDateInPastError as e:
+        form.add_error("scheduled_date", f"{e}")
+        page_title = "Update Task (Errors)"
+
+    except Exception as e:
+        logger.error(f"An excpetion occurred in task_update_view: {e}")
+
+    context = {
+        "form": form,
+        "task_id": task_id,
+        "page_title": page_title,
+    }
+    return render(
+        request, template_name="todo/partials/_add_task.html", context=context
+    )
+
+
 @require_http_methods(request_method_list=["GET", "POST"])
 def task_update_view(request, task_id):
     task = get_task_for_user(user=request.user, task_id=task_id)
-    form = TaskForm(instance=task)
-    page_title = "Update Task"
-
-    if request.method == "POST":
-        form = TaskForm(request.POST, instance=task)
-        if form.is_valid():
-            try:
-                task, success = task_update_service(
-                    user=request.user,
-                    task_id=task_id,
-                    title=form.cleaned_data["title"],
-                    description=form.cleaned_data.get("description"),
-                    status=form.cleaned_data["status"],
-                    priority=form.cleaned_data["priority"],
-                    due_datetime=form.cleaned_data.get("due_datetime"),
-                    scheduled_date=form.cleaned_data.get("scheduled_date"),
-                )
-                if success:
-                    messages.success(request, "Task have been updated successfully.")
-
-                else:
-                    messages.warning(
-                        request,
-                        "Task update failed. Maybe all the task attributes are still the same",
-                    )
-                response = HttpResponse()
-                response["HX-Location"] = reverse("task_list")
-                return response
-
-            except Task.DoesNotExist:
-                response = HttpResponse()
-                response["HX-Location"] = reverse("task_list")
-                messages.error(request, "No task assiociated with this id.")
-                return response
-
-            except DueDateInPastError as e:
-                form.add_error("due_datetime", f"{e}")
-                page_title = "Update Task (Errors)"
-
-            except ScheduledDateInPastError as e:
-                form.add_error("scheduled_date", f"{e}")
-                page_title = "Update Task (Errors)"
-
-            except Exception as e:
-                logger.error(f"An excpetion occurred in task_update_view: {e}")
 
     if not task:
         response = HttpResponse()
@@ -172,6 +179,13 @@ def task_update_view(request, task_id):
         messages.error(request, "No task assiociated with this id.")
         return response
 
+    if request.method == "POST":
+        form = TaskForm(request.POST, instance=task)
+        if form.is_valid():
+            return handle_valid_update_form(request, task_id, form)
+
+    form = TaskForm(instance=task)
+    page_title = "Update Task"
     context = {
         "form": form,
         "task_id": task_id,
