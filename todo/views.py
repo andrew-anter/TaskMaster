@@ -60,6 +60,7 @@ def task_list_partial_view(request):
 
 @require_http_methods(request_method_list=["GET", "POST"])
 def task_add_partial_view(request):
+    template_name = "todo/partials/_add_task.html"
     if request.method == "POST":
         form = TaskForm(request.POST)
         if form.is_valid():
@@ -76,7 +77,7 @@ def task_add_partial_view(request):
             except DueDateInPastError as e:
                 form.add_error(None, f"{e}")
                 context = {"form": form, "page_title": "Add New Task (Errors)"}
-                return render(request, "todo/partials/_add_task.html", context)
+                return render(request, template_name, context)
 
             if request.htmx:
                 response = HttpResponse()  # Empty response is fine
@@ -89,13 +90,13 @@ def task_add_partial_view(request):
         else:  # Form is invalid
             if request.htmx:
                 context = {"form": form, "page_title": "Add New Task (Errors)"}
-                return render(request, "todo/partials/_add_task.html", context)
+                return render(request, template_name, context)
 
     else:
         form = TaskForm()
 
     context = {"form": form, "page_title": "Add New Task"}
-    return render(request, "todo/partials/_add_task.html", context)
+    return render(request, template_name, context)
 
 
 @require_http_methods(request_method_list=["POST"])
