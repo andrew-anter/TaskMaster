@@ -26,6 +26,7 @@ from .services import (
 import logging
 
 logger = logging.getLogger(__name__)
+ADD_TASK_TEMPLATE_NAME = "todo/partials/_add_task.html"
 
 
 @require_http_methods(["GET"])
@@ -60,7 +61,7 @@ def task_list_partial_view(request):
 
 @require_http_methods(request_method_list=["GET", "POST"])
 def task_add_partial_view(request):
-    template_name = "todo/partials/_add_task.html"
+    template_name = ADD_TASK_TEMPLATE_NAME
     if request.method == "POST":
         form = TaskForm(request.POST)
         if form.is_valid():
@@ -120,7 +121,7 @@ def task_update_status_view(request, task_id):
 def handle_valid_update_form(request, task_id, form):
     page_title = "Update Task"
     try:
-        task, success = task_update_service(
+        _, success = task_update_service(
             user=request.user,
             task_id=task_id,
             title=form.cleaned_data["title"],
@@ -164,9 +165,7 @@ def handle_valid_update_form(request, task_id, form):
         "task_id": task_id,
         "page_title": page_title,
     }
-    return render(
-        request, template_name="todo/partials/_add_task.html", context=context
-    )
+    return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
 
 
 @require_http_methods(request_method_list=["GET", "POST"])
@@ -191,9 +190,7 @@ def task_update_view(request, task_id):
         "task_id": task_id,
         "page_title": page_title,
     }
-    return render(
-        request, template_name="todo/partials/_add_task.html", context=context
-    )
+    return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
 
 
 @require_http_methods(request_method_list=["POST"])
