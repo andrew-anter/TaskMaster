@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from django.conf import settings
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from .models import Task
-from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
 

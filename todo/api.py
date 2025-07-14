@@ -1,22 +1,20 @@
+from django.contrib.auth import get_user_model
 from django.http import HttpRequest
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status
 
+from .exceptions import DueDateInPastError, ScheduledDateInPastError
 from .models import Task
+from .selectors import get_all_tasks_for_user, get_task_for_user
 from .services import (
-    task_update_service,
-    task_delete_service,
     task_add_service,
+    task_delete_service,
+    task_update_service,
     toggle_task_status_service,
 )
-from .selectors import get_all_tasks_for_user, get_task_for_user
-from .exceptions import ScheduledDateInPastError, DueDateInPastError
-
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 

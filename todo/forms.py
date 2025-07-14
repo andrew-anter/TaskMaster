@@ -1,6 +1,6 @@
 from django import forms
-from .models import Task
 
+from .models import Task
 
 FORM_FIELD_CLASSES = "input w-full"
 SELECT_FIELD_CLASSES = "select w-full"

@@ -1,9 +1,10 @@
-from django.utils import timezone
 from django.test import TestCase
-from todo.exceptions import DueDateInPastError
-from todo.models import Task
+from django.utils import timezone
+
 from accounts.models import User
-from todo.services import task_add_service, toggle_task_status_service
+from .exceptions import DueDateInPastError
+from .models import Task
+from .services import task_add_service, toggle_task_status_service
 
 
 class AddTaskServiceTestCase(TestCase):

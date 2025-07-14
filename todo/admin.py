@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Task
 from unfold.admin import ModelAdmin
+
+from .models import Task
 
 
 @admin.register(Task)
