@@ -1,12 +1,16 @@
 import pytest
-from django.test import TestCase
 from django.utils import timezone
 
 from .exceptions import DueDateInPastError
 from datetime import datetime
 from accounts.models import User
 from .models import Task
-from .services import task_add_service, toggle_task_status_service, task_update_service
+from .services import (
+    task_add_service,
+    toggle_task_status_service,
+    task_update_service,
+    task_delete_service,
+)
 
 
 @pytest.fixture
@@ -169,4 +173,12 @@ class TestUpdateTaskService:
         assert task.scheduled_date == new_scheduled_date
 
 
-# TODO: test for deleting task service
+@pytest.mark.django_db
+class TestDeleteTaskService:
+    def test_delete_task(self, task_for_testing, owner):
+        task_id = task_for_testing.pk
+        user = owner
+
+        task_delete_service(user=user, task_id=task_id)
+        with pytest.raises(Task.DoesNotExist):
+            Task.objects.get(pk=task_id)
