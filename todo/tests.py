@@ -66,6 +66,46 @@ class TestAddTaskService:
         assert Task.objects.count() == 0
 
 
+@pytest.fixture
+def todo_task(valid_task_data) -> Task:
+    """Fixture to provide a task with a 'TODO' status."""
+
+    updated_data = {**valid_task_data, "status": Task.Status.TODO}
+    return task_add_service(**updated_data)
+
+
+@pytest.fixture
+def completed_task(valid_task_data) -> Task:
+    """Fixture to provide a task with a 'COMPLETED' status."""
+    updated_data = {**valid_task_data, "status": Task.Status.COMPLETED}
+    return task_add_service(**updated_data)
+
+
+@pytest.mark.django_db
+class TestToggleTaskStatusService:
+    def test_toggle_from_todo_to_completed(self, todo_task):
+        """
+        Tests that a task with status 'TODO' becomes 'COMPLETED' after toggling.
+        """
+        task = todo_task
+
+        toggle_task_status_service(task=task)
+        task.refresh_from_db()
+
+        assert task.status == Task.Status.COMPLETED
+
+    def test_toggle_from_completed_to_todo(self, completed_task):
+        """
+        Tests that a task with status 'COMPLETED' becomes 'TODO' after toggling.
+        """
+        task = completed_task
+
+        toggle_task_status_service(task=task)
+        task.refresh_from_db()
+
+        assert task.status == Task.Status.TODO
+
+
 class ToggleTaskStatusServiceTestCase(TestCase):
     def setUp(self):
         title = "Test title"
