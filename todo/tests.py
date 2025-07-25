@@ -2,63 +2,68 @@ import pytest
 from django.test import TestCase
 from django.utils import timezone
 
+from .exceptions import DueDateInPastError
 from datetime import datetime
 from accounts.models import User
-from .exceptions import DueDateInPastError
 from .models import Task
 from .services import task_add_service, toggle_task_status_service, task_update_service
 
 
-class AddTaskServiceTestCase(TestCase):
-    def setUp(self):
-        self.title = "Test title"
-        self.description = "Test Description"
-        self.status = Task.Status.IN_PROGRESS
-        self.priority = Task.Priority.MEDIUM
-        self.due_datetime = timezone.now()
-        self.scheduled_date = timezone.now().date()
-        self.owner, _ = User.objects.get_or_create(username="testuser")
+@pytest.fixture
+def owner() -> User:
+    """Fixture to provide a user object for tests."""
+    user, _ = User.objects.get_or_create(username="testuser")
+    return user
 
-    def test_create_task_with_valid_data(self):
-        task_item = task_add_service(
-            title=self.title,
-            description=self.description,
-            status=self.status,
-            priority=self.priority,
-            due_datetime=self.due_datetime,
-            scheduled_date=self.scheduled_date,
-            owner=self.owner,
-        )
 
-        # Task was added to db check
-        self.assertTrue(Task.objects.filter(pk=task_item.pk).exists())
+@pytest.fixture
+def valid_task_data(owner: User) -> dict:
+    """Fixture to provide a dictionary of valid data for creating a task."""
+    return {
+        "title": "Test title",
+        "description": "Test Description",
+        "status": Task.Status.IN_PROGRESS,
+        "priority": Task.Priority.MEDIUM,
+        "due_datetime": timezone.now(),
+        "scheduled_date": timezone.now().date(),
+        "owner": owner,
+    }
 
-        # Data is valid check
-        self.assertEqual(task_item.title, self.title)
-        self.assertEqual(task_item.description, self.description)
-        self.assertEqual(task_item.status, self.status)
-        self.assertEqual(task_item.priority, self.priority)
-        self.assertEqual(task_item.due_datetime, self.due_datetime)
-        self.assertEqual(task_item.scheduled_date, self.scheduled_date)
-        self.assertEqual(task_item.owner, self.owner)
 
-    def test_create_task_with_invalid_duedatetime(self):
-        past_due_datetime = timezone.now() - timezone.timedelta(days=10)  # type:ignore
-        with self.assertRaises(DueDateInPastError):
-            task_add_service(
-                title=self.title,
-                description=self.description,
-                status=self.status,
-                priority=self.priority,
-                due_datetime=past_due_datetime,
-                scheduled_date=self.scheduled_date,
-                owner=self.owner,
-            )
+@pytest.fixture
+def task_for_testing(valid_task_data: dict) -> Task:
+    """
+    This fixture now DEPENDS on the 'valid_task_data' fixture.
+    Pytest will run 'valid_task_data' first and pass its result in.
+    """
+    task = task_add_service(**valid_task_data)
+    return task
 
-        # --- Assert for Side Effects ---
-        # After confirming the exception was raised, we assert that NO task
-        # was created in the database.
-        self.assertEqual(Task.objects.count(), 0)
+
+@pytest.mark.django_db
+class TestAddTaskService:
+    def test_create_task_with_valid_data(self, valid_task_data):
+        """Tests that a task is created correctly with valid data."""
+        task_item = task_add_service(**valid_task_data)
+
+        assert Task.objects.filter(pk=task_item.pk).exists()
+        for key, value in valid_task_data.items():
+            assert getattr(task_item, key) == value
+
+    def test_create_task_with_invalid_duedatetime(self, valid_task_data):
+        """
+        Tests that a custom exception is raised for a past due date
+        and that no task is created.
+        """
+        invalid_data = valid_task_data.copy()
+        invalid_data["due_datetime"] = timezone.now() - timezone.timedelta(days=10)
+
+        # Act & Assert for the exception
+        with pytest.raises(DueDateInPastError):
+            task_add_service(**invalid_data)
+
+        # Assert for side effects (that no task was created)
+        assert Task.objects.count() == 0
 
 
 class ToggleTaskStatusServiceTestCase(TestCase):
@@ -93,25 +98,6 @@ class ToggleTaskStatusServiceTestCase(TestCase):
         toggle_task_status_service(task=self.task)
         self.task.refresh_from_db()
         self.assertEqual(self.task.status, Task.Status.COMPLETED)
-
-
-@pytest.fixture
-def task_for_testing() -> Task:
-    """
-    A pytest fixture that creates a default Task instance for use in tests.
-    This replaces the old setUp method.
-    """
-    owner, _ = User.objects.get_or_create(username="testuser")
-    task = task_add_service(
-        title="Original Title",
-        description="Original Description",
-        status=Task.Status.IN_PROGRESS,
-        priority=Task.Priority.MEDIUM,
-        due_datetime=timezone.now(),
-        scheduled_date=timezone.now().date(),
-        owner=owner,
-    )
-    return task
 
 
 @pytest.mark.django_db
