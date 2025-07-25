@@ -2,6 +2,8 @@
 
 TaskMaster is a modern web-based task management application built with Django and enhanced with HTMX for dynamic user interactions. It aims to provide an intuitive interface for managing personal and potentially team tasks efficiently.
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=andrew-anter_todo&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=andrew-anter_todo)
+
 ## Features
 
 * **Task Management:**
@@ -140,7 +142,7 @@ uv run python manage.py runserver_plus --key-file selftest-key --cert-file selft
     uv run ruff format .
     ```
 
-* **MyPy (Static Type Checking):**
+* **Pyright (Static Type Checking):**
 
     ```bash
     uv run pyright .
