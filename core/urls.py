@@ -1,19 +1,25 @@
-from django.contrib import admin
-from django.urls import path, include
-from todo import views as todo_views
-
-from django.conf import settings  # For static files in DEBUG
+from django.apps import apps
+from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+
+optional_apps = {
+    "accounts": "accounts/",
+    "tasks": "tasks/",
+    "labels": "labels/",
+}
 
 urlpatterns = [
-    path("", todo_views.task_list_view, name="task_list"),
     path("admin/", admin.site.urls),
-    path("tasks/", include("todo.urls")),
     path("accounts/", include("accounts.urls")),
     path("allauth/", include("allauth.urls")),
     path("api-auth/", include("rest_framework.urls")),
-    path("api/v1/tasks/", include("todo.api-urls")),
 ]
+
+for app_name, app_url_prefix in optional_apps.items():
+    if apps.is_installed(app_name):
+        urlpatterns.append(path(app_url_prefix, include(f"{app_name}.urls")))
 
 # Serve static and media files during development
 if settings.DEBUG:

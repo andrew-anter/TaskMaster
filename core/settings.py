@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "corsheaders",
+    "colorfield",
     # django allauth
     "allauth",
     "allauth.account",
@@ -46,8 +47,9 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     # Main apps
-    "todo",
+    "tasks",
     "accounts",
+    "labels",
 ]
 
 
@@ -150,3 +152,4 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SOCIALACCOUNT_LOGIN_ON_GET = True
+SIGNUP_FORM_HONEYPOT_FIELD = True
