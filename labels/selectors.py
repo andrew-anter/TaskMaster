@@ -14,20 +14,17 @@ if TYPE_CHECKING:
 class LabelSelector:
     def __init__(self, user: User):
         self.user = user
-        self._permission_check()
+        self._check_permissions()
 
-    def _permission_check(self):
+    def _check_permissions(self):
+        # NOTE: Added for later expansion
         return
-        ## raise PermissionDenied
 
     def get_label(self, pk: int) -> Label:
-        self._permission_check()
         return Label.objects.get(pk=pk)
 
     def get_labels_for_task(self, task: Task) -> QuerySet[Label]:
-        self._permission_check()
         return task.labels.all()  # type: ignore
 
     def get_labels_for_tasks(self, tasks: QuerySet[Task]) -> QuerySet[Label]:
-        self._permission_check()
         return Label.objects.filter(tasks__in=tasks).distinct()
