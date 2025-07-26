@@ -1,10 +1,10 @@
 from django.conf import settings
-from django.views.decorators.http import require_http_methods
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_not_required  # type: ignore
-from django.http import HttpResponse, HttpResponseNotAllowed
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
 from .forms import CustomLoginForm, CustomRegisterForm
 
@@ -19,7 +19,7 @@ def login_view(request) -> HttpResponse:
             login(request, user)
 
             response: HttpResponse = HttpResponse()
-            response["HX-Location"] = reverse(viewname="task_list")
+            response["HX-Location"] = reverse(viewname="all_tasks")
             return response
     else:
         form = CustomLoginForm()
