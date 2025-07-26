@@ -7,7 +7,7 @@
 {% block site_header %}
 <header class="navbar bg-base-100 border-b border-base-300 px-4 md:px-10"> {# DaisyUI navbar with theme background and border #}
   <div class="navbar-start">
-    <a href="{% url 'task_list' %}" class="flex items-center gap-3 normal-case text-xl font-bold"> {# Link on brand #}
+    <a href="{% url 'all_tasks' %}" class="flex items-center gap-3 normal-case text-xl font-bold"> {# Link on brand #}
       <div class="size-5 text-primary"> {# Logo with primary theme color #}
         <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
       </div>
@@ -16,7 +16,7 @@
   </div>
   <div class="navbar-end">
     {# TODO: signup page URL #}
-    <a href="#" class="btn btn-ghost btn-sm normal-case ml-2">Sign up</a> {# Simpler button style for "Sign up" #}
+    <a href="{% url 'register' %}" class="btn btn-ghost btn-sm normal-case ml-2">Sign up</a> 
   </div>
 </header>
 {% endblock site_header %}
@@ -31,7 +31,6 @@
 
       {% if form.non_field_errors %}
       <div class="mb-4">
-        {# Using DaisyUI alert for errors #}
         <div role="alert" class="alert alert-error text-sm">
           <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <div>
@@ -95,8 +94,7 @@
 
       <div class="text-center mt-4 text-sm">
         <span class="text-neutral-focus">Don't have an account?</span>
-        {# TODO: Link to your signup page URL #}
-        <a href="#" class="link link-hover text-primary font-medium ml-1">Sign up</a>
+        <a href="{% url 'register' %}" class="link link-hover text-primary font-medium ml-1">Sign up</a>
       </div>
     </form>
   </div>

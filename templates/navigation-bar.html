@@ -2,68 +2,73 @@
 
 {# Main navigation links - hidden on small screens, visible on larger ones #}
 <nav class="hidden md:flex items-center gap-2 lg:gap-4">
-    <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'task_list_partial' %}" hx-target="#main-content"  >My Tasks</button>
-    <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'all_tasks' %}" hx-target="#main-content">All Tasks</button> 
-    <a class="btn btn-ghost btn-sm normal-case" href="#">Labels</a> {# TODO: Update URL #}
+  <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'task_list_partial' %}" hx-target="#main-content"  >My Tasks</button>
+  <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'all_tasks' %}" hx-target="#main-content">All Tasks</button> 
+  <a class="btn btn-ghost btn-sm normal-case" href="#">Labels</a> {# TODO: Update URL #}
 </nav>
 
 {# Actions - Add Task, Notifications, User Profile #}
 <div class="flex items-center gap-2 lg:gap-3 ml-2 lg:ml-4">
-    {# Add Task Button #}
-    <button
-        hx-get="{% url 'task_add' %}" 
-        hx-target="#main-content"
-        class="btn btn-primary md:ml-5 btn-sm rounded-full normal-case">
-        <i class="nf nf-fa-plus"></i>
-        Add Task
+  {# Add Task Button #}
+  <button
+      hx-get="{% url 'task_add' %}" 
+      hx-target="#main-content"
+      class="btn btn-primary md:ml-5 btn-sm rounded-full normal-case">
+    <i class="nf nf-fa-plus"></i>
+    Add Task
+  </button>
+
+  <div class="indicator"> 
+    <button class="btn btn-ghost btn-circle btn-sm" title="Notifications">
+      <i class="nf nf-cod-bell m-0 p-0 text-large"></i>
     </button>
+  </div>
 
-    <div class="indicator"> 
-        <button class="btn btn-ghost btn-circle btn-sm" title="Notifications">
-          <i class="nf nf-cod-bell m-0 p-0 text-large"></i>
-        </button>
-    </div>
+  {# User Profile Dropdown #}
+  {% block user_profile %}
+  <div class="dropdown dropdown-end">
+    <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+      <div class="w-10 rounded-full">
+        {# TODO: Dynamic image #}
+        <img src="{% static 'images/default-avatar.svg' %}" />
+      </div>
+    </label>
+    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
+      {% comment %}
+      <li>
+        <a href="#"> {# TODO: Link to profile page e.g. {% url 'profile_view' %} #}
+          Profile
+          <span class="badge badge-ghost">New</span> {# Example badge #}
+        </a>
+      </li>
+      <li><a href="#">Settings</a></li> {# TODO: Link to settings page #}
+      <li>
+        {% endcomment %}
+        <li><a hx-post="{% url 'logout' %}"  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
+      </li> 
 
-    {# User Profile Dropdown #}
-    {% block user_profile %}
-    <div class="dropdown dropdown-end">
-        <label tabindex="0" class="btn btn-ghost btn-circle avatar">
-            <div class="w-10 rounded-full" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC1YfJCUaLsbSw8WHczuvag_Ey4h9kikn4L7Q5LCca8gJsu3-kq3nL-JEOyWySDVs1At7rOh_82hU_HuPnDD1jLnnzIFAmi0j0E2OlWjO7--rT2qkVHztXlmPiqeh44SJ7WYviaA8v7WJrmUNB2hJMRTpxYq_TFYpX8Ls0jAtVHSlLR4S_sduilmeqzJyiJySEQuAPhJinPX0iiUMpjva-KkQ4rpKmtoMxZkvbvt1OjS3wk8IIt5zU7BfzoSQJy-fpl-1wNMHkvrXk");'>
-                {# Or use an <img> tag if you have a dynamic user profile image URL: #}
-                {# <img src="{{ request.user.profile.image_url|default:'{% static 'images/default_avatar.png' %}' }}" /> #}
-            </div>
-        </label>
-        <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
-            <li>
-                <a href="#"> {# TODO: Link to profile page e.g. {% url 'profile_view' %} #}
-                    Profile
-                    <span class="badge badge-ghost">New</span> {# Example badge #}
-                </a>
-            </li>
-            <li><a href="#">Settings</a></li> {# TODO: Link to settings page #}
-            <li>
-            <li><a hx-post="{% url 'logout' %}"  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
-            </li> 
-
-        </ul>
-    </div>
-    {% endblock user_profile %}
+    </ul>
+  </div>
+  {% endblock user_profile %}
 </div>
 
 {# Mobile Menu - Hamburger for smaller screens (Optional but Recommended) #}
 <div class="navbar-end md:hidden">
-    <div class="dropdown dropdown-end">
-        <label tabindex="0" class="btn btn-ghost btn-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
-        </label>
-        <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
-            <li><button class="w-full text-left justify-start" hx-get="{% url 'task_list' %}" hx-target="#main-content"  >My Tasks</button></li>
-            <li><button class="w-full text-left justify-start" hx-get="#" hx-target="#main-content"  >All Tasks</button></li> 
-            <li><a href="#">Labels</a></li> {# TODO: Update Link to labels page #}
+  <div class="dropdown dropdown-end">
+    <label tabindex="0" class="btn btn-ghost btn-circle">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+    </label>
+    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
+      <li><button class="w-full text-left justify-start" hx-get="{% url 'all_tasks' %}" hx-target="#main-content"  >My Tasks</button></li>
+      <li><button class="w-full text-left justify-start" hx-get="#" hx-target="#main-content"  >All Tasks</button></li> 
+      {% comment %}
+      {# TODO: labels feature implementation #}
+      <li><a href="#">Labels</a></li> 
+      {% endcomment %}
 
-            <li><hr class="my-1"></li>
+      <li><hr class="my-1"></li>
 
-            <li><a hx-post="{% url 'logout' %}"  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
-        </ul>
-    </div>
+      <li><a hx-post="{% url 'logout' %}"  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
+    </ul>
+  </div>
 </div>

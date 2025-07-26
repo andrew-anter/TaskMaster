@@ -1,0 +1,82 @@
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Register - TaskMaster{% endblock title %}
+
+{% block site_header %}
+<header class="navbar bg-base-100 border-b border-base-300 px-4 md:px-10"> 
+  <div class="navbar-start">
+    <a href="{% url 'task_list' %}" class="flex items-center gap-3 normal-case text-xl font-bold">
+      <div class="size-5 text-primary"> 
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
+      </div>
+      TaskMaster
+    </a>
+  </div>
+</header>
+{% endblock site_header %}
+
+{% block content %}
+<div class="flex flex-col w-full items-center justify-center py-8 md:py-12">
+  <div class="card w-full md:w-[450px] max-w-md bg-base-100 shadow-xl p-6 md:p-8"> 
+    <h2 class="text-2xl font-bold text-center mb-6 text-base-content">Create An Account</h2>
+
+    <form method="post" action="{% url 'register' %}">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="mb-4">
+        <div role="alert" class="alert alert-error text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div>
+            {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if request.GET.next %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+      {% endif %}
+
+
+      <div class="space-y-4"> 
+        
+        {% for field in form %}
+        <div class="form-control w-full"> 
+          <label class="label pb-1" for="{{ field.id_for_label }}">
+            <span class="label-text text-base-content text-base font-medium">{{ field.label }}</span>
+          </label>
+          {{ field }} 
+          {% for error in field.errors %}
+          <label class="label pt-1">
+            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="text-sm mt-3 text-right">
+        {# TODO: Link to your password reset URL #}
+        <a href="#" class="link link-hover text-neutral">Forgot password?</a>
+      </div>
+
+      <div class="form-control mt-6">
+        <button type="submit" class="btn btn-primary w-full rounded-full normal-case"> 
+          Register
+        </button>
+      </div>
+
+      <div class="text-center mt-4 text-sm">
+        <span class="text-neutral-focus">Already Have An Account?</span>
+        <a href="{% url 'login' %}" class="link link-hover text-primary font-medium ml-1">Sign In Here</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{% endblock content %}
