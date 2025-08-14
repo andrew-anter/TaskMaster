@@ -24,7 +24,7 @@ class LabelService:
         Creates or finds a label and associates it with a task.
         """
         label, _ = Label.objects.get_or_create(name=name, defaults={"color": color})
-        task.labels.add(label)  # type: ignore
+        task.labels.add(label)  # type: ignore # reverse relation
         return label
 
     def update_label(
@@ -35,18 +35,18 @@ class LabelService:
         """
         label = self.selector.get_label(pk=pk)
 
-        fields_to_update = []
+        fields_to_update = set()
         if name is not None:
             label.name = name
-            fields_to_update.append("name")
+            fields_to_update.add("name")
 
         if color is not None:
             label.color = color
-            fields_to_update.append("color")
+            fields_to_update.add("color")
 
         if fields_to_update:
             label.full_clean()
-            label.save(update_fields=fields_to_update)
+            label.save(update_fields=list(fields_to_update))
 
         return label
 

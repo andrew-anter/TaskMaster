@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from django.db.models.query import QuerySet
 
     from accounts.models import User
-    from tasks.models import Task
 
 
 class LabelSelector:
@@ -23,8 +22,11 @@ class LabelSelector:
     def get_label(self, pk: int) -> Label:
         return Label.objects.get(pk=pk)
 
-    def get_labels_for_task(self, task: Task) -> QuerySet[Label]:
-        return task.labels.all()  # type: ignore
+    def get_labels(self, ids: set[int]) -> QuerySet[Label]:
+        return Label.objects.filter(pk__in=ids)
 
-    def get_labels_for_tasks(self, tasks: QuerySet[Task]) -> QuerySet[Label]:
-        return Label.objects.filter(tasks__in=tasks).distinct()
+    def get_labels_for_task(self, task_id: int) -> QuerySet[Label]:
+        return Label.objects.filter(tasks__pk=task_id)
+
+    def get_labels_for_tasks(self, tasks_ids: set[int]) -> QuerySet[Label]:
+        return Label.objects.filter(tasks__pk__in=tasks_ids)
