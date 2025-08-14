@@ -53,10 +53,10 @@ def task_add_service(
     *,
     title: str,
     description: str | None,
-    status: str,
-    priority: int,
-    due_datetime: datetime | None,
-    scheduled_date: date | None,
+    status: str = Task.Status.IN_PROGRESS,
+    priority: int = Task.Priority.MEDIUM,
+    due_datetime: datetime | None = None,
+    scheduled_date: date | None = None,
     owner: User,
 ) -> Task:
     """
