@@ -88,7 +88,7 @@ def task_add_partial_view(request):
             else:
                 messages.success(request, "Task added successfully!")
                 return HttpResponseRedirect(reverse("all_tasks"))
-        else:  # Form is invalid
+        else:
             if request.htmx:
                 context = {"form": form, "page_title": "Add New Task (Errors)"}
                 return render(request, template_name, context)
@@ -195,10 +195,10 @@ def task_update_view(request, task_id):
 
 @require_http_methods(request_method_list=["POST"])
 def task_delete_view(request, task_id):
-    deleted = task_delete_service(user=request.user, task_id=task_id)
-    if deleted:
+    try:
+        task_delete_service(user=request.user, task_id=task_id)
         messages.success(request, message="Task deleted successfully.")
-    else:
+    except Exception:
         messages.warning(
             request, message="An error occurred, no changes have been made"
         )

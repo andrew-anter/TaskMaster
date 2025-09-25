@@ -3,7 +3,7 @@
 {# Main navigation links - hidden on small screens, visible on larger ones #}
 <nav class="hidden md:flex items-center gap-2 lg:gap-4">
   <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'task_list_partial' %}" hx-target="#main-content"  >My Tasks</button>
-  <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'all_tasks' %}" hx-target="#main-content">All Tasks</button> 
+  <button class="btn btn-ghost btn-sm normal-case" hx-get="{% url 'task_list_partial' %}" hx-target="#main-content">All Tasks</button> 
   <a class="btn btn-ghost btn-sm normal-case" href="#">Labels</a> {# TODO: Update URL #}
 </nav>
 

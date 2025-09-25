@@ -11,11 +11,11 @@
               {% else %}
                 hx-post="{% url 'task_add' %}"
               {% endif %}
-              hx-target="#task-form-container" {# Swaps the whole container including title #}
-              hx-swap="innerHTML" {# Replaces content of task-form-container; outerHTML would replace the container itself #}
+              hx-target="#task-form-container" 
+              hx-swap="innerHTML"
               class="mt-2">
             {% csrf_token %}
-            <div class="card-body p-4 space-y-4"> {# DaisyUI card-body for padding and structure, space-y for field gap #}
+            <div class="card-body p-4 space-y-4"> 
 
                 {% if form.non_field_errors %}
                 <div role="alert" class="alert alert-error text-sm">
@@ -72,7 +72,7 @@
                 {# Status #}
                 <fieldset class="fieldset">
                   <legend class="fieldset-legend">{{ form.status.label|default:"Status" }}</legend>
-                  {{ form.scheduled_date }}
+                  {{ form.status }}
                 </fieldset>
 
                 {# Priority #}

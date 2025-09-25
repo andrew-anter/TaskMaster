@@ -22,9 +22,9 @@
         {{ task.title }}
     </p>
     <p class="text-base-content opacity-70 text-sm font-normal leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
-    {% if task.due_date %}
-    Due: {{ task.due_date|date:"F j, Y" }}
-    (at {{ task.due_date|time:"h:i P" }}) 
+    {% if task.due_datetime %}
+    Due: {{ task.due_datetime|date:"F j, Y" }}
+    (at {{ task.due_datetime|time }}) 
     {% else %}
     No due date
     {% endif %}

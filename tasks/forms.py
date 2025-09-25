@@ -20,10 +20,10 @@ class TaskForm(forms.ModelForm):
         fields = [
             "title",
             "description",
-            "status",
-            "priority",
             "due_datetime",
             "scheduled_date",
+            "status",
+            "priority",
         ]
 
         widgets = {
