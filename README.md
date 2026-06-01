@@ -1,8 +1,19 @@
 # TaskMaster
 
-TaskMaster is a modern web-based task management application built with Django and enhanced with HTMX for dynamic user interactions. It aims to provide an intuitive interface for managing personal and potentially team tasks efficiently.
-
+A production-grade implementation of a decoupled Django web application demonstrating strict Separation of Concerns, advanced architecture patterns, and uncompromising software craftsmanship.
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=andrew-anter_todo&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=andrew-anter_todo)
+
+
+## 🏗️ Architectural Highlights
+- **Decoupled Service Layer:** Completely encapsulates core business logic away from the Django view layer, utilizing custom domain exceptions and rigid static type constraints.
+- **Asynchronous Readiness:** Ready for heavy background task delegation via decoupled application logic structures.
+- **Modern Tooling & Typing:** Maintained using a highly customized Neovim workflow, utilizing `uv` for lightning-fast package isolation, `Ruff` for linting, and `BasedPyright` to enforce strict Python type-safety.
+- **Dynamic Frontend Integration:** Leverages HTMX for high-performance, partial page updates and real-time state synchronization without the massive footprint of an SPA framework.
+
+## 🛠️ Tech Stack & Tooling
+- **Backend:** Python (Strict Type Hints), Django, SQLite (Development) / PostgreSQL (Production ready)
+- **Frontend:** HTMX, Tailwind CSS, daisyUI
+- **Quality Guardrails:** Docker Compose environment pre-configured for SonarQube static code quality analysis.
 
 ## Features
 
