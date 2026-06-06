@@ -31,6 +31,7 @@ class TaskForm(forms.ModelForm):
                 attrs={
                     "class": FORM_FIELD_CLASSES,
                     "placeholder": "Enter task title",
+                    "autofocus": True,
                 }
             ),
             "description": forms.Textarea(

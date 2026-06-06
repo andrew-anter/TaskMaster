@@ -11,6 +11,19 @@
               hx-swap="outerHTML"
               class="mt-2">
             {% csrf_token %}
+            <script>
+                // Ensure focus on the title field when the partial is loaded via HTMX
+                (function() {
+                    const titleField = document.getElementById('id_title');
+                    if (titleField) {
+                        titleField.focus();
+                        // Move cursor to end if there's text
+                        const val = titleField.value;
+                        titleField.value = '';
+                        titleField.value = val;
+                    }
+                })();
+            </script>
             <div class="card-body p-4 space-y-4">
                 {% if form.non_field_errors %}
                     <div role="alert" class="alert alert-error text-sm">
