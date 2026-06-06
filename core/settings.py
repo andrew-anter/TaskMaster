@@ -159,8 +159,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LOGIN_URL = "accounts/login/"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "all_tasks"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
