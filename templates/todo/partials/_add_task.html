@@ -1,96 +1,92 @@
-<div id="task-form-container" class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
+<div id="task-form-container"
+     class="layout-content-container flex flex-col w-full md:w-[512px] max-w-[512px] py-5 mx-auto">
     <div class="flex flex-wrap justify-between items-center gap-3 p-4">
         <h1 class="text-3xl font-bold text-base-content">{{ page_title|default:"Manage Task" }}</h1>
         {# The "X" button from design's header could be a "Cancel" action. We have a Cancel button at the bottom. #}
     </div>
-
-    <div id="task-form-wrapper"> 
+    <div id="task-form-wrapper">
         <form method="post"
-              {% if task_id %}
-                hx-post="{% url 'task_update' task_id %}" 
-              {% else %}
-                hx-post="{% url 'task_add' %}"
-              {% endif %}
-              hx-target="#task-form-container" 
-              hx-swap="innerHTML"
+              {% if task_id %} hx-post="{% url 'task_update' task_id %}" {% else %} hx-post="{% url 'task_add' %}" {% endif %}
+              hx-target="#task-form-container"
+              hx-swap="outerHTML"
               class="mt-2">
             {% csrf_token %}
-            <div class="card-body p-4 space-y-4"> 
-
+            <div class="card-body p-4 space-y-4">
                 {% if form.non_field_errors %}
-                <div role="alert" class="alert alert-error text-sm">
-                    <i class="nf nf-md-alpha_x_circle text-lg text-error"></i>
-                    <div>
-                        {% for error in form.non_field_errors %}
-                        <p>{{ error }}</p>
-                        {% endfor %}
+                    <div role="alert" class="alert alert-error text-sm">
+                        <i class="nf nf-md-alpha_x_circle text-lg text-error"></i>
+                        <div>
+                            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                        </div>
                     </div>
-                </div>
                 {% endif %}
-                
                 <div id="success-message-area"></div>
-
                 {# Task Title #}
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{{ form.title.label|default:"Task Title" }}</legend>
-                  {{ form.title }}
-                  <div class="label">Required</div>
-                  {% for error in form.title.errors %}
-                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                  {% endfor %}
+                    <legend class="fieldset-legend">{{ form.title.label|default:"Task Title" }}</legend>
+                    {{ form.title }}
+                    <div class="label">Required</div>
+                    {% for error in form.title.errors %}
+                        <label class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </label>
+                    {% endfor %}
                 </fieldset>
-
                 {# Description #}
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{{ form.description.label|default:"Description" }}</legend>
-                  {{ form.description }}
-                  {% for error in form.description.errors %}
-                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                  {% endfor %}
+                    <legend class="fieldset-legend">{{ form.description.label|default:"Description" }}</legend>
+                    {{ form.description }}
+                    {% for error in form.description.errors %}
+                        <label class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </label>
+                    {% endfor %}
                 </fieldset>
-
                 {# Due Date & Time #}
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{{ form.due_datetime.label|default:"Due Date & Time" }}</legend>
-                  {{ form.due_datetime }}
-                  {% for error in form.due_datetime.errors %}
-                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                  {% endfor %}
+                    <legend class="fieldset-legend">{{ form.due_datetime.label|default:"Due Date & Time" }}</legend>
+                    {{ form.due_datetime }}
+                    {% for error in form.due_datetime.errors %}
+                        <label class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </label>
+                    {% endfor %}
                 </fieldset>
-
-                
                 {# Scheduled Date #}
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{{ form.scheduled_date.label|default:"Scheduled Date" }}</legend>
-                  {{ form.scheduled_date }}
-                  {% for error in form.scheduled_date.errors %}
-                  <label class="label pt-0"> <span class="label-text-alt text-error text-xs">{{ error }}</span> </label>
-                  {% endfor %}
+                    <legend class="fieldset-legend">{{ form.scheduled_date.label|default:"Scheduled Date" }}</legend>
+                    {{ form.scheduled_date }}
+                    {% for error in form.scheduled_date.errors %}
+                        <label class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </label>
+                    {% endfor %}
                 </fieldset>
-
-
                 {# Status #}
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{{ form.status.label|default:"Status" }}</legend>
-                  {{ form.status }}
+                    <legend class="fieldset-legend">{{ form.status.label|default:"Status" }}</legend>
+                    {{ form.status }}
                 </fieldset>
-
                 {# Priority #}
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{{ form.priority.label|default:"Priority" }}</legend>
-                  {{ form.priority }}
+                    <legend class="fieldset-legend">{{ form.priority.label|default:"Priority" }}</legend>
+                    {{ form.priority }}
                 </fieldset>
-
                 {# Note: "Project" and "Labels" fields from your design are not yet in the Django model/form. #}
-
                 <div class="flex justify-end gap-3 pt-4">
                     <a hx-get="{% url 'task_list_partial' %}" {# Assuming task_list renders the main content #}
-                       hx-target="#main-content" {# Target the main content area defined in base.html or a parent #}
-                       class="btn btn-ghost rounded-full normal-case"> {# DaisyUI ghost button for cancel #}
+                        hx-target="#main-content" {# Target the main content area defined in base.html or a parent #}
+                        class="btn btn-ghost rounded-full normal-case"> {# DaisyUI ghost button for cancel #}
                         Cancel
                     </a>
-                    <button type="submit" class="btn btn-primary rounded-full normal-case"> {# DaisyUI primary button #}
-                        {% if task_id %}Update{% else %}Add{% endif %} Task
+                    <button type="submit" class="btn btn-primary rounded-full normal-case">
+                        {# DaisyUI primary button #}
+                        {% if task_id %}
+                            Update
+                        {% else %}
+                            Add
+                        {% endif %}
+                        Task
                     </button>
                 </div>
             </div>

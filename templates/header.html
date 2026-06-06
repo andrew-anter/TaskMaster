@@ -1,22 +1,20 @@
-{% load static %} 
-
+{% load static %}
 <header class="navbar bg-base-100 shadow-sm px-4 md:px-10 py-2">
     {# Navbar Start - Logo and Brand Name #}
     <div class="navbar-start">
-        <a href="{% block brand_link %}{% url 'all_tasks' %}{% endblock brand_link %}" class="flex items-center gap-3">
-            <div class="size-6 text-primary"> 
-              <i class="nf nf-fa-hourglass_o text-primary text-xl"></i>
+        <a href="{% block brand_link %}{% url 'all_tasks' %}{% endblock brand_link %}"
+           class="flex items-center gap-3">
+            <div class="size-6 text-primary">
+                <i class="nf nf-fa-hourglass_o text-primary text-xl"></i>
             </div>
-            <button 
-                hx-get="{% url 'all_tasks' %}" 
-                hx-target="#main-content"
-                class="btn btn-ghost normal-case text-xl font-bold tracking-tight">
-                {% block brand_name %}TaskMaster{% endblock brand_name %}
+            <button hx-get="{% url 'all_tasks' %}"
+                    hx-target="#main-content"
+                    class="btn btn-ghost normal-case text-xl font-bold tracking-tight">
+                {% block brand_name %}
+                    TaskMaster
+                {% endblock brand_name %}
             </button>
         </a>
     </div>
-
-    <div class="navbar-end">
-        {% include "navigation-bar.html" %}
-    </div>
+    <div class="navbar-end">{% include "navigation-bar.html" %}</div>
 </header>

@@ -4,6 +4,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from accounts.views import root_redirect_view
+
 optional_apps = {
     "accounts": "accounts/",
     "tasks": "tasks/",
@@ -11,6 +13,7 @@ optional_apps = {
 }
 
 urlpatterns = [
+    path("", root_redirect_view, name="root_redirect"),
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("allauth/", include("allauth.urls")),

@@ -1,56 +1,69 @@
-<div id="task-{{ task.id }}-item" class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 min-h-[72px] border-b rounded-xl border-base-200">
-  {# Status Toggle Button/Form #}
-  <form hx-post="{% url 'update_task_status' task.id %}"
-        hx-target="#task-{{ task.id }}-item"
-        hx-swap="outerHTML"
-        class="contents">
-    {% csrf_token %}
-    <button type="submit"
-            class="btn btn-ghost btn-circle btn-sm md:btn-md" {# DaisyUI button, circle, ghost for minimal style, size sm or md #}
-            title="Toggle status for '{{ task.title|escapejs }}'">
-      {% if task.status == Status.COMPLETED %}
-      <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
-      {% else %}
-      <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z"></path></svg>
-      {% endif %}
-    </button>
-  </form>
-
-  {# Task Title and Due Date #}
-  <div class="flex flex-col justify-center flex-grow min-w-0"> {# Added min-w-0 for proper truncation with flex #}
-    <p class="text-base-content text-base font-medium leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
-        {{ task.title }}
-    </p>
-    <p class="text-base-content opacity-70 text-sm font-normal leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
-    {% if task.due_datetime %}
-    Due: {{ task.due_datetime|date:"F j, Y" }}
-    (at {{ task.due_datetime|time }}) 
-    {% else %}
-    No due date
-    {% endif %}
-    </p>
-  </div>
-
-  <div class="ml-auto flex items-center gap-1 md:gap-2 pl-2 shrink-0">
-    {# Edit Task Button #}
-    <button hx-get="{% url 'task_update' task.id %}" 
-            hx-target="#main-content" 
-            class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-white hover:bg-primary focus:bg-primary"
-            title="Edit task '{{ task.title|escapejs }}'">
-      <i class="nf nf-fa-edit text-lg "></i> 
-    </button>
-
-    <form hx-post="{% url 'task_delete' task.id %}" 
+<div id="task-{{ task.id }}-item"
+     class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 min-h-[72px] border-b rounded-xl border-base-200">
+    {# Status Toggle Button/Form #}
+    <form hx-post="{% url 'update_task_status' task.id %}"
           hx-target="#task-{{ task.id }}-item"
           hx-swap="outerHTML"
-          hx-confirm="Are you sure you want to delete '{{ task.title|escapejs }}'?"
-          class="contents"> 
-          {% csrf_token %}
-          <button type="submit"
-                  class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-error hover:text-error-content hover:text-white focus:bg-error focus:text-error-content"
-                  title="Delete task '{{ task.title|escapejs }}'">
-            <i class="nf nf-cod-trash text-lg hover:text-white"></i> {# Nerd Font icon #}
-          </button>
+          class="contents">
+        {% csrf_token %}
+        <button type="submit"
+            class="btn btn-ghost btn-circle btn-sm md:btn-md" {# DaisyUI button, circle, ghost for minimal style, size sm or md #}
+            title="Toggle status for '{{ task.title|escapejs }}'">
+            {% if task.status == Status.COMPLETED %}
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24px"
+                     height="24px"
+                     fill="currentColor"
+                     viewBox="0 0 256 256">
+                    <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z">
+                    </path>
+                </svg>
+            {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24px"
+                     height="24px"
+                     fill="currentColor"
+                     viewBox="0 0 256 256">
+                    <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z">
+                    </path>
+                </svg>
+            {% endif %}
+        </button>
     </form>
-  </div>
+    {# Task Title and Due Date #}
+    <div class="flex flex-col justify-center flex-grow min-w-0">
+        {# Added min-w-0 for proper truncation with flex #}
+        <p class="text-base-content text-base font-medium leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
+            {{ task.title }}
+        </p>
+        <p class="text-base-content opacity-70 text-sm font-normal leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
+            {% if task.due_datetime %}
+                Due: {{ task.due_datetime|date:"F j, Y" }}
+                (at {{ task.due_datetime|time }})
+            {% else %}
+                No due date
+            {% endif %}
+        </p>
+    </div>
+    <div class="ml-auto flex items-center gap-1 md:gap-2 pl-2 shrink-0">
+        {# Edit Task Button #}
+        <button hx-get="{% url 'task_update' task.id %}"
+                hx-target="#main-content"
+                class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-white hover:bg-primary focus:bg-primary"
+                title="Edit task '{{ task.title|escapejs }}'">
+            <i class="nf nf-fa-edit text-lg "></i>
+        </button>
+        <form hx-post="{% url 'task_delete' task.id %}"
+              hx-target="#task-{{ task.id }}-item"
+              hx-swap="outerHTML"
+              hx-confirm="Are you sure you want to delete '{{ task.title|escapejs }}'?"
+              class="contents">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-error hover:text-error-content hover:text-white focus:bg-error focus:text-error-content"
+                    title="Delete task '{{ task.title|escapejs }}'">
+                <i class="nf nf-cod-trash text-lg hover:text-white"></i> {# Nerd Font icon #}
+            </button>
+        </form>
+    </div>
 </div>

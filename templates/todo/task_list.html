@@ -1,70 +1,69 @@
 {% extends "base.html" %}
 {% load static %}
-
-{% block title %}My Tasks - TaskMaster{% endblock title %}
-
+{% block title %}
+    My Tasks - TaskMaster
+{% endblock title %}
 {% block content %}
-<div id="main-content" class="layout-content-container flex flex-col w-full"> 
-
-  <div class="flex flex-wrap justify-between items-center gap-3 p-4">
-    <h1 class="text-3xl lg:text-4xl font-bold text-base-content"> 
-      Good {% now "A" as current_greeting %}{% if current_greeting == "AM" %}morning{% else %}afternoon{% endif %}, {{ request.user.first_name|default:request.user.username|capfirst }}
-    </h1>
-  </div>
-
-  <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Today</h2>
-  <div id="all-tasks-list" class="flex flex-col mb-6"> 
-    {% if today_tasks %}
-    {% for task_item in today_tasks %}
-      <div class="card my-2">
-        {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
-      <div>
-    {% endfor %}
-    {% else %}
-    <div role="alert" class="alert shadow-sm m-4">
-      <i class="nf nf-cod-info text-lg"></i>
-      <span>No tasks have been created yet. Start by creating some!</span>
+    <div id="main-content"
+         class="layout-content-container flex flex-col w-full">
+        <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+            <h1 class="text-3xl lg:text-4xl font-bold text-base-content">
+                Good {% now "A" as current_greeting %}
+                {% if current_greeting == "AM" %}
+                    morning
+                {% else %}
+                    afternoon
+                {% endif %}
+                , {{ request.user.first_name|default:request.user.username|capfirst }}
+            </h1>
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Today</h2>
+        <div id="today-tasks-list" class="flex flex-col mb-6">
+            {% if today_tasks %}
+                {% for task_item in today_tasks %}
+                    <div class="card my-2">
+                        {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div role="alert" class="alert shadow-sm m-4">
+                    <i class="nf nf-cod-info text-lg"></i>
+                    <span>No tasks for today. Relax!</span>
+                </div>
+            {% endif %}
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Upcoming</h2>
+        <div id="upcoming-tasks-list" class="flex flex-col mb-6">
+            {% if upcoming_tasks %}
+                {% for task_item in upcoming_tasks %}
+                    <div class="card my-2">
+                        {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div role="alert" class="alert shadow-sm m-4">
+                    <i class="nf nf-cod-info text-lg"></i>
+                    <span>No upcoming tasks.</span>
+                </div>
+            {% endif %}
+        </div>
+        {# "Quick Actions" Section #}
+        <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Quick Actions</h2>
+        <div class="flex justify-start">
+            <div class="flex flex-1 gap-3 flex-wrap px-4 py-3">
+                <a hx-get="{% url 'task_add' %}"
+                   hx-target="#main-content"
+                   class="btn btn-primary rounded-full normal-case">
+                    <span class="truncate">Add Task</span>
+                </a>
+                <a href="#" class="btn rounded-full normal-case">
+                    {# TODO: Link to your calendar view URL #}
+                    <span class="truncate">View Calendar</span>
+                </a>
+            </div>
+        </div>
     </div>
-    {% endif %}
-  </div>
-
-
-  <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Upcoming</h2>
-  <div id="all-tasks-list" class="flex flex-col mb-6"> 
-    {% if upcoming_tasks %}
-      {% for task_item in upcoming_tasks %}
-      <div class="card my-2">
-        {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
-      </div>
-      {% endfor %}
-    {% else %}
-    <div role="alert" class="alert shadow-sm m-4">
-
-      <i class="nf nf-cod-info text-lg"></i>
-      <span>No tasks have been created yet. Start by creating some!</span>
-    </div>
-    {% endif %}
-  </div>
-
-  {# "Quick Actions" Section #}
-  <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Quick Actions</h2>
-  <div class="flex justify-start">
-    <div class="flex flex-1 gap-3 flex-wrap px-4 py-3">
-      <a hx-get="{% url 'task_add' %}" 
-         hx-target="#main-content" 
-         class="btn btn-primary rounded-full normal-case"
-         > 
-         <span class="truncate">Add Task</span>
-      </a>
-      <a href="#" class="btn rounded-full normal-case">
-        {# TODO: Link to your calendar view URL #}
-        <span class="truncate">View Calendar</span>
-      </a>
-    </div>
-  </div>
-</div>
 {% endblock content %}
-
 {% block head_extra %}
-{{ block.super }}
+    {{ block.super }}
 {% endblock head_extra %}
