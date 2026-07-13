@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 class LabelService:
     def __init__(self, user: User):
+        self.user = user
         self._check_permissions(user=user)
         self.selector = LabelSelector(user=user)
 
@@ -23,8 +24,17 @@ class LabelService:
         """
         Creates or finds a label and associates it with a task.
         """
-        label, _ = Label.objects.get_or_create(name=name, defaults={"color": color})
-        task.labels.add(label)  # type: ignore # reverse relation
+        label, _ = Label.objects.get_or_create(
+            name=name, owner=self.user, defaults={"color": color}
+        )
+        task.labels.add(label)
+        return label
+
+    def create_label(self, name: str, color: str) -> Label:
+        """
+        Creates a new label for the user.
+        """
+        label = Label.objects.create(name=name, color=color, owner=self.user)
         return label
 
     def update_label(

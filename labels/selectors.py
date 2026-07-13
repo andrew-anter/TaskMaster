@@ -20,13 +20,16 @@ class LabelSelector:
         return
 
     def get_label(self, pk: int) -> Label:
-        return Label.objects.get(pk=pk)
+        return Label.objects.get(pk=pk, owner=self.user)
 
-    def get_labels(self, ids: set[int]) -> QuerySet[Label]:
-        return Label.objects.filter(pk__in=ids)
+    def get_labels(self, ids: set[int] | None = None) -> QuerySet[Label]:
+        queryset = Label.objects.filter(owner=self.user)
+        if ids is not None:
+            queryset = queryset.filter(pk__in=ids)
+        return queryset
 
     def get_labels_for_task(self, task_id: int) -> QuerySet[Label]:
-        return Label.objects.filter(tasks__pk=task_id)
+        return Label.objects.filter(tasks__pk=task_id, owner=self.user)
 
     def get_labels_for_tasks(self, tasks_ids: set[int]) -> QuerySet[Label]:
-        return Label.objects.filter(tasks__pk__in=tasks_ids)
+        return Label.objects.filter(tasks__pk__in=tasks_ids, owner=self.user).distinct()

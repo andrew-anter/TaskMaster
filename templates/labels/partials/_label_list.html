@@ -1,0 +1,85 @@
+{% load color_utils %}
+<div class="py-5 px-4">
+  <div class="flex items-end justify-between mb-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight">Labels</h1>
+      <p class="text-sm mt-1" style="color: oklch(20% 0 0 / 0.5);">Organize your tasks with color-coded labels</p>
+    </div>
+    <button hx-get="{% url 'label_create' %}"
+            hx-target="#main-content"
+            hx-push-url="true"
+            class="btn btn-primary rounded-full normal-case gap-1">
+      <i class="nf nf-fa-plus text-sm"></i>
+      New Label
+    </button>
+  </div>
+
+  {% if labels %}
+    <div class="grid grid-flow-col gap-3" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+      {% for label in labels %}
+        {% with contrast=label.color|contrast_color %}
+          <div class="card bg-base-100 border border-base-200" style="border-radius: 1rem; overflow: hidden;">
+            <div class="flex items-stretch" style="min-height: 56px;">
+              <div class="shrink-0" style="width: 6px; background-color: {{ label.color }};"></div>
+              <div class="flex items-center justify-between flex-1 gap-2" style="padding: 0.75rem 0.5rem 0.75rem 1rem;">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div style="width: 16px; height: 16px; border-radius: 9999px; flex-shrink: 0; background-color: {{ label.color }}; border: 1px solid oklch(92% 0 0 / 0.3);"></div>
+                  <div class="min-w-0">
+                    <span class="font-medium text-sm block truncate">{{ label.name }}</span>
+                    <button hx-get="{% url 'tasks_by_label' label.id %}"
+                            hx-target="#main-content"
+                            hx-push-url="true"
+                            class="text-xs" style="color: oklch(20% 0 0 / 0.4); cursor: pointer; background: none; border: none; padding: 0;">
+                      {{ label.tasks.count }} task{{ label.tasks.count|pluralize }}
+                    </button>
+                  </div>
+                </div>
+                <div class="flex gap-1" style="opacity: 0.6;">
+                  <button hx-get="{% url 'label_update' label.pk %}"
+                          hx-target="#main-content"
+                          hx-push-url="true"
+                          class="btn btn-ghost btn-sm btn-square"
+                          style="width: 32px; height: 32px; min-height: 32px;"
+                          title="Edit label">
+                    <i class="nf nf-fa-edit text-base"></i>
+                  </button>
+                  <form hx-post="{% url 'label_delete' label.pk %}"
+                        hx-confirm="Delete label '{{ label.name }}'?"
+                        hx-target="#main-content"
+                        class="contents">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-ghost btn-sm btn-square"
+                            style="width: 32px; height: 32px; min-height: 32px;"
+                            title="Delete label">
+                      <i class="nf nf-cod-trash text-base" style="color: oklch(70% 0.191 22.216 / 0.7);"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="flex flex-col items-center justify-center" style="padding: 4rem 0; text-align: center;">
+      <div style="width: 64px; height: 64px; border-radius: 9999px; background-color: oklch(92% 0 0); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+        <i class="nf nf-fa-tag text-2xl" style="color: oklch(20% 0 0 / 0.3);"></i>
+      </div>
+      <h3 class="text-lg font-bold" style="color: oklch(20% 0 0 / 0.7);">No labels yet</h3>
+      <p class="text-sm mt-1 mb-6" style="color: oklch(20% 0 0 / 0.4); max-width: 280px;">Create your first label to start categorizing and filtering your tasks</p>
+      <button hx-get="{% url 'label_create' %}"
+              hx-target="#main-content"
+              hx-push-url="true"
+              class="btn btn-primary rounded-full normal-case gap-1">
+        <i class="nf nf-fa-plus text-sm"></i>
+        Create Label
+      </button>
+    </div>
+  {% endif %}
+</div>
+
+<div id="toast-container" hx-swap-oob="afterbegin">
+  {% include "partials/_messages.html" %}
+</div>

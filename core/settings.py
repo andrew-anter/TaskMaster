@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "tasks",
     "accounts",
     "labels",
+    "common",
 ]
 
 
@@ -69,6 +70,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
+    "common.middleware.HtmxVaryMiddleware",
 ]
 
 # Security Settings for Production
