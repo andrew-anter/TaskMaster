@@ -2,15 +2,21 @@
 {# Main navigation links - hidden on small screens, visible on larger ones #}
 <nav class="hidden md:flex items-center gap-2 lg:gap-4">
     <button class="btn btn-ghost btn-sm normal-case"
-            hx-get="{% url 'task_list_partial' %}"
-            hx-target="#main-content">My Tasks</button>
+            hx-get="{% url 'home' %}"
+            hx-target="#main-content"
+            hx-push-url="true">My Tasks</button>
     <button class="btn btn-ghost btn-sm normal-case"
-            hx-get="{% url 'task_list_partial' %}"
-            hx-target="#main-content">All Tasks</button>
-    <a class="btn btn-ghost btn-sm normal-case" href="#">Labels</a> {# TODO: Update URL #}
+            hx-get="{% url 'all_tasks' %}"
+            hx-target="#main-content"
+            hx-push-url="true">All Tasks</button>
+    <button class="btn btn-ghost btn-sm normal-case"
+            hx-get="{% url 'label_list' %}"
+            hx-target="#main-content"
+            hx-push-url="true">Labels</button>
 </nav>
 {# Actions - Add Task, Notifications, User Profile #}
 <div class="flex items-center gap-2 lg:gap-3 ml-2 lg:ml-4">
+    {% if request.user.is_authenticated %}
     {# Add Task Button #}
     <button hx-get="{% url 'task_add' %}"
             hx-target="#main-content"
@@ -49,7 +55,11 @@
             </li>
         </ul>
     </div>
-{% endblock user_profile %}
+    {% endblock user_profile %}
+    {% else %}
+    <a href="{% url 'login' %}" class="btn btn-ghost btn-sm normal-case">Log in</a>
+    <a href="{% url 'register' %}" class="btn btn-primary btn-sm rounded-full normal-case">Sign up</a>
+    {% endif %}
 </div>
 {# Mobile Menu - Hamburger for smaller screens (Optional but Recommended) #}
 <div class="navbar-end md:hidden">
@@ -67,23 +77,32 @@
             class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
             <li>
                 <button class="w-full text-left justify-start"
-                        hx-get="{% url 'all_tasks' %}"
-                        hx-target="#main-content">My Tasks</button>
+                        hx-get="{% url 'home' %}"
+                        hx-target="#main-content"
+                        hx-push-url="true">My Tasks</button>
             </li>
             <li>
                 <button class="w-full text-left justify-start"
-                        hx-get="#"
-                        hx-target="#main-content">All Tasks</button>
+                        hx-get="{% url 'all_tasks' %}"
+                        hx-target="#main-content"
+                        hx-push-url="true">All Tasks</button>
             </li>
-            {% comment %}
-      {# TODO: labels feature implementation #}
-      <li><a href="#">Labels</a></li> 
-            {% endcomment %}
+            <li>
+                <button class="w-full text-left justify-start"
+                        hx-get="{% url 'label_list' %}"
+                        hx-target="#main-content"
+                        hx-push-url="true">Labels</button>
+            </li>
             <li>
                 <hr class="my-1">
             </li>
+            {% if request.user.is_authenticated %}
             <li><a hx-post="{% url 'logout' %}"
    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
+            {% else %}
+            <li><a href="{% url 'login' %}">Log in</a></li>
+            <li><a href="{% url 'register' %}">Sign up</a></li>
+            {% endif %}
         </ul>
     </div>
 </div>

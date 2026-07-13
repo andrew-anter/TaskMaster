@@ -3,17 +3,13 @@
     {# Navbar Start - Logo and Brand Name #}
     <div class="navbar-start">
         <a href="{% block brand_link %}{% url 'all_tasks' %}{% endblock brand_link %}"
-           class="flex items-center gap-3">
+           class="flex items-center gap-3 btn btn-ghost normal-case text-xl font-bold tracking-tight px-2">
             <div class="size-6 text-primary">
                 <i class="nf nf-fa-hourglass_o text-primary text-xl"></i>
             </div>
-            <button hx-get="{% url 'all_tasks' %}"
-                    hx-target="#main-content"
-                    class="btn btn-ghost normal-case text-xl font-bold tracking-tight">
-                {% block brand_name %}
-                    TaskMaster
-                {% endblock brand_name %}
-            </button>
+            {% block brand_name %}
+                TaskMaster
+            {% endblock brand_name %}
         </a>
     </div>
     <div class="navbar-end">{% include "navigation-bar.html" %}</div>

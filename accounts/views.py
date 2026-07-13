@@ -13,7 +13,7 @@ from .forms import CustomLoginForm, CustomRegisterForm
 @login_not_required
 def root_redirect_view(request) -> HttpResponse:
     if request.user.is_authenticated:
-        return HttpResponseRedirect(reverse("all_tasks"))
+        return HttpResponseRedirect(reverse("home"))
     return HttpResponseRedirect(reverse("login"))
 
 
@@ -26,9 +26,7 @@ def login_view(request) -> HttpResponse:
             user = form.get_user()
             login(request, user)
 
-            response: HttpResponse = HttpResponse()
-            response["HX-Location"] = reverse(viewname="all_tasks")
-            return response
+            return HttpResponseRedirect(reverse("home"))
     else:
         form = CustomLoginForm()
 
@@ -49,9 +47,7 @@ def register_view(request) -> HttpResponse:
             user = form.save(request)
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
-            response = HttpResponse()
-            response["HX-Location"] = reverse("all_tasks")
-            return response
+            return HttpResponseRedirect(reverse("home"))
     else:
         form = CustomRegisterForm()
 

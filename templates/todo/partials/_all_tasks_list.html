@@ -9,7 +9,7 @@
             , {{ request.user.first_name|default:request.user.username|capfirst }}
         </h1>
     </div>
-    <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">All Tasks</h2>
+    <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">{{ page_title }}</h2>
     <div id="all-tasks-list" class="flex flex-col mb-6">
         {% if all_tasks %}
             {% for task_item in all_tasks %}
@@ -44,3 +44,7 @@
             </a>
         </div>
     </div>
+
+<div id="toast-container" hx-swap-oob="afterbegin">
+    {% include "partials/_messages.html" %}
+</div>

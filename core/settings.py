@@ -12,7 +12,7 @@ env = environ.Env(
     CORS_ALLOWED_ORIGINS=(list, []),
     CSRF_TRUSTED_ORIGINS=(list, []),
 )
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+environ.Env.read_env(os.path.join(BASE_DIR, "core", ".env"))
 
 
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-build-time-key")
@@ -162,7 +162,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "all_tasks"
+LOGIN_REDIRECT_URL = "home"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
