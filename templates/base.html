@@ -16,10 +16,10 @@
               href="{% static 'images/favicon.ico' %}">
         <link rel="stylesheet" href="{% static 'css/output.css' %}">
         <link rel="stylesheet"
-              href="https://www.nerdfonts.com/assets/css/webfont.css">
+              href="{% static 'css/nerdfonts.css' %}">
         {# Alpine.js Script - Defer makes it run after the page is parsed #}
         <script defer
-                src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+                src="{% static 'js/alpine.min.js' %}"></script>
         {% block head_extra %}
         {% endblock head_extra %}
         {% htmx_script %}
@@ -28,48 +28,11 @@
           hx-boost="true"
           class="bg-base-200">
         {# The DaisyUI toast container. It sits in a corner of the screen. #}
-        {# You can change toast-end to toast-start, toast-top, toast-bottom etc. #}
-        <div class="toast toast-top toast-end z-50">
-            {% if messages %}
-                {% for message in messages %}
-                    {# Each message becomes an Alpine.js component #}
-                    <div x-data="{ show: true }"
-                        x-init="setTimeout(() => show = false, 4000)" {# Hide after 4 seconds #}
-                        x-show="show"
-                        x-transition:leave="transition ease-in duration-300"
-                        x-transition:leave-start="opacity-100"
-                        x-transition:leave-end="opacity-0 translate-x-8"
-                        class="alert
-                        {% if message.tags == 'success' %}
-                            alert-success
-                        {% elif message.tags == 'error' %}
-                            alert-error
-                        {% elif message.tags == 'warning' %}
-                            alert-warning
-                        {% else %}
-                            alert-info
-                        {% endif %}
-                        shadow-md text-sm">
-                        <div>
-                            {% if message.tags == 'success' %}
-                                <i class="nf nf-md-check_circle text-lg text-success"></i>
-                            {% elif message.tags == 'error' %}
-                                <i class="nf nf-md-alpha_x_circle  text-lg text-error"></i>
-                            {% elif message.tags == 'warning' %}
-                                <i class="nf nf-md-alert text-lg text-warning"></i>
-                            {% else %}
-                                {# Info or default #}
-                                <i class="nf nf-md-alert_circle text-lg text-info"></i>
-                            {% endif %}
-                        </svg>
-                        <span>{{ message }}</span>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-    </div>
+        <div id="toast-container" class="toast toast-top toast-end z-50">
+            {% include "partials/_messages.html" %}
+        </div>
     <div class="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
-        <div class="layout-container flex h-full grow flex-col">
+        <div id="layout" class="layout-container flex h-full grow flex-col">
             {% block site_header %}
                 {% include "header.html" %}
             {% endblock site_header %}

@@ -3,19 +3,6 @@
 {% load static %}
 {% block title %}Register - TaskMaster{% endblock title %}
 
-{% block site_header %}
-<header class="navbar bg-base-100 border-b border-base-300 px-4 md:px-10"> 
-  <div class="navbar-start">
-    <a href="{% url 'task_list' %}" class="flex items-center gap-3 normal-case text-xl font-bold">
-      <div class="size-5 text-primary"> 
-        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
-      </div>
-      TaskMaster
-    </a>
-  </div>
-</header>
-{% endblock site_header %}
-
 {% block content %}
 <div class="flex flex-col w-full items-center justify-center py-8 md:py-12">
   <div class="card w-full md:w-[450px] max-w-md bg-base-100 shadow-xl p-6 md:p-8"> 

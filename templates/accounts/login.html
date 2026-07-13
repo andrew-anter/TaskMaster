@@ -3,24 +3,6 @@
 
 {% block title %}Log In - TaskMaster{% endblock title %}
 
-{# This login page uses its own simpler header, overriding the default from base.html #}
-{% block site_header %}
-<header class="navbar bg-base-100 border-b border-base-300 px-4 md:px-10"> {# DaisyUI navbar with theme background and border #}
-  <div class="navbar-start">
-    <a href="{% url 'all_tasks' %}" class="flex items-center gap-3 normal-case text-xl font-bold"> {# Link on brand #}
-      <div class="size-5 text-primary"> {# Logo with primary theme color #}
-        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path></svg>
-      </div>
-      TaskMaster
-    </a>
-  </div>
-  <div class="navbar-end">
-    {# TODO: signup page URL #}
-    <a href="{% url 'register' %}" class="btn btn-ghost btn-sm normal-case ml-2">Sign up</a> 
-  </div>
-</header>
-{% endblock site_header %}
-
 {% block content %}
 <div class="flex flex-col w-full items-center justify-center py-8 md:py-12">
   <div class="card w-full md:w-[450px] max-w-md bg-base-100 shadow-xl p-6 md:p-8"> {# DaisyUI card for the form container #}
