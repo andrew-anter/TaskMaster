@@ -22,3 +22,4 @@ daisyui-theme.js
 /typings/
 .uv/
 .python-version
+.agents/

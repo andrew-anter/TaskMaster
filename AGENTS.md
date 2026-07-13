@@ -1,0 +1,101 @@
+# AGENTS.md
+
+## Commands
+
+```bash
+# Development server
+uv run python manage.py runserver
+
+# Tests
+uv run pytest
+uv run pytest tasks/tests/services_tests.py::TestAddTaskService::test_create_task_with_valid_data
+
+# Linting & formatting
+uv run ruff check . --fix
+uv run ruff format .
+
+# Type checking
+uv run basedpyright .
+
+# Security checks
+uv run bandit -r . -x ./.venv
+
+# Dependency vulnerability checks
+osv-scanner scan -r .
+
+# Build Tailwind CSS (required after template changes)
+tailwindcss -i src/input.css -o static/css/output.css --minify
+```
+
+## Architecture
+
+**Service/Selector pattern**: Business logic lives in `services.py` (write operations with `@transaction.atomic`), queries in `selectors.py` (read operations). Views orchestrate but don't contain logic.
+
+**HTMX partials**: Views check `request.htmx` to return partial templates for dynamic updates vs full pages. Partials live in `templates/*/partials/`.
+
+**Environment**: `.env` file goes in `core/` (not root). Settings loaded via `django-environ`.
+
+**Custom user model**: `accounts.User` (extends `AbstractUser`). Reference via `settings.AUTH_USER_MODEL`.
+
+**Apps**:
+- `tasks`: Core task management (models, services, selectors, API)
+- `labels`: Task labeling system
+- `accounts`: Authentication (login/register/logout)
+- `common`: Shared middleware (`HtmxVaryMiddleware`), template tags
+
+## Key Patterns
+
+**Service functions** use keyword-only arguments and raise domain exceptions (`DueDateInPastError`, `ScheduledDateInPastError`):
+```python
+@transaction.atomic
+def task_add_service(*, title: str, owner: User, ...) -> Task:
+    if due_datetime and due_datetime.date() < today:
+        raise DueDateInPastError(...)
+```
+
+**Selectors** are permission-checked query functions:
+```python
+def get_task_for_user(*, user: User, task_id: int) -> Task:
+    return Task.objects.get(pk=task_id, owner=user)
+```
+
+**Views** handle HTMX vs standard requests:
+```python
+if request.htmx and not request.htmx.boosted:
+    return render(request, "todo/partials/_task_list.html", context)
+return render(request, "todo/task_list.html", context)
+```
+
+## Testing
+
+- Fixtures in `conftest.py` files per app
+- Use `@pytest.mark.django_db` for database tests
+- Test services directly, not views
+- Fixtures chain: `valid_task_data` → `task_for_testing`
+
+## Frontend
+
+- **Tailwind CSS v4** with daisyUI plugin
+- Input: `src/input.css` → Output: `static/css/output.css`
+- Sources scanned: `templates/**`, `**/forms.py`
+- Custom theme: `customBumblebee` (defined in `src/input.css`)
+- Alpine.js for client-side interactivity
+
+## Type Checking
+
+- `basedpyright` in standard mode
+- Excludes: `migrations/*.py`, `.venv/`, `__pycache__/`
+- Stubs in `./typings/` (gitignored)
+- Use `django_stubs_ext.monkeypatch()` (auto-enabled in DEBUG mode)
+
+## Migrations
+
+After model changes:
+```bash
+uv run python manage.py makemigrations
+uv run python manage.py migrate
+```
+
+## API
+
+REST API at `/tasks/api/v1/` using DRF. Endpoints in `tasks/api.py`. Authentication: Session + Basic.
