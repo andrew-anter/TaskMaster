@@ -19,10 +19,12 @@ class TaskForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        if user:
-            self.fields["labels"].queryset = Label.objects.filter(owner=user)
-        else:
-            self.fields["labels"].queryset = Label.objects.none()
+        labels_field = self.fields["labels"]
+        if isinstance(labels_field, forms.ModelMultipleChoiceField):
+            if user:
+                labels_field.queryset = Label.objects.filter(owner=user)
+            else:
+                labels_field.queryset = Label.objects.none()
 
     class Meta:
         model = Task

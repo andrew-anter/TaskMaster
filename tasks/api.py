@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from rest_framework import serializers, status
@@ -67,7 +69,17 @@ class ListCreateApiView(BaseAPIView):
         user = request.user
         serializer = self.TaskSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        task_add_service(**serializer.validated_data, owner=user)
+        data = cast(dict[str, Any], serializer.validated_data)
+        task_add_service(
+            title=data["title"],
+            description=data.get("description"),
+            status=data.get("status", Task.Status.IN_PROGRESS),
+            priority=data.get("priority", Task.Priority.MEDIUM),
+            due_datetime=data.get("due_datetime"),
+            scheduled_date=data.get("scheduled_date"),
+            owner=user,
+            labels=data.get("labels"),
+        )
         return Response(status=status.HTTP_201_CREATED)
 
 
@@ -105,8 +117,17 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
         if not serializer.is_valid():
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         try:
+            data = cast(dict[str, Any], serializer.validated_data)
             task, updated = task_update_service(
-                task_id=pk, user=request.user, **serializer.validated_data
+                task_id=pk,
+                user=request.user,
+                title=data.get("title"),
+                description=data.get("description"),
+                status=data.get("status"),
+                priority=data.get("priority"),
+                due_datetime=data.get("due_datetime"),
+                scheduled_date=data.get("scheduled_date"),
+                labels=data.get("labels"),
             )
 
         except Task.DoesNotExist:

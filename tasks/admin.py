@@ -46,32 +46,25 @@ class TaskAdmin(ModelAdmin):
     )
 
     # Custom Admin Actions to update status
+    @admin.display(description="Mark selected as To Do")
     def mark_as_todo(self, request, queryset):
-        queryset.update(
-            status=Task.Status.TODO, modified_at=timezone.now()
-        )  # Changed to modified_at
+        queryset.update(status=Task.Status.TODO, modified_at=timezone.now())
 
-    mark_as_todo.short_description = "Mark selected as To Do"
-
+    @admin.display(description="Mark selected as In Progress")
     def mark_as_in_progress(self, request, queryset):
-        queryset.update(
-            status=Task.Status.IN_PROGRESS, modified_at=timezone.now()
-        )  # Changed to modified_at
+        queryset.update(status=Task.Status.IN_PROGRESS, modified_at=timezone.now())
 
-    mark_as_in_progress.short_description = "Mark selected as In Progress"
-
+    @admin.display(description="Mark selected as On Hold")
     def mark_as_on_hold(self, request, queryset):
-        queryset.update(
-            status=Task.Status.ON_HOLD, modified_at=timezone.now()
-        )  # Changed to modified_at
+        queryset.update(status=Task.Status.ON_HOLD, modified_at=timezone.now())
 
-    mark_as_on_hold.short_description = "Mark selected as On Hold"
-
+    @admin.display(description="Mark selected as Completed")
     def mark_as_completed(self, request, queryset):
-        queryset.update(
-            status=Task.Status.COMPLETED, modified_at=timezone.now()
-        )  # Changed to modified_at
+        queryset.update(status=Task.Status.COMPLETED, modified_at=timezone.now())
 
-    mark_as_completed.short_description = "Mark selected as Completed"
-
-    actions = [mark_as_todo, mark_as_in_progress, mark_as_on_hold, mark_as_completed]
+    actions = [
+        "mark_as_todo",
+        "mark_as_in_progress",
+        "mark_as_on_hold",
+        "mark_as_completed",
+    ]

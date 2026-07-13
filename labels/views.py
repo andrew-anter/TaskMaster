@@ -35,7 +35,11 @@ def label_create_view(request):
             messages.success(request, "Label created successfully")
             if request.htmx:
                 response = HttpResponse()
-                response["HX-Location"] = '{"path": "' + reverse("label_list") + '", "target": "#main-content"}'
+                response["HX-Location"] = (
+                    '{"path": "'
+                    + reverse("label_list")
+                    + '", "target": "#main-content"}'
+                )
                 return response
             return HttpResponseRedirect(reverse("label_list"))
     else:
@@ -68,7 +72,11 @@ def label_update_view(request, pk):
             messages.success(request, "Label updated successfully")
             if request.htmx:
                 response = HttpResponse()
-                response["HX-Location"] = '{"path": "' + reverse("label_list") + '", "target": "#main-content"}'
+                response["HX-Location"] = (
+                    '{"path": "'
+                    + reverse("label_list")
+                    + '", "target": "#main-content"}'
+                )
                 return response
             return HttpResponseRedirect(reverse("label_list"))
     else:
@@ -92,6 +100,8 @@ def label_delete_view(request, pk):
     messages.success(request, "Label deleted successfully")
     if request.htmx:
         response = HttpResponse()
-        response["HX-Location"] = '{"path": "' + reverse("label_list") + '", "target": "#main-content"}'
+        response["HX-Location"] = (
+            '{"path": "' + reverse("label_list") + '", "target": "#main-content"}'
+        )
         return response
     return HttpResponseRedirect(reverse("label_list"))

@@ -15,8 +15,8 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR, "core", ".env"))
 
 
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-build-time-key")
-DEBUG = env.bool("DEBUG", default=True)
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-build-time-key")  # type: ignore[reportArgumentType]
+DEBUG = env.bool("DEBUG", default=True)  # type: ignore[reportArgumentType]
 
 if DEBUG:
     import django_stubs_ext
@@ -75,16 +75,17 @@ MIDDLEWARE = [
 
 # Security Settings for Production
 if not DEBUG:
-    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
-    SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
-    CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)  # type: ignore[reportArgumentType]
+    SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)  # type: ignore[reportArgumentType]
+    CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)  # type: ignore[reportArgumentType]
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)  # type: ignore[reportArgumentType]
     SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
-        "SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS",
+        default=True,  # type: ignore[reportArgumentType]
     )
-    SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=True)
+    SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=True)  # type: ignore[reportArgumentType]
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 ROOT_URLCONF = "core.urls"
@@ -126,7 +127,7 @@ SOCIALACCOUNT_PROVIDERS = {
 WSGI_APPLICATION = "core.wsgi.application"
 
 DATABASES = {
-    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")  # type: ignore[reportArgumentType]
 }
 
 
@@ -173,7 +174,7 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 STATIC_URL = "static/"
-STATIC_ROOT = env("STATIC_ROOT", default=str(BASE_DIR / "staticfiles"))
+STATIC_ROOT = env("STATIC_ROOT", default=str(BASE_DIR / "staticfiles"))  # type: ignore[reportArgumentType]
 
 if not DEBUG:
     STORAGES = {
@@ -185,10 +186,10 @@ if not DEBUG:
         },
     }
 
-MEDIA_URL = env("MEDIA_URL", default="/media/")
-MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
+MEDIA_URL = env("MEDIA_URL", default="/media/")  # type: ignore[reportArgumentType]
+MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))  # type: ignore[reportArgumentType]
 
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost")  # type: ignore[reportArgumentType]
 
 # Logging Configuration
 LOGGING = {
@@ -213,7 +214,7 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": env("DJANGO_LOG_LEVEL", default="INFO"),
+            "level": env("DJANGO_LOG_LEVEL", default="INFO"),  # type: ignore[reportArgumentType]
             "propagate": False,
         },
     },

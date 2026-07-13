@@ -5,15 +5,16 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('labels', '0003_alter_label_owner'),
+        ("labels", "0003_alter_label_owner"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='label',
-            name='color',
-            field=colorfield.fields.ColorField(default='#FFFFFF', image_field=None, max_length=25, samples=None),
+            model_name="label",
+            name="color",
+            field=colorfield.fields.ColorField(
+                default="#FFFFFF", image_field=None, max_length=25, samples=None
+            ),
         ),
     ]

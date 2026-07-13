@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,23 +14,60 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Task',
+            name="Task",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True)),
-                ('status', models.CharField(choices=[('TODO', 'To Do'), ('IN_PROGRESS', 'In Progress'), ('ON_HOLD', 'On Hold'), ('COMPLETED', 'Completed')], default='TODO', max_length=20)),
-                ('priority', models.IntegerField(choices=[(3, 'Low'), (2, 'Medium'), (1, 'High'), (0, 'None')], default=2)),
-                ('due_datetime', models.DateTimeField(blank=True, null=True, verbose_name='Due date & time')),
-                ('scheduled_date', models.DateField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('modified_at', models.DateTimeField(auto_now=True)),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("TODO", "To Do"),
+                            ("IN_PROGRESS", "In Progress"),
+                            ("ON_HOLD", "On Hold"),
+                            ("COMPLETED", "Completed"),
+                        ],
+                        default="TODO",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "priority",
+                    models.IntegerField(
+                        choices=[(3, "Low"), (2, "Medium"), (1, "High"), (0, "None")],
+                        default=2,
+                    ),
+                ),
+                (
+                    "due_datetime",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Due date & time"
+                    ),
+                ),
+                ("scheduled_date", models.DateField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("modified_at", models.DateTimeField(auto_now=True)),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'To-Do Item',
-                'verbose_name_plural': 'To-Do Items',
-                'ordering': ['status', 'priority', 'due_datetime'],
+                "verbose_name": "To-Do Item",
+                "verbose_name_plural": "To-Do Items",
+                "ordering": ["status", "priority", "due_datetime"],
             },
         ),
     ]

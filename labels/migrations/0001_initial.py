@@ -5,21 +5,41 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('tasks', '__first__'),
+        ("tasks", "__first__"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Label',
+            name="Label",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=50)),
-                ('color', colorfield.fields.ColorField(default='#FFFFFFF', image_field=None, max_length=25, samples=None)),
-                ('tasks', models.ManyToManyField(blank=True, related_name='labels', to='tasks.task')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=50)),
+                (
+                    "color",
+                    colorfield.fields.ColorField(
+                        default="#FFFFFFF",
+                        image_field=None,
+                        max_length=25,
+                        samples=None,
+                    ),
+                ),
+                (
+                    "tasks",
+                    models.ManyToManyField(
+                        blank=True, related_name="labels", to="tasks.task"
+                    ),
+                ),
             ],
         ),
     ]
