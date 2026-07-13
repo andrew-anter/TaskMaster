@@ -14,6 +14,7 @@ from .models import Task
 from .selectors import (
     get_all_tasks_for_user,
     get_task_for_user,
+    get_tasks_by_label,
     get_today_tasks_for_user,
     get_upcoming_tasks_for_user,
 )
@@ -41,29 +42,21 @@ def task_list_view(request):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
+    if request.htmx and not request.htmx.boosted:
+        return render(request, "todo/partials/_task_list.html", context)
     return render(request, "todo/task_list.html", context)
 
 
 @require_http_methods(["GET"])
 def task_list_partial_view(request):
-    today_tasks = get_today_tasks_for_user(user=request.user)
-    upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
-
-    context = {
-        "today_tasks": today_tasks,
-        "upcoming_tasks": upcoming_tasks,
-        "page_title": "My Tasks",
-        "Status": Task.Status,
-        "Priority": Task.Priority,
-    }
-    return render(request, "todo/partials/_task_list.html", context)
+    return task_list_view(request)
 
 
 @require_http_methods(request_method_list=["GET", "POST"])
 def task_add_partial_view(request):
     template_name = ADD_TASK_TEMPLATE_NAME
     if request.method == "POST":
-        form = TaskForm(request.POST)
+        form = TaskForm(request.POST, user=request.user)
         if form.is_valid():
             try:
                 task_add_service(
@@ -74,6 +67,7 @@ def task_add_partial_view(request):
                     due_datetime=form.cleaned_data.get("due_datetime"),
                     scheduled_date=form.cleaned_data.get("scheduled_date"),
                     owner=request.user,
+                    labels=form.cleaned_data.get("labels"),
                 )
             except DueDateInPastError as e:
                 form.add_error(None, f"{e}")
@@ -82,19 +76,19 @@ def task_add_partial_view(request):
 
             if request.htmx:
                 response = HttpResponse()  # Empty response is fine
-                response["HX-Location"] = reverse("all_tasks")
+                response["HX-Location"] = '{"path": "' + reverse("home") + '", "target": "#main-content"}'
                 messages.success(request, "Task added successfully")
                 return response
             else:
                 messages.success(request, "Task added successfully!")
-                return HttpResponseRedirect(reverse("all_tasks"))
+                return HttpResponseRedirect(reverse("home"))
         else:
             if request.htmx:
                 context = {"form": form, "page_title": "Add New Task (Errors)"}
                 return render(request, template_name, context)
 
     else:
-        form = TaskForm()
+        form = TaskForm(user=request.user)
 
     context = {"form": form, "page_title": "Add New Task"}
     return render(request, template_name, context)
@@ -130,6 +124,7 @@ def handle_valid_update_form(request, task_id, form):
             priority=form.cleaned_data["priority"],
             due_datetime=form.cleaned_data.get("due_datetime"),
             scheduled_date=form.cleaned_data.get("scheduled_date"),
+            labels=form.cleaned_data.get("labels"),
         )
         if success:
             messages.success(request, "Task have been updated successfully.")
@@ -140,12 +135,12 @@ def handle_valid_update_form(request, task_id, form):
                 "Task update failed. Maybe all the task attributes are still the same",
             )
         response = HttpResponse()
-        response["HX-Location"] = reverse("all_tasks")
+        response["HX-Location"] = '{"path": "' + reverse("home") + '", "target": "#main-content"}'
         return response
 
     except Task.DoesNotExist:
         response = HttpResponse()
-        response["HX-Location"] = reverse("all_tasks")
+        response["HX-Location"] = '{"path": "' + reverse("home") + '", "target": "#main-content"}'
         messages.error(request, "No task assiociated with this id.")
         return response
 
@@ -174,16 +169,16 @@ def task_update_view(request, task_id):
 
     if not task:
         response = HttpResponse()
-        response["HX-Location"] = reverse("all_tasks")
+        response["HX-Location"] = '{"path": "' + reverse("home") + '", "target": "#main-content"}'
         messages.error(request, "No task assiociated with this id.")
         return response
 
     if request.method == "POST":
-        form = TaskForm(request.POST, instance=task)
+        form = TaskForm(request.POST, instance=task, user=request.user)
         if form.is_valid():
             return handle_valid_update_form(request, task_id, form)
 
-    form = TaskForm(instance=task)
+    form = TaskForm(instance=task, user=request.user)
     page_title = "Update Task"
     context = {
         "form": form,
@@ -204,7 +199,7 @@ def task_delete_view(request, task_id):
         )
 
     response = HttpResponse()
-    response["HX-Location"] = reverse("all_tasks")
+    response["HX-Location"] = '{"path": "' + reverse("home") + '", "target": "#main-content"}'
     return response
 
 
@@ -218,8 +213,38 @@ def all_tasks_view(request):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
+    if request.htmx and not request.htmx.boosted:
+        return render(
+            request=request,
+            template_name="todo/partials/_all_tasks_list.html",
+            context=context,
+        )
     return render(
         request=request,
-        template_name="todo/partials/_all_tasks_list.html",
+        template_name="todo/all_tasks.html",
+        context=context,
+    )
+
+
+@require_http_methods(["GET"])
+def task_list_by_label_view(request, label_id):
+    tasks = get_tasks_by_label(user=request.user, label_id=label_id)
+    label = get_object_or_404(request.user.labels, id=label_id)
+
+    context = {
+        "all_tasks": tasks,
+        "page_title": f"Tasks labeled '{label.name}'",
+        "Status": Task.Status,
+        "Priority": Task.Priority,
+    }
+    if request.htmx and not request.htmx.boosted:
+        return render(
+            request=request,
+            template_name="todo/partials/_all_tasks_list.html",
+            context=context,
+        )
+    return render(
+        request=request,
+        template_name="todo/all_tasks.html",
         context=context,
     )

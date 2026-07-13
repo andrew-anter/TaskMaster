@@ -85,10 +85,27 @@
                     <legend class="fieldset-legend">{{ form.priority.label|default:"Priority" }}</legend>
                     {{ form.priority }}
                 </fieldset>
-                {# Note: "Project" and "Labels" fields from your design are not yet in the Django model/form. #}
+                {# Labels #}
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ form.labels.label|default:"Labels" }}</legend>
+                    <div class="flex flex-wrap gap-4">
+                        {% for choice in form.labels %}
+                            <label class="label cursor-pointer flex items-center gap-2">
+                                {{ choice.tag }}
+                                <span class="label-text">{{ choice.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.labels.errors %}
+                        <label class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </label>
+                    {% endfor %}
+                </fieldset>
                 <div class="flex justify-end gap-3 pt-4">
-                    <a hx-get="{% url 'task_list_partial' %}" {# Assuming task_list renders the main content #}
+                    <a hx-get="{% url 'home' %}" {# Assuming task_list renders the main content #}
                         hx-target="#main-content" {# Target the main content area defined in base.html or a parent #}
+                        hx-push-url="true"
                         class="btn btn-ghost rounded-full normal-case"> {# DaisyUI ghost button for cancel #}
                         Cancel
                     </a>
@@ -105,4 +122,8 @@
             </div>
         </form>
     </div>
+</div>
+
+<div id="toast-container" hx-swap-oob="afterbegin">
+    {% include "partials/_messages.html" %}
 </div>

@@ -90,3 +90,10 @@ def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
         | Q(scheduled_date=today)
         | Q(created_at__date=today)
     )
+
+
+def get_tasks_by_label(*, user: User, label_id: int) -> QuerySet[Task]:
+    """
+    Retrieves all tasks for a user that have a specific label.
+    """
+    return get_all_tasks_for_user(user=user).filter(labels__id=label_id)

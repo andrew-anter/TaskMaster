@@ -58,6 +58,7 @@ def task_add_service(
     due_datetime: datetime | None = None,
     scheduled_date: date | None = None,
     owner: User,
+    labels: list[int] | None = None,
 ) -> Task:
     """
     Creates a new task with the provided details.
@@ -73,6 +74,7 @@ def task_add_service(
         due_datetime: An optional datetime for when the task is due.
         scheduled_date: An optional date for when to work on the task.
         owner: The user who owns this task.
+        labels: An optional list of label IDs to associate with the task.
 
     Returns:
         The newly created Task instance.
@@ -94,6 +96,8 @@ def task_add_service(
         scheduled_date=scheduled_date,
         owner=owner,
     )
+    if labels:
+        todo_item.labels.set(labels)
     return todo_item
 
 
@@ -127,6 +131,7 @@ def task_update_service(
     priority: int | None = None,
     due_datetime: datetime | None = None,
     scheduled_date: date | None = None,
+    labels: list[int] | None = None,
 ) -> tuple[Task, bool]:
     """
     Updates a task with the provided values, performing a partial update.
@@ -144,6 +149,7 @@ def task_update_service(
         priority: The new priority, if provided.
         due_datetime: The new due datetime, if provided.
         scheduled_date: The new scheduled date, if provided.
+        labels: The new list of label IDs, if provided.
 
     Returns:
         A tuple containing:
@@ -160,6 +166,7 @@ def task_update_service(
     task = get_task_for_user(user=user, task_id=task_id)
 
     fields_to_update = []
+    updated = False
     if title and task.title != title:
         task.title = title
         fields_to_update.append("title")
@@ -188,9 +195,13 @@ def task_update_service(
 
     if fields_to_update:
         task.save(update_fields=fields_to_update)
-        return task, True
+        updated = True
 
-    return task, False
+    if labels is not None:
+        task.labels.set(labels)
+        updated = True
+
+    return task, updated
 
 
 @transaction.atomic

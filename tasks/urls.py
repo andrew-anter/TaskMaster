@@ -4,8 +4,8 @@ from . import views
 from .api import DetailUpdateDeleteTaskApiView, ListCreateApiView, ToggleStatusAPI
 
 main_patterns = [
-    path("tasks/", views.task_list_partial_view, name="task_list_partial"),
-    path("all-tasks/", views.task_list_view, name="all_tasks"),
+    path("home/", views.task_list_view, name="home"),
+    path("all-tasks/", views.all_tasks_view, name="all_tasks"),
     path("add/", views.task_add_partial_view, name="task_add"),
     path("update/<int:task_id>/", views.task_update_view, name="task_update"),
     path(
@@ -14,6 +14,7 @@ main_patterns = [
         name="update_task_status",
     ),
     path("delete/<int:task_id>/", views.task_delete_view, name="task_delete"),
+    path("label/<int:label_id>/", views.task_list_by_label_view, name="tasks_by_label"),
 ]
 
 api_version_prefix = "api/v1"

@@ -39,6 +39,7 @@ class ListCreateApiView(BaseAPIView):
                 "scheduled_date",
                 "created_at",
                 "modified_at",
+                "labels",
             ]
 
     def get(self, request: HttpRequest) -> Response:
@@ -59,6 +60,7 @@ class ListCreateApiView(BaseAPIView):
                 "scheduled_date",
                 "created_at",
                 "modified_at",
+                "labels",
             ]
 
     def post(self, request) -> Response:
@@ -82,6 +84,7 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
                 "scheduled_date",
                 "created_at",
                 "modified_at",
+                "labels",
             ]
 
     def get(self, request: HttpRequest, pk: int) -> Response:

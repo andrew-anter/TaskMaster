@@ -31,6 +31,7 @@ class Task(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
+    labels = models.ManyToManyField("labels.Label", related_name="tasks", blank=True)
 
     def __str__(self):
         return str(self.title)

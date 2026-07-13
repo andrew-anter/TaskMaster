@@ -1,6 +1,7 @@
 from django import forms
 
 from .models import Task
+from labels.models import Label
 
 FORM_FIELD_CLASSES = "input w-full"
 SELECT_FIELD_CLASSES = "select w-full"
@@ -15,6 +16,14 @@ class DateTimeInput(forms.DateTimeInput):
 
 
 class TaskForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields["labels"].queryset = Label.objects.filter(owner=user)
+        else:
+            self.fields["labels"].queryset = Label.objects.none()
+
     class Meta:
         model = Task
         fields = [
@@ -24,6 +33,7 @@ class TaskForm(forms.ModelForm):
             "scheduled_date",
             "status",
             "priority",
+            "labels",
         ]
 
         widgets = {
@@ -63,6 +73,11 @@ class TaskForm(forms.ModelForm):
                     "class": SELECT_FIELD_CLASSES,
                 }
             ),
+            "labels": forms.CheckboxSelectMultiple(
+                attrs={
+                    "class": "checkbox checkbox-primary",
+                }
+            ),
         }
         labels = {  # Using more concise labels that Django's form rendering can use by default
             "title": "Task Title",
@@ -71,4 +86,5 @@ class TaskForm(forms.ModelForm):
             "scheduled_date": "Scheduled Date",
             "status": "Status",
             "priority": "Priority",
+            "labels": "Labels",
         }

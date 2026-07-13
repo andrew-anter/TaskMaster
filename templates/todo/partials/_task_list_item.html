@@ -1,3 +1,4 @@
+{% load color_utils %}
 <div id="task-{{ task.id }}-item"
      class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 min-h-[72px] border-b rounded-xl border-base-200">
     {# Status Toggle Button/Form #}
@@ -44,6 +45,19 @@
                 No due date
             {% endif %}
         </p>
+        {% if task.labels.exists %}
+            <div class="flex flex-wrap gap-1 mt-1">
+                {% for label in task.labels.all %}
+                    <button hx-get="{% url 'tasks_by_label' label.id %}"
+                            hx-target="#main-content"
+                            hx-push-url="true"
+                            class="badge badge-sm hover:opacity-80 transition-opacity"
+                            style="background-color: {{ label.color }}; border-color: {{ label.color }}; color: {{ label.color|contrast_color }};">
+                        {{ label.name }}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
     <div class="ml-auto flex items-center gap-1 md:gap-2 pl-2 shrink-0">
         {# Edit Task Button #}
