@@ -17,30 +17,30 @@
 {# Actions - Add Task, Notifications, User Profile #}
 <div class="flex items-center gap-2 lg:gap-3 ml-2 lg:ml-4">
     {% if request.user.is_authenticated %}
-    {# Add Task Button #}
-    <button hx-get="{% url 'task_add' %}"
-            hx-target="#main-content"
-            class="btn btn-primary md:ml-5 btn-sm rounded-full normal-case">
-        <i class="nf nf-fa-plus"></i>
-        Add Task
-    </button>
-    <div class="indicator">
-        <button class="btn btn-ghost btn-circle btn-sm" title="Notifications">
-            <i class="nf nf-cod-bell m-0 p-0 text-large"></i>
+        {# Add Task Button #}
+        <button hx-get="{% url 'task_add' %}"
+                hx-target="#main-content"
+                class="btn btn-primary md:ml-5 btn-sm rounded-full normal-case">
+            <i class="nf nf-fa-plus"></i>
+            Add Task
         </button>
-    </div>
-    {# User Profile Dropdown #}
-    {% block user_profile %}
-        <div class="dropdown dropdown-end">
-            <label tabindex="0" class="btn btn-ghost btn-circle avatar">
-                <div class="w-10 rounded-full">
-                    {# TODO: Dynamic image #}
-                    <img src="{% static 'images/default-avatar.svg' %}" />
-                </div>
-            </label>
-            <ul tabindex="0"
-                class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
-                {% comment %}
+        <div class="indicator">
+            <button class="btn btn-ghost btn-circle btn-sm" title="Notifications">
+                <i class="nf nf-cod-bell m-0 p-0 text-large"></i>
+            </button>
+        </div>
+        {# User Profile Dropdown #}
+        {% block user_profile %}
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+                    <div class="w-10 rounded-full">
+                        {# TODO: Dynamic image #}
+                        <img src="{% static 'images/default-avatar.svg' %}" />
+                    </div>
+                </label>
+                <ul tabindex="0"
+                    class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
+                    {% comment %}
       <li>
         <a href="#"> {# TODO: Link to profile page e.g. {% url 'profile_view' %} #}
           Profile
@@ -49,17 +49,18 @@
       </li>
       <li><a href="#">Settings</a></li> {# TODO: Link to settings page #}
       <li>
-                {% endcomment %}
-                <li><a hx-post="{% url 'logout' %}"
+                    {% endcomment %}
+                    <li><a hx-post="{% url 'logout' %}"
    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
-            </li>
-        </ul>
-    </div>
+                </li>
+            </ul>
+        </div>
     {% endblock user_profile %}
-    {% else %}
+{% else %}
     <a href="{% url 'login' %}" class="btn btn-ghost btn-sm normal-case">Log in</a>
-    <a href="{% url 'register' %}" class="btn btn-primary btn-sm rounded-full normal-case">Sign up</a>
-    {% endif %}
+    <a href="{% url 'register' %}"
+       class="btn btn-primary btn-sm rounded-full normal-case">Sign up</a>
+{% endif %}
 </div>
 {# Mobile Menu - Hamburger for smaller screens (Optional but Recommended) #}
 <div class="navbar-end md:hidden">
@@ -97,11 +98,11 @@
                 <hr class="my-1">
             </li>
             {% if request.user.is_authenticated %}
-            <li><a hx-post="{% url 'logout' %}"
+                <li><a hx-post="{% url 'logout' %}"
    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
             {% else %}
-            <li><a href="{% url 'login' %}">Log in</a></li>
-            <li><a href="{% url 'register' %}">Sign up</a></li>
+                <li><a href="{% url 'login' %}">Log in</a></li>
+                <li><a href="{% url 'register' %}">Sign up</a></li>
             {% endif %}
         </ul>
     </div>
