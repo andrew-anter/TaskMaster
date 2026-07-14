@@ -75,11 +75,7 @@ class TaskForm(forms.ModelForm):
                     "class": SELECT_FIELD_CLASSES,
                 }
             ),
-            "labels": forms.CheckboxSelectMultiple(
-                attrs={
-                    "class": "checkbox checkbox-primary",
-                }
-            ),
+            "labels": forms.CheckboxSelectMultiple(),
         }
         labels = {  # Using more concise labels that Django's form rendering can use by default
             "title": "Task Title",

@@ -15,6 +15,7 @@ main_patterns = [
     ),
     path("delete/<int:task_id>/", views.task_delete_view, name="task_delete"),
     path("label/<int:label_id>/", views.task_list_by_label_view, name="tasks_by_label"),
+    path("labels/refresh/", views.refresh_task_labels_view, name="refresh_task_labels"),
 ]
 
 api_version_prefix = "api/v1"

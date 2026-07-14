@@ -1,0 +1,46 @@
+{% load color_utils %}
+<div class="flex flex-wrap gap-2" id="labels-selector">
+    {% for label in user_labels %}
+        {% with contrast=label.color|contrast_color %}
+            <label class="cursor-pointer" style="margin: 0;">
+                <input type="checkbox"
+                       name="labels"
+                       value="{{ label.pk }}"
+                       class="hidden"
+                       {% if label.pk in selected_ids %}checked{% endif %}
+                       onchange="this.parentElement.classList.toggle('label-selected', this.checked)">
+                <span class="badge badge-lg font-medium px-3 py-3 transition-all duration-150 label-badge"
+                      style="background-color: {{ label.color }}; color: {{ contrast }}; border: 2px solid transparent;">
+                    {{ label.name }}
+                </span>
+            </label>
+        {% endwith %}
+    {% endfor %}
+</div>
+<script>
+(function() {
+    function syncBadgeStyles() {
+        document.querySelectorAll('#labels-selector input[type="checkbox"]').forEach(function(cb) {
+            var badge = cb.nextElementSibling;
+            if (cb.checked) {
+                badge.style.border = '2px solid oklch(85% 0.199 91.936)';
+                badge.style.boxShadow = '0 0 0 1px oklch(85% 0.199 91.936)';
+            } else {
+                badge.style.border = '2px solid transparent';
+                badge.style.boxShadow = 'none';
+            }
+        });
+    }
+    syncBadgeStyles();
+    document.getElementById('labels-selector')?.addEventListener('change', syncBadgeStyles);
+
+    document.body.addEventListener('labelCreated', function() {
+        var container = document.getElementById('labels-selector');
+        if (!container) return;
+        var checked = container.querySelectorAll('input[type="checkbox"]:checked');
+        var ids = Array.from(checked).map(function(cb) { return cb.value; }).join(',');
+        var url = "{% url 'refresh_task_labels' %}?form_labels=" + ids;
+        htmx.ajax('GET', url, {target: '#labels-selector', swap: 'outerHTML'});
+    });
+})();
+</script>

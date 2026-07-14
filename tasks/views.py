@@ -24,6 +24,7 @@ from .services import (
     task_update_service,
     toggle_task_status_service,
 )
+from labels.models import Label
 import logging
 
 logger = logging.getLogger(__name__)
@@ -71,7 +72,14 @@ def task_add_partial_view(request):
                 )
             except DueDateInPastError as e:
                 form.add_error(None, f"{e}")
-                context = {"form": form, "page_title": "Add New Task (Errors)"}
+                context = {
+                    "form": form,
+                    "page_title": "Add New Task (Errors)",
+                    "user_labels": Label.objects.filter(owner=request.user),
+                    "selected_label_ids": [
+                        lbl.pk for lbl in form.cleaned_data.get("labels", [])
+                    ],
+                }
                 return render(request, template_name, context)
 
             if request.htmx:
@@ -86,13 +94,25 @@ def task_add_partial_view(request):
                 return HttpResponseRedirect(reverse("home"))
         else:
             if request.htmx:
-                context = {"form": form, "page_title": "Add New Task (Errors)"}
+                context = {
+                    "form": form,
+                    "page_title": "Add New Task (Errors)",
+                    "user_labels": Label.objects.filter(owner=request.user),
+                    "selected_label_ids": [
+                        lbl.pk for lbl in form.cleaned_data.get("labels", [])
+                    ],
+                }
                 return render(request, template_name, context)
 
     else:
         form = TaskForm(user=request.user)
 
-    context = {"form": form, "page_title": "Add New Task"}
+    context = {
+        "form": form,
+        "page_title": "Add New Task",
+        "user_labels": Label.objects.filter(owner=request.user),
+        "selected_label_ids": [],
+    }
     return render(request, template_name, context)
 
 
@@ -165,6 +185,8 @@ def handle_valid_update_form(request, task_id, form):
         "form": form,
         "task_id": task_id,
         "page_title": page_title,
+        "user_labels": Label.objects.filter(owner=request.user),
+        "selected_label_ids": [lbl.pk for lbl in form.cleaned_data.get("labels", [])],
     }
     return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
 
@@ -192,6 +214,8 @@ def task_update_view(request, task_id):
         "form": form,
         "task_id": task_id,
         "page_title": page_title,
+        "user_labels": Label.objects.filter(owner=request.user),
+        "selected_label_ids": list(task.labels.values_list("pk", flat=True)),
     }
     return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
 
@@ -234,6 +258,15 @@ def all_tasks_view(request):
         template_name="todo/all_tasks.html",
         context=context,
     )
+
+
+@require_http_methods(["GET"])
+def refresh_task_labels_view(request):
+    user_labels = Label.objects.filter(owner=request.user)
+    form_labels = request.GET.get("form_labels", "")
+    selected_ids = [int(x) for x in form_labels.split(",") if x] if form_labels else []
+    context = {"user_labels": user_labels, "selected_ids": selected_ids}
+    return render(request, "todo/partials/_labels_selector.html", context)
 
 
 @require_http_methods(["GET"])
