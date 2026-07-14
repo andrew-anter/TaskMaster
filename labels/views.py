@@ -105,3 +105,23 @@ def label_delete_view(request, pk):
         )
         return response
     return HttpResponseRedirect(reverse("label_list"))
+
+
+@require_http_methods(["GET"])
+def inline_label_form_view(request):
+    context = {"label_colors": LABEL_COLORS}
+    return render(request, "labels/partials/_inline_label_form.html", context)
+
+
+@require_http_methods(["POST"])
+def inline_label_create_view(request):
+    name = request.POST.get("name", "").strip()
+    color = request.POST.get("color", LABEL_COLORS[0])
+
+    if name and color in LABEL_COLORS:
+        service = LabelService(user=request.user)
+        service.create_label(name=name, color=color)
+
+    response = HttpResponse()
+    response["HX-Trigger"] = "labelCreated"
+    return response

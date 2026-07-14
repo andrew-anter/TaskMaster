@@ -1,0 +1,83 @@
+{% load color_utils %}
+<div class="card bg-base-100 rounded-xl border border-base-300 shadow-sm my-8">
+    <div class="card-body p-6">
+        <h3 class="text-base font-semibold text-base-content mb-5">Create New Label</h3>
+        <form hx-post="{% url 'inline_label_create' %}"
+              hx-target="#inline-label-form-area"
+              hx-swap="outerHTML"
+              class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <input type="text"
+                       name="name"
+                       placeholder="Label name"
+                       class="input input-sm w-full"
+                       required
+                       maxlength="50"
+                       autofocus>
+            </div>
+            <div>
+                <div class="flex flex-wrap gap-2 mb-3" id="inline-color-palette">
+                    {% for hex in label_colors %}
+                        {% with contrast=hex|contrast_color %}
+                        <button type="button"
+                                data-color="{{ hex }}"
+                                data-contrast="{{ contrast }}"
+                                class="inline-color-swatch rounded-full cursor-pointer flex-shrink-0 transition-all duration-150 hover:scale-110"
+                                style="width: 32px; height: 32px; background-color: {{ hex }}; border: 2px solid transparent;">
+                        </button>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="color" id="inline-label-color" value="{{ label_colors.0 }}">
+            </div>
+            <div class="flex items-center justify-between pt-3">
+                <span id="inline-label-preview"
+                      class="badge badge-lg font-medium px-4"
+                      style="background-color: {{ label_colors.0 }}; color: {{ label_colors.0|contrast_color }};">
+                    Preview
+                </span>
+                <button type="submit" class="btn btn-primary btn-sm rounded-full normal-case gap-1">
+                    <i class="nf nf-fa-check text-sm"></i>
+                    Create Label
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    var palette = document.getElementById('inline-color-palette');
+    var hiddenInput = document.getElementById('inline-label-color');
+    var preview = document.getElementById('inline-label-preview');
+    var nameInput = document.querySelector('#inline-label-form-area input[name="name"]');
+    var firstSwatch = palette?.querySelector('.inline-color-swatch');
+
+    function selectSwatch(swatch) {
+        if (!swatch) return;
+        palette.querySelectorAll('.inline-color-swatch').forEach(function(s) {
+            s.style.border = '2px solid transparent';
+            s.style.boxShadow = 'none';
+        });
+        swatch.style.border = '2px solid white';
+        swatch.style.boxShadow = '0 0 0 2px oklch(85% 0.199 91.936)';
+        hiddenInput.value = swatch.dataset.color;
+        preview.style.backgroundColor = swatch.dataset.color;
+        preview.style.color = swatch.dataset.contrast;
+    }
+
+    if (firstSwatch) selectSwatch(firstSwatch);
+
+    palette?.addEventListener('click', function(e) {
+        var swatch = e.target.closest('.inline-color-swatch');
+        if (swatch) selectSwatch(swatch);
+    });
+
+    nameInput?.addEventListener('input', function() {
+        preview.textContent = this.value.trim() || 'Preview';
+    });
+
+    nameInput?.focus();
+})();
+</script>
