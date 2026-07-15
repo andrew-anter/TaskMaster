@@ -32,12 +32,11 @@
         {# User Profile Dropdown #}
         {% block user_profile %}
             <div class="dropdown dropdown-end">
-                <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+                <div tabindex="0" class="btn btn-ghost btn-circle avatar">
                     <div class="w-10 rounded-full">
-                        {# TODO: Dynamic image #}
-                        <img src="{% static 'images/default-avatar.svg' %}" />
+                        <img src="{% static 'images/default-avatar.svg' %}" alt="User avatar" />
                     </div>
-                </label>
+                </div>
                 <ul tabindex="0"
                     class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
                     <li><a hx-post="{% url 'logout' %}"
@@ -54,7 +53,7 @@
 {# Mobile Menu - Hamburger for smaller screens (Optional but Recommended) #}
 <div class="navbar-end md:hidden">
     <div class="dropdown dropdown-end">
-        <label tabindex="0" class="btn btn-ghost btn-circle">
+        <div tabindex="0" class="btn btn-ghost btn-circle">
             <svg xmlns="http://www.w3.org/2000/svg"
                  class="h-5 w-5"
                  fill="none"
@@ -62,7 +61,7 @@
                  stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
             </svg>
-        </label>
+        </div>
         <ul tabindex="0"
             class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
             <li>
