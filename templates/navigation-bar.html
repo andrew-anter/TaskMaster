@@ -40,20 +40,9 @@
                 </label>
                 <ul tabindex="0"
                     class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
-                    {% comment %}
-      <li>
-        <a href="#"> {# TODO: Link to profile page e.g. {% url 'profile_view' %} #}
-          Profile
-          <span class="badge badge-ghost">New</span> {# Example badge #}
-        </a>
-      </li>
-      <li><a href="#">Settings</a></li> {# TODO: Link to settings page #}
-      <li>
-                    {% endcomment %}
                     <li><a hx-post="{% url 'logout' %}"
    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
-                </li>
-            </ul>
+                </ul>
         </div>
     {% endblock user_profile %}
 {% else %}

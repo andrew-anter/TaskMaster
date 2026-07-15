@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # 3rd party
     "django_htmx",
-    "django_extensions",
     "rest_framework",
     "drf_spectacular",
     "corsheaders",
@@ -222,4 +221,3 @@ LOGGING = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SOCIALACCOUNT_LOGIN_ON_GET = True
-SIGNUP_FORM_HONEYPOT_FIELD = True

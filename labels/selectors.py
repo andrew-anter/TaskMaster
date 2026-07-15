@@ -30,6 +30,3 @@ class LabelSelector:
 
     def get_labels_for_task(self, task_id: int) -> QuerySet[Label]:
         return Label.objects.filter(tasks__pk=task_id, owner=self.user)
-
-    def get_labels_for_tasks(self, tasks_ids: set[int]) -> QuerySet[Label]:
-        return Label.objects.filter(tasks__pk__in=tasks_ids, owner=self.user).distinct()

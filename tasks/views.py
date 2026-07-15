@@ -48,11 +48,6 @@ def task_list_view(request):
     return render(request, "todo/task_list.html", context)
 
 
-@require_http_methods(["GET"])
-def task_list_partial_view(request):
-    return task_list_view(request)
-
-
 @require_http_methods(request_method_list=["GET", "POST"])
 def task_add_partial_view(request):
     template_name = ADD_TASK_TEMPLATE_NAME

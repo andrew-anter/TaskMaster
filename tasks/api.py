@@ -1,9 +1,7 @@
 from typing import Any, cast
 
-from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from rest_framework import serializers, status
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,56 +16,38 @@ from .services import (
     toggle_task_status_service,
 )
 
-User = get_user_model()
+
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields: list[str] = [
+            "id",
+            "title",
+            "description",
+            "status",
+            "priority",
+            "due_datetime",
+            "scheduled_date",
+            "created_at",
+            "modified_at",
+            "labels",
+        ]
 
 
-# TODO: add support for token authentication
 class BaseAPIView(APIView):
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [IsAuthenticated]
 
 
 class ListCreateApiView(BaseAPIView):
-    class TaskSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Task
-            fields: list[str] = [
-                "id",
-                "title",
-                "description",
-                "status",
-                "priority",
-                "due_datetime",
-                "scheduled_date",
-                "created_at",
-                "modified_at",
-                "labels",
-            ]
-
     def get(self, request: HttpRequest) -> Response:
         user = request.user
         tasks = get_all_tasks_for_user(user=user)
-        data = self.TaskSerializer(instance=tasks, many=True).data
+        data = TaskSerializer(instance=tasks, many=True).data
         return Response(data)
-
-    class TaskUpdateSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Task
-            fields: list[str] = [
-                "title",
-                "description",
-                "status",
-                "priority",
-                "due_datetime",
-                "scheduled_date",
-                "created_at",
-                "modified_at",
-                "labels",
-            ]
 
     def post(self, request) -> Response:
         user = request.user
-        serializer = self.TaskSerializer(data=request.data)
+        serializer = TaskSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = cast(dict[str, Any], serializer.validated_data)
         task_add_service(
@@ -84,36 +64,20 @@ class ListCreateApiView(BaseAPIView):
 
 
 class DetailUpdateDeleteTaskApiView(BaseAPIView):
-    class TaskSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Task
-            fields: list[str] = [
-                "title",
-                "description",
-                "status",
-                "priority",
-                "due_datetime",
-                "scheduled_date",
-                "created_at",
-                "modified_at",
-                "labels",
-            ]
-
     def get(self, request: HttpRequest, pk: int) -> Response:
         """
-        Get Details for a specific task
+        Get details for a specific task
         """
-
         user = request.user
         task: Task = get_task_for_user(user=user, task_id=pk)
-        data = self.TaskSerializer(instance=task).data
+        data = TaskSerializer(instance=task).data
         return Response(data)
 
     def patch(self, request, pk: int) -> Response:
         """
         Handles partial updates for a specific task.
         """
-        serializer = self.TaskSerializer(data=request.data, partial=True)
+        serializer = TaskSerializer(data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -145,10 +109,10 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
             )
 
         if updated:
-            response_serializer = self.TaskSerializer(instance=task)
+            response_serializer = TaskSerializer(instance=task)
             return Response(data=response_serializer.data, status=status.HTTP_200_OK)
         else:
-            response_serializer = self.TaskSerializer(instance=task)
+            response_serializer = TaskSerializer(instance=task)
             return Response(
                 data=response_serializer.data, status=status.HTTP_304_NOT_MODIFIED
             )
