@@ -25,10 +25,17 @@ from .services import (
     toggle_task_status_service,
 )
 from labels.models import Label
+import json
 import logging
 
 logger = logging.getLogger(__name__)
 ADD_TASK_TEMPLATE_NAME = "todo/partials/_add_task.html"
+
+
+def _hx_location_response(path):
+    response = HttpResponse()
+    response["HX-Location"] = json.dumps({"path": path, "target": "#main-content"})
+    return response
 
 
 @require_http_methods(["GET"])
@@ -78,10 +85,7 @@ def task_add_partial_view(request):
                 return render(request, template_name, context)
 
             if request.htmx:
-                response = HttpResponse()  # Empty response is fine
-                response["HX-Location"] = (
-                    '{"path": "' + reverse("home") + '", "target": "#main-content"}'
-                )
+                response = _hx_location_response(reverse("home"))
                 messages.success(request, "Task added successfully")
                 return response
             else:
@@ -151,17 +155,11 @@ def handle_valid_update_form(request, task_id, form):
                 request,
                 "Task update failed. Maybe all the task attributes are still the same",
             )
-        response = HttpResponse()
-        response["HX-Location"] = (
-            '{"path": "' + reverse("home") + '", "target": "#main-content"}'
-        )
+        response = _hx_location_response(reverse("home"))
         return response
 
     except Task.DoesNotExist:
-        response = HttpResponse()
-        response["HX-Location"] = (
-            '{"path": "' + reverse("home") + '", "target": "#main-content"}'
-        )
+        response = _hx_location_response(reverse("home"))
         messages.error(request, "No task assiociated with this id.")
         return response
 
@@ -191,10 +189,7 @@ def task_update_view(request, task_id):
     task = get_task_for_user(user=request.user, task_id=task_id)
 
     if not task:
-        response = HttpResponse()
-        response["HX-Location"] = (
-            '{"path": "' + reverse("home") + '", "target": "#main-content"}'
-        )
+        response = _hx_location_response(reverse("home"))
         messages.error(request, "No task assiociated with this id.")
         return response
 
@@ -225,10 +220,7 @@ def task_delete_view(request, task_id):
             request, message="An error occurred, no changes have been made"
         )
 
-    response = HttpResponse()
-    response["HX-Location"] = (
-        '{"path": "' + reverse("home") + '", "target": "#main-content"}'
-    )
+    response = _hx_location_response(reverse("home"))
     return response
 
 
