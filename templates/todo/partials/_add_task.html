@@ -40,9 +40,9 @@
                     {{ form.title }}
                     <div class="label">Required</div>
                     {% for error in form.title.errors %}
-                        <label class="label pt-0">
+                        <div class="label pt-0">
                             <span class="label-text-alt text-error text-xs">{{ error }}</span>
-                        </label>
+                        </div>
                     {% endfor %}
                 </fieldset>
                 {# Description #}
@@ -50,9 +50,9 @@
                     <legend class="fieldset-legend">{{ form.description.label|default:"Description" }}</legend>
                     {{ form.description }}
                     {% for error in form.description.errors %}
-                        <label class="label pt-0">
+                        <div class="label pt-0">
                             <span class="label-text-alt text-error text-xs">{{ error }}</span>
-                        </label>
+                        </div>
                     {% endfor %}
                 </fieldset>
                 {# Due Date & Time #}
@@ -60,9 +60,9 @@
                     <legend class="fieldset-legend">{{ form.due_datetime.label|default:"Due Date & Time" }}</legend>
                     {{ form.due_datetime }}
                     {% for error in form.due_datetime.errors %}
-                        <label class="label pt-0">
+                        <div class="label pt-0">
                             <span class="label-text-alt text-error text-xs">{{ error }}</span>
-                        </label>
+                        </div>
                     {% endfor %}
                 </fieldset>
                 {# Scheduled Date #}
@@ -70,9 +70,9 @@
                     <legend class="fieldset-legend">{{ form.scheduled_date.label|default:"Scheduled Date" }}</legend>
                     {{ form.scheduled_date }}
                     {% for error in form.scheduled_date.errors %}
-                        <label class="label pt-0">
+                        <div class="label pt-0">
                             <span class="label-text-alt text-error text-xs">{{ error }}</span>
-                        </label>
+                        </div>
                     {% endfor %}
                 </fieldset>
                 {# Status #}
@@ -108,9 +108,9 @@
                         </div>
                     {% endif %}
                     {% for error in form.labels.errors %}
-                        <label class="label pt-0">
+                        <div class="label pt-0">
                             <span class="label-text-alt text-error text-xs">{{ error }}</span>
-                        </label>
+                        </div>
                     {% endfor %}
                 </fieldset>
                 <div class="flex justify-end gap-3 pt-4">
