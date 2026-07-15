@@ -29,9 +29,9 @@
       <legend class="fieldset-legend">Label Name</legend>
       {{ form.name }}
       {% for error in form.name.errors %}
-        <label class="label pt-0">
+        <div class="label pt-0">
           <span class="label-text-alt text-error text-xs">{{ error }}</span>
-        </label>
+        </div>
       {% endfor %}
     </fieldset>
 
@@ -63,9 +63,9 @@
         {% endfor %}
       </div>
       {% for error in form.color.errors %}
-        <label class="label pt-0">
+        <div class="label pt-0">
           <span class="label-text-alt text-error text-xs">{{ error }}</span>
-        </label>
+        </div>
       {% endfor %}
     </fieldset>
 
