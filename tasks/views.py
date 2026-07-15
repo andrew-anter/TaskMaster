@@ -171,8 +171,8 @@ def handle_valid_update_form(request, task_id, form):
         form.add_error("scheduled_date", f"{e}")
         page_title = "Update Task (Errors)"
 
-    except Exception as e:
-        logger.error(f"An excpetion occurred in task_update_view: {e}")
+    except Exception:
+        logger.exception("An exception occurred in task_update_view")
 
     context = {
         "form": form,
