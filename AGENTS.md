@@ -24,7 +24,8 @@ uv run bandit -r . -x ./.venv
 osv-scanner scan -r .
 
 # Build Tailwind CSS (required after template changes)
-tailwindcss -i src/input.css -o static/css/output.css --minify
+./build-css.sh build
+./build-css.sh watch  # for development with auto-rebuild
 ```
 
 ## Architecture

@@ -1,8 +1,8 @@
 @import "tailwindcss" source(none);
 
-@plugin "./daisyui.js";
+@plugin "./daisyui.mjs";
 
-@plugin "./daisyui-theme.js" {
+@plugin "./daisyui-theme.mjs" {
   name: "customBumblebee";
   default: true;
   prefersdark: false;
@@ -38,7 +38,7 @@
 }
 
 
-@source "../../**/forms.py";
+@source "../**/forms.py";
 
-@source "../../templates";
-@source "../../**/templates";
+@source "../templates";
+@source "../**/templates";
