@@ -116,8 +116,7 @@
     function selectSwatch(swatch) {
       if (!swatch) return;
       var swatches = palette.querySelectorAll('.color-swatch');
-      for (var i = 0; i < swatches.length; i++) {
-        var s = swatches[i];
+      for (var s of swatches) {
         s.style.border = '2px solid transparent';
         s.style.boxShadow = 'none';
         s.innerHTML = '';
