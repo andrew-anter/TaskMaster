@@ -38,9 +38,9 @@
           </label>
           {{ field }} 
           {% for error in field.errors %}
-          <label class="label pt-1">
+          <div class="label pt-1">
             <span class="label-text-alt text-error text-xs">{{ error }}</span>
-          </label>
+          </div>
           {% endfor %}
         </div>
         {% endfor %}
