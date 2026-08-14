@@ -49,4 +49,17 @@
         <a href="{% url 'register' %}"
            class="btn btn-primary btn-xs sm:btn-sm rounded-full normal-case">Sign up</a>
     {% endif %}
+    <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle"
+            x-data
+            x-cloak
+            @click="$store.theme.toggle()"
+            title="Toggle theme"
+            aria-label="Toggle theme">
+        <i class="nf nf-fa-sun text-sm sm:text-lg"
+           x-show="$store.theme.current === 'customBumblebee'"
+           aria-hidden="true"></i>
+        <i class="nf nf-fa-moon text-sm sm:text-lg"
+           x-show="$store.theme.current === 'customBumblebeeDark'"
+           aria-hidden="true"></i>
+    </button>
 </div>

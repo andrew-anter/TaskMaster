@@ -5,6 +5,37 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script>
+            (function () {
+                var LIGHT = 'customBumblebee';
+                var DARK = 'customBumblebeeDark';
+                var saved = localStorage.getItem('theme');
+                var theme = (saved === LIGHT || saved === DARK)
+                    ? saved
+                    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? DARK : LIGHT);
+                document.documentElement.setAttribute('data-theme', theme);
+
+                document.addEventListener('alpine:init', function () {
+                    Alpine.store('theme', {
+                        current: document.documentElement.getAttribute('data-theme'),
+                        toggle: function () {
+                            this.current = this.current === LIGHT ? DARK : LIGHT;
+                            localStorage.setItem('theme', this.current);
+                            document.documentElement.setAttribute('data-theme', this.current);
+                        }
+                    });
+
+                    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+                    mq.addEventListener('change', function () {
+                        var t = localStorage.getItem('theme');
+                        if (t === LIGHT || t === DARK) return;
+                        var next = mq.matches ? DARK : LIGHT;
+                        Alpine.store('theme').current = next;
+                        document.documentElement.setAttribute('data-theme', next);
+                    });
+                });
+            })();
+        </script>
         <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
         <title>
             {% block title %}

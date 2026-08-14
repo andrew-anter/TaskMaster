@@ -18,6 +18,9 @@ selftest-cert.*
 # Runtime logs
 /logs/
 
+# Reports (local, not shared)
+/reports/
+
 # Tooling
 tailwindcss
 daisyui.js

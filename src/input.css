@@ -1,5 +1,9 @@
 @import "tailwindcss" source(none);
 
+[x-cloak] {
+    display: none !important;
+}
+
 @plugin "./daisyui.mjs";
 
 @plugin "./daisyui-theme.mjs" {
@@ -27,6 +31,41 @@
   --color-warning-content: oklch(41% 0.112 45.904);
   --color-error: oklch(70% 0.191 22.216);
   --color-error-content: oklch(39% 0.141 25.723);
+  --radius-selector: 1rem;
+  --radius-field: 1rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@plugin "./daisyui-theme.mjs" {
+  name: "customBumblebeeDark";
+  default: false;
+  prefersdark: false;
+  color-scheme: "dark";
+  --color-base-100: oklch(27% 0.012 67.558);
+  --color-base-200: oklch(22% 0.01 67.558);
+  --color-base-300: oklch(17% 0.008 67.558);
+  --color-base-content: oklch(93% 0.003 48.717);
+  --color-primary: oklch(88% 0.17 91.936);
+  --color-primary-content: oklch(28% 0.06 91.936);
+  --color-secondary: oklch(80% 0.16 55.934);
+  --color-secondary-content: oklch(28% 0.06 55.934);
+  --color-accent: oklch(100% 0 0);
+  --color-accent-content: oklch(25% 0 0);
+  --color-neutral: oklch(32% 0.01 67.558);
+  --color-neutral-content: oklch(93% 0.003 48.717);
+  --color-info: oklch(74% 0.16 232.661);
+  --color-info-content: oklch(20% 0.06 240.876);
+  --color-success: oklch(76% 0.177 163.223);
+  --color-success-content: oklch(20% 0.06 168.94);
+  --color-warning: oklch(82% 0.189 84.429);
+  --color-warning-content: oklch(20% 0.06 45.904);
+  --color-error: oklch(70% 0.191 22.216);
+  --color-error-content: oklch(20% 0.06 25.723);
   --radius-selector: 1rem;
   --radius-field: 1rem;
   --radius-box: 1rem;
