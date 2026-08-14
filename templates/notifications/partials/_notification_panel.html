@@ -1,0 +1,32 @@
+{% load notifications_extras %}
+<div id="notification-panel-content" class="w-80 max-w-[90vw]">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+        <h3 class="font-semibold text-sm">Notifications</h3>
+        {% if notifications %}
+            <button class="btn btn-ghost btn-xs normal-case"
+                    hx-post="{% url 'notifications_mark_all_read' %}"
+                    hx-vals='{"source": "panel"}'
+                    hx-target="#notification-panel-content"
+                    hx-swap="outerHTML">Mark all read</button>
+        {% endif %}
+    </div>
+    {% if notifications %}
+        <div class="max-h-80 overflow-y-auto divide-y divide-base-300">
+            {% for notification in notifications %}
+                {% include "notifications/partials/_notification_item.html" with notification=notification %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="px-4 py-8 text-center">
+            <i class="nf nf-cod-bell text-2xl opacity-40" aria-hidden="true"></i>
+            <p class="text-sm opacity-60 mt-2">No notifications yet</p>
+        </div>
+    {% endif %}
+    <a href="{% url 'notification_list' %}"
+       hx-get="{% url 'notification_list' %}"
+       hx-target="#main-content"
+       hx-push-url="true"
+       class="block text-center text-sm font-medium py-3 border-t border-base-300 hover:bg-base-200">
+        See all notifications
+    </a>
+</div>

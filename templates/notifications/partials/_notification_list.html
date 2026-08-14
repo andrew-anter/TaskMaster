@@ -1,0 +1,25 @@
+{% load notifications_extras %}
+<div>
+    <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+        <h1 class="text-3xl lg:text-4xl font-bold text-base-content">{{ page_title }}</h1>
+        {% if notifications %}
+            <button class="btn btn-outline btn-sm rounded-full normal-case"
+                    hx-post="{% url 'notifications_mark_all_read' %}"
+                    hx-vals='{"source": "page"}'
+                    hx-target="#main-content"
+                    hx-swap="innerHTML">Mark all read</button>
+        {% endif %}
+    </div>
+    {% if notifications %}
+        <div id="notifications-list" class="flex flex-col divide-y divide-base-300">
+            {% for notification in notifications %}
+                {% include "notifications/partials/_notification_item.html" with notification=notification %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div role="alert" class="alert shadow-sm m-4">
+            <i class="nf nf-cod-bell text-lg"></i>
+            <span>You have no notifications.</span>
+        </div>
+    {% endif %}
+</div>

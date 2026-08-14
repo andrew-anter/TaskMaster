@@ -1,0 +1,11 @@
+<div id="notification-badge"
+     class="indicator-item"
+     {% if swap_oob %}hx-swap-oob="true"{% endif %}
+     hx-get="{% url 'notification_badge' %}"
+     hx-trigger="every 60s"
+     hx-target="#notification-badge"
+     hx-swap="outerHTML">
+    {% if unread_count %}
+        <span class="badge badge-primary badge-xs font-bold">{{ unread_count }}</span>
+    {% endif %}
+</div>

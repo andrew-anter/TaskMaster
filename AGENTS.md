@@ -11,6 +11,11 @@ uv run python manage.py seed_data
 uv run python manage.py seed_data --users 50 --labels 20 --tasks 50000 --seed 42
 uv run python manage.py seed_data --flush
 
+# Celery worker / beat (task reminders)
+make worker
+make beat
+make worker-beat   # combined, for local dev
+
 # Tests
 uv run pytest
 uv run pytest tasks/tests/services_tests.py::TestAddTaskService::test_create_task_with_valid_data
@@ -23,7 +28,7 @@ uv run ruff format .
 uv run basedpyright .
 
 # Security checks
-uv run bandit -r . -x ./.venv
+uv run bandit -r . -x ./.venv -c pyproject.toml
 
 # Dependency vulnerability checks
 osv-scanner scan -r .
@@ -47,7 +52,8 @@ osv-scanner scan -r .
 - `tasks`: Core task management (models, services, selectors, API)
 - `labels`: Task labeling system
 - `accounts`: Authentication (login/register/logout)
-- `common`: Shared middleware (`HtmxVaryMiddleware`), template tags
+- `notifications`: **Generic notification subsystem** (model, `notify()`/`notify_bulk()` emitter API, UI). Other apps emit notifications by calling these services and registering type metadata.
+- `common`: Shared middleware (`HtmxVaryMiddleware`), shared HTTP helpers (`hx_location_response`)
 
 ## Key Patterns
 
@@ -71,6 +77,8 @@ if request.htmx and not request.htmx.boosted:
     return render(request, "todo/partials/_task_list.html", context)
 return render(request, "todo/task_list.html", context)
 ```
+
+**Notifications**: Emit via `notifications.services.notify()` / `notify_bulk()`. Register per-type display metadata (`icon`, `label`) in `apps.py ready()` via `notifications.types.register_type`. Pass `dedupe_key` for idempotency. Periodic producers are Celery tasks (e.g. `tasks/tasks.py`); UI lives in `templates/notifications/`.
 
 ## Testing
 

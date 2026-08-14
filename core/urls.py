@@ -10,6 +10,7 @@ optional_apps = {
     "accounts": "accounts/",
     "tasks": "tasks/",
     "labels": "labels/",
+    "notifications": "notifications/",
 }
 
 urlpatterns = [

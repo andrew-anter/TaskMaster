@@ -22,11 +22,28 @@
                 aria-label="Add Task">
             <i class="nf nf-fa-plus text-sm sm:text-lg"></i>
         </button>
-        <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle hidden lg:inline-flex"
-                title="Notifications"
-                aria-label="Notifications">
-            <i class="nf nf-cod-bell text-sm sm:text-lg"></i>
-        </button>
+        <div class="dropdown dropdown-end">
+            <div class="indicator">
+                <div tabindex="0"
+                     role="button"
+                     class="btn btn-ghost btn-xs sm:btn-sm btn-circle"
+                     title="Notifications"
+                     aria-label="Notifications"
+                     hx-get="{% url 'notification_panel' %}"
+                     hx-trigger="mousedown, keydown[key=='Enter'], keydown[key==' ']"
+                     hx-target="#notification-panel"
+                     hx-swap="innerHTML">
+                    <i class="nf nf-cod-bell text-sm sm:text-lg"></i>
+                </div>
+                {% include "notifications/partials/_notification_badge.html" with unread_count=unread_count %}
+            </div>
+            <div tabindex="0"
+                 class="dropdown-content mt-3 z-[50] shadow bg-base-100 rounded-box w-80 max-w-[90vw]">
+                <div id="notification-panel">
+                    <div class="px-4 py-8 text-center text-sm opacity-60">Loading notifications…</div>
+                </div>
+            </div>
+        </div>
         {# User Profile Dropdown #}
         {% block user_profile %}
             <div class="dropdown dropdown-end">

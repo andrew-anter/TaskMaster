@@ -1,0 +1,18 @@
+{% load notifications_extras %}
+<a href="{{ notification.link|default:'#' }}"
+   class="block px-4 py-3 transition-colors hover:bg-base-200 {% if not notification.is_read %}bg-primary/10{% endif %}"
+   hx-post="{% url 'notification_mark_read' notification.pk %}"
+   hx-swap="none">
+    <div class="flex items-start gap-3">
+        <i class="nf {{ notification.type|notification_icon }} text-lg mt-0.5 text-primary"
+           aria-hidden="true"></i>
+        <div class="flex-1 min-w-0">
+            <p class="text-sm text-base-content">{{ notification.message }}</p>
+            <p class="text-xs text-base-content/60">{{ notification.created_at|timesince }} ago</p>
+        </div>
+        {% if not notification.is_read %}
+            <span class="mt-1.5 size-2 rounded-full bg-primary shrink-0"
+                  title="Unread"></span>
+        {% endif %}
+    </div>
+</a>

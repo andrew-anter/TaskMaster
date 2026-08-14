@@ -3,14 +3,38 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
 
 from .exceptions import DueDateInPastError, ScheduledDateInPastError
 from .models import Task
+from .reminder_types import (
+    TYPE_DUE_SOON,
+    TYPE_DUE_TODAY,
+    TYPE_OVERDUE,
+    TYPE_SCHEDULED_TODAY,
+)
 from .selectors import get_task_for_user
+from notifications.models import Notification
 
 User = settings.AUTH_USER_MODEL
+
+REMINDER_NOTIFICATION_TYPES = [
+    TYPE_DUE_TODAY,
+    TYPE_DUE_SOON,
+    TYPE_OVERDUE,
+    TYPE_SCHEDULED_TODAY,
+]
+
+
+def _clear_task_reminder_notifications(task: Task) -> None:
+    """Delete generated reminder notifications for a task (so they regenerate)."""
+    Notification.objects.filter(
+        target_content_type=ContentType.objects.get_for_model(Task),
+        target_object_id=task.pk,
+        type__in=REMINDER_NOTIFICATION_TYPES,
+    ).delete()
 
 
 # -- Helper Functions -- #
@@ -201,6 +225,15 @@ def task_update_service(
         task.labels.set(labels)
         updated = True
 
+    if updated and any(
+        field in fields_to_update
+        for field in ("title", "due_datetime", "scheduled_date")
+    ):
+        # A title or date change invalidates previously generated reminders
+        # (stale message text / stale dates); the next beat run will
+        # regenerate them for the current task state.
+        _clear_task_reminder_notifications(task)
+
     return task, updated
 
 
@@ -226,4 +259,5 @@ def task_delete_service(*, user: User, task_id: int) -> None:
         Task.DoesNotExist: If the task does not exist for the user.
     """
     task = get_task_for_user(user=user, task_id=task_id)
+    _clear_task_reminder_notifications(task)
     _ = task.delete()

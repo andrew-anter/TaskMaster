@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "tasks",
     "accounts",
     "labels",
+    "notifications",
     "common",
 ]
 
@@ -127,6 +128,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "notifications.context_processors.unread_notifications_count",
             ],
         },
     },
@@ -209,6 +211,30 @@ REST_FRAMEWORK = {
 }
 
 
+# Celery / Valkey (Redis-compatible) configuration
+CELERY_BROKER_URL = env(
+    "CELERY_BROKER_URL",
+    default="redis://127.0.0.1:6379/0",  # type: ignore[reportArgumentType]
+)
+CELERY_RESULT_BACKEND = env(
+    "CELERY_RESULT_BACKEND",
+    default="redis://127.0.0.1:6379/0",  # type: ignore[reportArgumentType]
+)
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)  # type: ignore[reportArgumentType]
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_BEAT_SCHEDULE = {
+    "generate-task-reminder-notifications": {
+        "task": "tasks.tasks.generate_reminder_notifications",
+        "schedule": env.int(
+            "CELERY_BEAT_REMINDERS_INTERVAL_SECONDS",
+            default=900,  # type: ignore[reportArgumentType]
+        ),
+    },
+}
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -231,6 +257,8 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
+
+CELERY_TIMEZONE = TIME_ZONE
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",

@@ -1,8 +1,17 @@
 .PHONY: run test lint format typecheck security deps css css-build css-watch \
-        migrations migrate migrate-full shell check help
+        migrations migrate migrate-full shell check worker beat worker-beat
 
 run: ## Run the development server
 	uv run python manage.py runserver
+
+worker: ## Run the Celery worker (requires a broker at CELERY_BROKER_URL)
+	uv run celery -A core worker -l info
+
+beat: ## Run the Celery beat scheduler (periodic tasks)
+	uv run celery -A core beat -l info
+
+worker-beat: ## Run worker + beat together (convenience for local dev)
+	uv run celery -A core worker -B -l info
 
 test: ## Run the test suite
 	uv run pytest
@@ -17,7 +26,7 @@ typecheck: ## Run basedpyright type checking
 	uv run basedpyright .
 
 security: ## Run bandit security checks
-	uv run bandit -r . -x ./.venv
+	uv run bandit -r . -x ./.venv -c pyproject.toml
 
 deps: ## Scan dependencies for vulnerabilities
 	osv-scanner scan -r .
