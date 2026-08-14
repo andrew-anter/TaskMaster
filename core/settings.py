@@ -47,7 +47,6 @@ ADMINS = [("Admin", env("ADMIN_EMAIL", default="admin@example.com"))]  # type: i
 SERVER_EMAIL = env("SERVER_EMAIL", default="root@example.com")  # type: ignore[reportArgumentType]
 
 INSTALLED_APPS = [
-    "unfold",  # for admin site ui
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

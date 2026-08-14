@@ -1,11 +1,10 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
 
 from .models import Notification
 
 
 @admin.register(Notification)
-class NotificationAdmin(ModelAdmin):
+class NotificationAdmin(admin.ModelAdmin):
     list_display = (
         "recipient",
         "type",

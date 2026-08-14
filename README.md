@@ -14,7 +14,7 @@ A production-grade implementation of a decoupled Django web application demonstr
 ## 🛠️ Tech Stack & Tooling
 - **Backend:** Python 3.13+, Django 5.2+, SQLite (Development) / PostgreSQL (Production ready)
 - **Frontend:** HTMX, Tailwind CSS v4, daisyUI, Alpine.js
-- **Admin:** django-unfold for modern admin interface
+- **Admin:** Django's built-in admin interface
 - **Quality Guardrails:** BasedPyright, Ruff, bandit, osv-scanner, pytest
 
 ## Features
