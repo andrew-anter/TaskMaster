@@ -15,6 +15,9 @@ static/css/output.css
 # SSL certificates
 selftest-cert.*
 
+# Runtime logs
+/logs/
+
 # Tooling
 tailwindcss
 daisyui.js

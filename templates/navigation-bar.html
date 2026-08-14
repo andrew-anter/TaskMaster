@@ -1,22 +1,18 @@
 {% load static %}
-{# Main navigation links - hidden on small screens, visible on larger ones #}
-<nav class="hidden md:flex items-center gap-2 lg:gap-4">
-    <button class="btn btn-ghost btn-sm normal-case"
-            hx-get="{% url 'home' %}"
-            hx-target="#main-content"
-            hx-push-url="true">My Tasks</button>
-    <button class="btn btn-ghost btn-sm normal-case"
-            hx-get="{% url 'all_tasks' %}"
-            hx-target="#main-content"
-            hx-push-url="true">All Tasks</button>
-    <button class="btn btn-ghost btn-sm normal-case"
-            hx-get="{% url 'label_list' %}"
-            hx-target="#main-content"
-            hx-push-url="true">Labels</button>
-</nav>
-{# Actions - Add Task, Notifications, User Profile #}
 <div class="flex items-center gap-2 lg:gap-3 ml-2 lg:ml-4">
     {% if request.user.is_authenticated %}
+        <button class="btn btn-ghost btn-sm normal-case"
+                hx-get="{% url 'home' %}"
+                hx-target="#main-content"
+                hx-push-url="true">My Tasks</button>
+        <button class="btn btn-ghost btn-sm normal-case"
+                hx-get="{% url 'all_tasks' %}"
+                hx-target="#main-content"
+                hx-push-url="true">All Tasks</button>
+        <button class="btn btn-ghost btn-sm normal-case"
+                hx-get="{% url 'label_list' %}"
+                hx-target="#main-content"
+                hx-push-url="true">Labels</button>
         {# Add Task Button #}
         <button hx-get="{% url 'task_add' %}"
                 hx-target="#main-content"
@@ -33,22 +29,20 @@
         {% block user_profile %}
             <div class="dropdown dropdown-end">
                 <div tabindex="0" class="btn btn-ghost btn-circle avatar">
-                    <div class="w-10 rounded-full">
-                        <img src="{% static 'images/default-avatar.svg' %}" alt="User avatar" />
-                    </div>
+                    <i class="nf nf-fa-user m-0 p-0 text-large"></i>
                 </div>
                 <ul tabindex="0"
                     class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
                     <li><a hx-post="{% url 'logout' %}"
    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
                 </ul>
-        </div>
-    {% endblock user_profile %}
-{% else %}
-    <a href="{% url 'login' %}" class="btn btn-ghost btn-sm normal-case">Log in</a>
-    <a href="{% url 'register' %}"
-       class="btn btn-primary btn-sm rounded-full normal-case">Sign up</a>
-{% endif %}
+            </div>
+        {% endblock user_profile %}
+    {% else %}
+        <a href="{% url 'login' %}" class="btn btn-ghost btn-sm normal-case">Log in</a>
+        <a href="{% url 'register' %}"
+           class="btn btn-primary btn-sm rounded-full normal-case">Sign up</a>
+    {% endif %}
 </div>
 {# Mobile Menu - Hamburger for smaller screens (Optional but Recommended) #}
 <div class="navbar-end md:hidden">
