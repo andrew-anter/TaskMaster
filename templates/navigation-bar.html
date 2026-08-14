@@ -1,35 +1,40 @@
 {% load static %}
-<div class="flex items-center gap-2 lg:gap-3 ml-2 lg:ml-4">
+<div class="flex items-center gap-1 lg:gap-2 ml-2 lg:ml-4">
     {% if request.user.is_authenticated %}
-        <button class="btn btn-ghost btn-sm normal-case"
+        <button class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case"
                 hx-get="{% url 'home' %}"
                 hx-target="#main-content"
                 hx-push-url="true">My Tasks</button>
-        <button class="btn btn-ghost btn-sm normal-case"
+        <button class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case"
                 hx-get="{% url 'all_tasks' %}"
                 hx-target="#main-content"
                 hx-push-url="true">All Tasks</button>
-        <button class="btn btn-ghost btn-sm normal-case"
+        <button class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case"
                 hx-get="{% url 'label_list' %}"
                 hx-target="#main-content"
                 hx-push-url="true">Labels</button>
         {# Add Task Button #}
-        <button hx-get="{% url 'task_add' %}"
+        <button class="btn btn-primary btn-xs sm:btn-sm btn-circle"
+                hx-get="{% url 'task_add' %}"
                 hx-target="#main-content"
-                class="btn btn-primary md:ml-5 btn-sm rounded-full normal-case">
-            <i class="nf nf-fa-plus"></i>
-            Add Task
+                hx-push-url="true"
+                title="Add Task"
+                aria-label="Add Task">
+            <i class="nf nf-fa-plus text-sm sm:text-lg"></i>
         </button>
-        <div class="indicator">
-            <button class="btn btn-ghost btn-circle btn-sm" title="Notifications">
-                <i class="nf nf-cod-bell m-0 p-0 text-large"></i>
-            </button>
-        </div>
+        <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle hidden lg:inline-flex"
+                title="Notifications"
+                aria-label="Notifications">
+            <i class="nf nf-cod-bell text-sm sm:text-lg"></i>
+        </button>
         {# User Profile Dropdown #}
         {% block user_profile %}
             <div class="dropdown dropdown-end">
-                <div tabindex="0" class="btn btn-ghost btn-circle avatar">
-                    <i class="nf nf-fa-user m-0 p-0 text-large"></i>
+                <div tabindex="0"
+                     role="button"
+                     class="btn btn-ghost btn-xs sm:btn-sm btn-circle"
+                     aria-label="Account menu">
+                    <i class="nf nf-fa-user text-sm sm:text-lg"></i>
                 </div>
                 <ul tabindex="0"
                     class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
@@ -39,53 +44,9 @@
             </div>
         {% endblock user_profile %}
     {% else %}
-        <a href="{% url 'login' %}" class="btn btn-ghost btn-sm normal-case">Log in</a>
+        <a href="{% url 'login' %}"
+           class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case">Log in</a>
         <a href="{% url 'register' %}"
-           class="btn btn-primary btn-sm rounded-full normal-case">Sign up</a>
+           class="btn btn-primary btn-xs sm:btn-sm rounded-full normal-case">Sign up</a>
     {% endif %}
-</div>
-{# Mobile Menu - Hamburger for smaller screens (Optional but Recommended) #}
-<div class="navbar-end md:hidden">
-    <div class="dropdown dropdown-end">
-        <div tabindex="0" class="btn btn-ghost btn-circle">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="h-5 w-5"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-        </div>
-        <ul tabindex="0"
-            class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
-            <li>
-                <button class="w-full text-left justify-start"
-                        hx-get="{% url 'home' %}"
-                        hx-target="#main-content"
-                        hx-push-url="true">My Tasks</button>
-            </li>
-            <li>
-                <button class="w-full text-left justify-start"
-                        hx-get="{% url 'all_tasks' %}"
-                        hx-target="#main-content"
-                        hx-push-url="true">All Tasks</button>
-            </li>
-            <li>
-                <button class="w-full text-left justify-start"
-                        hx-get="{% url 'label_list' %}"
-                        hx-target="#main-content"
-                        hx-push-url="true">Labels</button>
-            </li>
-            <li>
-                <hr class="my-1">
-            </li>
-            {% if request.user.is_authenticated %}
-                <li><a hx-post="{% url 'logout' %}"
-   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
-            {% else %}
-                <li><a href="{% url 'login' %}">Log in</a></li>
-                <li><a href="{% url 'register' %}">Sign up</a></li>
-            {% endif %}
-        </ul>
-    </div>
 </div>

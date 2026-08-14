@@ -1,16 +1,15 @@
 {% load static %}
-<header class="navbar bg-base-100 shadow-sm px-4 md:px-10 py-2">
-    {# Navbar Start - Logo and Brand Name #}
-    <div class="navbar-start">
+<header class="flex items-center gap-1 md:gap-3 px-3 md:px-10 py-2 bg-base-100 shadow-sm">
+    <div class="flex items-center">
         <a href="{% block brand_link %}{% url 'all_tasks' %}{% endblock brand_link %}"
-           class="flex items-center gap-3 btn btn-ghost normal-case text-xl font-bold tracking-tight px-2">
+           class="flex items-center gap-3 btn btn-ghost btn-sm md:btn-md rounded-full normal-case text-xl font-bold tracking-tight px-2">
             <div class="size-6 text-primary">
                 <i class="nf nf-fa-hourglass_o text-primary text-xl"></i>
             </div>
-            {% block brand_name %}
-                TaskMaster
-            {% endblock brand_name %}
+            <span class="hidden md:inline">
+                {% block brand_name %}TaskMaster{% endblock brand_name %}
+            </span>
         </a>
     </div>
-    <div class="navbar-end">{% include "navigation-bar.html" %}</div>
+    <div class="flex-1 flex justify-end">{% include "navigation-bar.html" %}</div>
 </header>

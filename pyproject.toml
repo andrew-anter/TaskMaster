@@ -1,7 +1,8 @@
 [project]
-name = "todo-app"
-version = "0.1.2"
-description = "ToDo App"
+name = "TaskMaster"
+version = "0.0.1"
+description = """Web-based Task Management application that makes use heavily of django full stack
+ability"""
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -31,6 +32,7 @@ dev = [
 	"django-stubs>=5.2.0",
 	"django-stubs-ext>=5.2.0",
 	"django-types>=0.21.0",
+	"playwright>=1.62.0",
 	"pyopenssl>=25.1.0",
 	"pytest>=8.4.1",
 	"pytest-django>=4.11.1",
