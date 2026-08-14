@@ -6,7 +6,7 @@
 # Development server
 uv run python manage.py runserver
 
-# Seed demo data (100 users, 50 labels, 100k tasks; --flush to reset)
+# Seed demo data (100 users, 50 labels, 100k tasks, notifications; --flush to reset)
 uv run python manage.py seed_data
 uv run python manage.py seed_data --users 50 --labels 20 --tasks 50000 --seed 42
 uv run python manage.py seed_data --flush

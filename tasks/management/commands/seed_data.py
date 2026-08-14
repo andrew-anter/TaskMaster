@@ -3,12 +3,17 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from labels.models import Label
+from notifications.models import Notification
+from notifications.services import notify_bulk
 from tasks.models import Task
+from tasks.tasks import generate_reminder_notifications
 
 if TYPE_CHECKING:
     from accounts.models import User
@@ -104,6 +109,11 @@ class Command(BaseCommand):
             help="Delete previously seeded users, labels, and tasks first.",
         )
         parser.add_argument(
+            "--no-notifications",
+            action="store_true",
+            help="Skip seeding notifications (task reminders + welcome messages).",
+        )
+        parser.add_argument(
             "--seed", type=int, default=None, help="Seed for the random generator."
         )
 
@@ -130,22 +140,51 @@ class Command(BaseCommand):
 
         self._create_tasks(rng, n_tasks, users, labels_by_owner, batch_size)
 
+        if not options["no_notifications"]:
+            self._create_notifications(users)
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Done: {n_users} users, {n_labels} labels, {n_tasks} tasks."
             )
         )
 
+    def _create_notifications(self, users: list[User]) -> None:
+        """Seed notifications: real task reminders via the periodic producer,
+        plus a welcome message per user. Both are idempotent (dedupe keys)."""
+        reminder_count = generate_reminder_notifications()
+        welcome_count = notify_bulk(
+            recipients=users,
+            type="system_announcement",
+            message="Welcome to TaskMaster — your tasks are ready.",
+            link="/",
+            dedupe_keys=[f"welcome:{user.pk}" for user in users],
+        )
+        self.stdout.write(
+            f"  Created {reminder_count + welcome_count} notifications"
+            f" ({reminder_count} task reminders, {welcome_count} welcome)."
+        )
+
     def _flush(self) -> None:
-        task_ids = Task.objects.filter(
-            owner__username__startswith=SEED_USERNAME_PREFIX
-        ).values_list("id", flat=True)
+        user_ids = User.objects.filter(
+            username__startswith=SEED_USERNAME_PREFIX
+        ).values_list("pk", flat=True)
+        task_ids = Task.objects.filter(owner_id__in=user_ids).values_list(
+            "pk", flat=True
+        )
         Task.labels.through.objects.filter(task_id__in=task_ids).delete()
+        # Explicit notification cleanup: deleting users/tasks does not cascade
+        # through the generic foreign key, and SQLite may not enforce FKs at all.
+        Notification.objects.filter(
+            Q(recipient_id__in=user_ids)
+            | Q(
+                target_content_type=ContentType.objects.get_for_model(Task),
+                target_object_id__in=task_ids,
+            )
+        ).delete()
         Task.objects.filter(pk__in=task_ids).delete()
         Label.objects.filter(name__startswith=SEED_LABEL_PREFIX).delete()
-        deleted, _ = User.objects.filter(
-            username__startswith=SEED_USERNAME_PREFIX
-        ).delete()
+        deleted, _ = User.objects.filter(pk__in=user_ids).delete()
         self.stdout.write(
             f"Flushed {deleted} previously seeded users (and their data)."
         )
