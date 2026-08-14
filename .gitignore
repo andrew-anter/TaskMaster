@@ -24,5 +24,6 @@ daisyui.js
 daisyui-theme.js
 /typings/
 .uv/
-.python-version
 .agents/
+.pytest_cache/
+.ruff_cache/

@@ -4,6 +4,11 @@
 db.sqlite3
 dockerfile
 .env
-.dokcerignore
+.dockerignore
 typings
 selftest-cert.*
+logs
+staticfiles
+.pytest_cache
+.ruff_cache
+media

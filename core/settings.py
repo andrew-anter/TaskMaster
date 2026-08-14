@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     # 3rd party
     "django_htmx",
     "rest_framework",
-    "drf_spectacular",
     "corsheaders",
     "colorfield",
     # django allauth
@@ -195,7 +194,6 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
@@ -209,13 +207,6 @@ REST_FRAMEWORK = {
     },
 }
 
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "TaskMaster API",
-    "DESCRIPTION": "A Task management app build by django.",
-    "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
