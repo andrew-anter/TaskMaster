@@ -6,6 +6,11 @@
 # Development server
 uv run python manage.py runserver
 
+# Seed demo data (100 users, 50 labels, 100k tasks; --flush to reset)
+uv run python manage.py seed_data
+uv run python manage.py seed_data --users 50 --labels 20 --tasks 50000 --seed 42
+uv run python manage.py seed_data --flush
+
 # Tests
 uv run pytest
 uv run pytest tasks/tests/services_tests.py::TestAddTaskService::test_create_task_with_valid_data

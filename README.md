@@ -122,3 +122,24 @@ For development with auto-rebuild on changes:
 ```bash
 ./build-css.sh watch
 ```
+
+### Seeding Demo Data
+
+Populate the database with realistic demo data (100 users, 50 labels, 100,000 tasks by default):
+
+```bash
+uv run python manage.py seed_data
+```
+
+Customize counts or make the output deterministic:
+
+```bash
+uv run python manage.py seed_data --users 50 --labels 20 --tasks 50000 --seed 42
+```
+
+Remove previously seeded data (identified by the `seed_user_` username and
+`Seed Label ` name prefixes), then re-seed:
+
+```bash
+uv run python manage.py seed_data --flush
+```
