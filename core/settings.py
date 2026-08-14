@@ -185,8 +185,9 @@ SESSION_CACHE_ALIAS = "default"
 SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE", default=1209600)  # type: ignore[reportArgumentType]  # 2 weeks
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = env.bool(
-    "SESSION_EXPIRE_AT_BROWSER_CLOSE", default=False
-)  # type: ignore[reportArgumentType]
+    "SESSION_EXPIRE_AT_BROWSER_CLOSE",
+    default=False,  # type: ignore[reportArgumentType]
+)
 
 
 REST_FRAMEWORK = {
@@ -254,12 +255,14 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost")  #
 
 # Email configuration
 EMAIL_BACKEND = env(
-    "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
-)  # type: ignore[reportArgumentType]
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",  # type: ignore[reportArgumentType]
+)
 if not DEBUG:
     EMAIL_BACKEND = env(
-        "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
-    )  # type: ignore[reportArgumentType]
+        "EMAIL_BACKEND",
+        default="django.core.mail.backends.smtp.EmailBackend",  # type: ignore[reportArgumentType]
+    )
     EMAIL_HOST = env("EMAIL_HOST", default="localhost")  # type: ignore[reportArgumentType]
     EMAIL_PORT = env.int("EMAIL_PORT", default=587)  # type: ignore[reportArgumentType]
     EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")  # type: ignore[reportArgumentType]

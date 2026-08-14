@@ -28,6 +28,7 @@ stubPath = "./typings/"
 
 [dependency-groups]
 dev = [
+	"basedpyright>=1.30.0",
 	"django-stubs>=5.2.0",
 	"django-stubs-ext>=5.2.0",
 	"django-types>=0.21.0",
