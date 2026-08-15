@@ -1,163 +1,41 @@
 {% load color_utils %}
-<div class="max-w-[512px] mx-auto w-full py-5 px-4">
-  <div class="mb-6">
-    <button hx-get="{% url 'label_list' %}"
-            hx-target="#main-content"
-            hx-push-url="true"
-            class="btn btn-ghost btn-sm gap-1 normal-case text-base-content/70 mb-2"
-            style="margin-left: -0.5rem;">
-      <i class="nf nf-fa-arrow_left text-sm"></i>
-      Labels
-    </button>
-    <h1 class="text-2xl font-bold tracking-tight">{{ page_title }}</h1>
-  </div>
-
-  <form hx-post="{{ request.path }}" hx-target="#main-content" class="space-y-4">
-    {% csrf_token %}
-    {{ form.color }}
-
-    {% if form.non_field_errors %}
-      <div role="alert" class="alert alert-error text-sm">
-        <i class="nf nf-md-alpha_x_circle text-lg text-error"></i>
-        <div>
-          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+<div id="label-form-container"
+     class="layout-content-container flex flex-col w-full py-5">
+    <form method="post"
+          hx-post="{{ request.path }}"
+          hx-target="#main-content"
+          class="contents">
+        {% csrf_token %}
+        {{ form.color }}
+        <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+            <h1 class="text-3xl font-bold text-base-content">{{ page_title|default:"Label" }}</h1>
+            <div class="flex items-center gap-2">
+                <button type="button"
+                        hx-get="{% url 'label_list' %}"
+                        hx-target="#main-content"
+                        class="btn btn-ghost rounded-full normal-case">Cancel</button>
+                <button type="submit" class="btn btn-primary rounded-full normal-case">
+                    <i class="nf nf-fa-check text-lg"></i>
+                    {% if form.instance.pk %}Update{% else %}Create{% endif %} Label
+                </button>
+            </div>
         </div>
-      </div>
-    {% endif %}
-
-    <fieldset class="fieldset">
-      <legend class="fieldset-legend">Label Name</legend>
-      {{ form.name }}
-      {% for error in form.name.errors %}
-        <div class="label pt-0">
-          <span class="label-text-alt text-error text-xs">{{ error }}</span>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-6">
+                {% if form.non_field_errors %}
+                    <div role="alert" class="alert alert-error text-sm">
+                        <i class="nf nf-md-alpha_x_circle text-lg text-error"></i>
+                        <div>
+                            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                {% include "labels/partials/_label_form_fields.html" %}
+            </div>
         </div>
-      {% endfor %}
-    </fieldset>
-
-    <fieldset class="fieldset">
-      <legend class="fieldset-legend">Color</legend>
-      <div id="color-palette" class="flex flex-wrap gap-2" style="padding: 0.25rem 0;">
-        {% for hex in label_colors %}
-          {% with contrast=hex|contrast_color %}
-            {% if form.color.value == hex %}
-              <button type="button"
-                      data-color="{{ hex }}"
-                      data-contrast="{{ contrast }}"
-                      class="color-swatch"
-                      style="width: 36px; height: 36px; border-radius: 9999px; border: 2px solid white; background-color: {{ hex }}; box-shadow: 0 0 0 2px #f59e0b; cursor: pointer; flex-shrink: 0; transition: box-shadow 0.15s, transform 0.15s;"
-                      aria-label="Select color {{ hex }}"
-                      title="{{ hex }}">
-                <i class="nf nf-fa-check text-xs flex items-center justify-center leading-none" style="color: {{ contrast }}; line-height: 32px;"></i>
-              </button>
-            {% else %}
-              <button type="button"
-                      data-color="{{ hex }}"
-                      data-contrast="{{ contrast }}"
-                      class="color-swatch"
-                      style="width: 36px; height: 36px; border-radius: 9999px; border: 2px solid transparent; background-color: {{ hex }}; cursor: pointer; flex-shrink: 0; transition: box-shadow 0.15s, transform 0.15s;"
-                      aria-label="Select color {{ hex }}"
-                      title="{{ hex }}"></button>
-            {% endif %}
-          {% endwith %}
-        {% endfor %}
-      </div>
-      {% for error in form.color.errors %}
-        <div class="label pt-0">
-          <span class="label-text-alt text-error text-xs">{{ error }}</span>
-        </div>
-      {% endfor %}
-    </fieldset>
-
-    <fieldset class="fieldset">
-      <legend class="fieldset-legend">Preview</legend>
-      <div class="flex items-center justify-center p-4" style="background: oklch(97% 0 0); border-radius: 1rem; min-height: 56px;">
-        <span id="preview-badge"
-              class="badge badge-lg border-none font-medium px-4 text-sm"
-              style="height: 32px; background-color: {{ form.color.value|default:label_colors.0 }}; color: {{ form.color.value|default:label_colors.0|contrast_color }};">
-          <span id="preview-text">{{ form.instance.name|default:"Label preview" }}</span>
-        </span>
-      </div>
-    </fieldset>
-
-    <div class="flex justify-end gap-3 pt-2">
-      <button type="button"
-              hx-get="{% url 'label_list' %}"
-              hx-target="#main-content"
-              hx-push-url="true"
-              class="btn btn-ghost rounded-full normal-case">
-        Cancel
-      </button>
-      <button type="submit" class="btn btn-primary rounded-full normal-case" style="min-width: 100px;">
-        <i class="nf nf-fa-check text-sm"></i>
-        {% if form.instance.pk %}Update{% else %}Create{% endif %}
-      </button>
-    </div>
-  </form>
+    </form>
 </div>
 
-<script>
-  (function() {
-    var palette = document.getElementById('color-palette');
-    var hiddenInput = document.getElementById('id_color');
-    var previewBadge = document.getElementById('preview-badge');
-    var nameInput = document.getElementById('id_name');
-    var previewText = document.getElementById('preview-text');
-
-    if (nameInput) {
-      nameInput.focus();
-      nameInput.addEventListener('input', function() {
-        if (previewText) {
-          previewText.textContent = this.value.trim() || 'Label preview';
-        }
-      });
-    }
-
-    function selectSwatch(swatch) {
-      if (!swatch) return;
-      var swatches = palette.querySelectorAll('.color-swatch');
-      for (var s of swatches) {
-        s.style.border = '2px solid transparent';
-        s.style.boxShadow = 'none';
-        s.innerHTML = '';
-      }
-      swatch.style.border = '2px solid white';
-      swatch.style.boxShadow = '0 0 0 2px #f59e0b';
-      var check = document.createElement('i');
-      check.className = 'nf nf-fa-check text-xs flex items-center justify-center leading-none';
-      check.style.color = swatch.dataset.contrast;
-      check.style.lineHeight = '32px';
-      swatch.appendChild(check);
-      hiddenInput.value = swatch.dataset.color;
-      if (previewBadge) {
-        previewBadge.style.backgroundColor = swatch.dataset.color;
-        previewBadge.style.color = swatch.dataset.contrast;
-      }
-    }
-
-    if (palette) {
-      if (!hiddenInput.value) {
-        var firstSwatch = palette.querySelector('.color-swatch');
-        if (firstSwatch) selectSwatch(firstSwatch);
-      }
-      palette.addEventListener('click', function(e) {
-        var swatch = e.target.closest ? e.target.closest('.color-swatch') : null;
-        if (!swatch) {
-          var el = e.target;
-          while (el && el !== palette) {
-            if (el.classList && el.classList.contains('color-swatch')) {
-              swatch = el;
-              break;
-            }
-            el = el.parentElement;
-          }
-        }
-        if (swatch) selectSwatch(swatch);
-      });
-    }
-  })();
-</script>
-
 <div id="toast-container" hx-swap-oob="afterbegin">
-  {% include "partials/_messages.html" %}
+    {% include "partials/_messages.html" %}
 </div>

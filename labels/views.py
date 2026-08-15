@@ -1,10 +1,14 @@
 from django.contrib import messages
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
+from tasks.models import Task
+from tasks.selectors import get_tasks_by_label
+
 from .forms import LabelForm, LABEL_COLORS
+from .models import Label
 from .selectors import LabelSelector
 from .services import LabelService
 
@@ -20,6 +24,59 @@ def label_list_view(request):
     if request.htmx:
         return render(request, "labels/partials/_label_list.html", context)
     return render(request, "labels/label_list.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+def label_detail_view(request, pk):
+    """
+    Renders a single label in read-only "view" mode by default.
+
+    Passing ``?mode=edit`` (or submitting the edit form via POST) switches the
+    same layout into editable form mode. Successful updates drop back to view
+    mode, mirroring the task detail page.
+    """
+    selector = LabelSelector(user=request.user)
+    try:
+        label = selector.get_label(pk=pk)
+    except Label.DoesNotExist:
+        messages.error(request, "No label associated with this id.")
+        if request.htmx:
+            response = HttpResponse()
+            response["HX-Location"] = (
+                '{"path": "' + reverse("label_list") + '", "target": "#main-content"}'
+            )
+            return response
+        raise Http404
+
+    editing = request.method == "POST" or request.GET.get("mode") == "edit"
+
+    if request.method == "POST":
+        form = LabelForm(request.POST, instance=label)
+        if form.is_valid():
+            service = LabelService(user=request.user)
+            label = service.update_label(
+                pk=pk,
+                name=form.cleaned_data["name"],
+                color=form.cleaned_data["color"],
+            )
+            messages.success(request, "Label updated successfully")
+            editing = False
+            form = LabelForm(instance=label)
+    else:
+        form = LabelForm(instance=label)
+
+    context = {
+        "label": label,
+        "form": form,
+        "editing": editing,
+        "label_colors": LABEL_COLORS,
+        "label_tasks": get_tasks_by_label(user=request.user, label_id=pk)[:5],
+        "Status": Task.Status,
+        "Priority": Task.Priority,
+    }
+    if request.htmx and not request.htmx.boosted:
+        return render(request, "labels/partials/_label_detail.html", context)
+    return render(request, "labels/label_detail.html", context)
 
 
 @require_http_methods(["GET", "POST"])

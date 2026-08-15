@@ -1,0 +1,104 @@
+{% load color_utils %}
+<div id="label-detail-container"
+     class="layout-content-container flex flex-col w-full py-5">
+    {% if editing %}
+        <form id="label-edit-form"
+              method="post"
+              hx-post="{% url 'label_detail' label.pk %}"
+              hx-target="#main-content"
+              class="contents">
+            {% csrf_token %}
+            {{ form.color }}
+            <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+                <h1 class="text-3xl font-bold text-base-content">Edit Label</h1>
+                <div class="flex items-center gap-2">
+                    <button type="button"
+                            hx-get="{% url 'label_detail' label.pk %}"
+                            hx-target="#main-content"
+                            class="btn btn-ghost rounded-full normal-case">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-full normal-case">
+                        <i class="nf nf-fa-check text-lg"></i>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6">
+                    {% if form.non_field_errors %}
+                        <div role="alert" class="alert alert-error text-sm">
+                            <i class="nf nf-md-alpha_x_circle text-lg text-error"></i>
+                            <div>
+                                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% include "labels/partials/_label_form_fields.html" %}
+                </div>
+            </div>
+        </form>
+    {% else %}
+        <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+            <h1 class="text-3xl font-bold text-base-content">Label Details</h1>
+            <div class="flex items-center gap-2">
+                <button hx-get="{% url 'label_list' %}"
+                        hx-target="#main-content"
+                        class="btn btn-ghost rounded-full normal-case">Back</button>
+                <button hx-get="{% url 'label_detail' label.pk %}?mode=edit"
+                        hx-target="#main-content"
+                        class="btn btn-primary rounded-full normal-case">
+                    <i class="nf nf-fa-edit text-lg"></i>
+                    Edit
+                </button>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-6">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="text-2xl font-bold text-base-content break-words">{{ label.name }}</h2>
+                    <span class="badge badge-lg font-medium px-3 py-3"
+                          style="background-color: {{ label.color }}; color: {{ label.color|contrast_color }};">
+                        {{ label.name }}
+                    </span>
+                </div>
+                <div class="divider"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex items-center gap-3 rounded-xl bg-base-200/60 p-4">
+                        <i class="nf nf-fa-palette text-xl text-primary"></i>
+                        <div>
+                            <p class="label-text text-base-content/60 text-xs uppercase tracking-wide">Color</p>
+                            <p class="text-base-content font-medium">{{ label.color }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl bg-base-200/60 p-4">
+                        <i class="nf nf-fa-tag text-xl text-primary"></i>
+                        <div>
+                            <p class="label-text text-base-content/60 text-xs uppercase tracking-wide">Tasks</p>
+                            <p class="text-base-content font-medium">{{ label.tasks.count }} task{{ label.tasks.count|pluralize }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <h3 class="label-text font-semibold uppercase tracking-wide text-base-content/70 mb-2">Tasks with this label</h3>
+                    {% if label_tasks %}
+                        {% for task in label_tasks %}
+                            <div class="card my-2">
+                                {% include "todo/partials/_task_list_item.html" with task=task Status=Status Priority=Priority %}
+                            </div>
+                        {% endfor %}
+                        <button hx-get="{% url 'tasks_by_label' label.pk %}"
+                                hx-target="#main-content"
+                                hx-push-url="true"
+                                class="btn btn-ghost rounded-full normal-case gap-1 mt-3">
+                            <i class="nf nf-fa-arrow_right text-sm"></i>
+                            View all {{ label.tasks.count }} task{{ label.tasks.count|pluralize }}
+                        </button>
+                    {% else %}
+                        <p class="text-base-content/50 text-sm italic">No tasks have this label yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+<div id="toast-container" hx-swap-oob="afterbegin">{% include "partials/_messages.html" %}</div>
