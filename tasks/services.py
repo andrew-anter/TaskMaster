@@ -128,22 +128,15 @@ def task_add_service(
     return todo_item
 
 
-STATUS_CYCLE: list[str] = [
-    Task.Status.TODO,
-    Task.Status.IN_PROGRESS,
-    Task.Status.ON_HOLD,
-    Task.Status.COMPLETED,
-]
-
-
 @transaction.atomic
 def toggle_task_status_service(*, task: Task) -> Task:
     """
-    Advances a task to the next status in the workflow cycle.
+    Toggles a task between TODO and COMPLETED.
 
-    The cycle is TODO -> IN_PROGRESS -> ON_HOLD -> COMPLETED -> TODO, so every
-    status is reachable from the quick toggle rather than being collapsed into
-    a two-state COMPLETED/TODO switch.
+    The quick toggle is intentionally a two-state switch (TODO <-> COMPLETED);
+    the intermediate statuses (IN_PROGRESS, ON_HOLD) are only reachable when
+    editing the task. Any non-completed status advances to COMPLETED;
+    COMPLETED returns to TODO.
 
     Args:
         task: The Task instance to be updated.
@@ -151,19 +144,14 @@ def toggle_task_status_service(*, task: Task) -> Task:
     Returns:
         The updated Task instance with the new status.
     """
-    try:
-        current_index = STATUS_CYCLE.index(task.status)
-    except ValueError:
-        # Tolerate statuses written outside the choices (e.g. via shell/admin)
-        # by treating them as though the cycle starts at TODO.
-        current_index = STATUS_CYCLE.index(Task.Status.TODO)
-    next_status = STATUS_CYCLE[(current_index + 1) % len(STATUS_CYCLE)]
-    task.status = next_status
-    task.save(update_fields=["status"])
-    if next_status == Task.Status.COMPLETED:
+    if task.status == Task.Status.COMPLETED:
+        task.status = Task.Status.TODO
+    else:
+        task.status = Task.Status.COMPLETED
         # A completed task should stop being nagged; the beat job will not
         # regenerate reminders for it.
         _clear_task_reminder_notifications(task)
+    task.save(update_fields=["status"])
     return task
 
 

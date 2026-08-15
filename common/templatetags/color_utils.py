@@ -4,7 +4,7 @@ register = template.Library()
 
 
 @register.filter
-def contrast_color(hex_color):
+def contrast_color(hex_color: str):
     """
     Returns 'white' or 'black' depending on the brightness of the hex_color.
     """
