@@ -21,6 +21,9 @@ selftest-cert.*
 # Reports (local, not shared)
 /reports/
 
+# Temporary files (screenshots, scripts)
+/tmp/
+
 # Tooling
 tailwindcss
 daisyui.js

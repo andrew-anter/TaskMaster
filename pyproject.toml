@@ -22,7 +22,7 @@ authors = [{ name = "Andrew Anter", email = "andrew.anter@gmail.com" }]
 
 [tool.basedpyright]
 include = ["."]
-exclude = ["**/node_modules", "**/__pycache__", ".venv", "**/migrations/*.py", "src"]
+exclude = ["**/node_modules", "**/__pycache__", ".venv", "**/migrations/*.py", "src", "tmp"]
 typeCheckingMode = "standard"
 stubPath = "./typings/"
 
@@ -44,6 +44,7 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
 python_files = ["test_*.py", "*_test.py", "*/tests/*.py", "*/tests.py"]
+norecursedirs = [".git", ".venv", "tmp", "node_modules", "staticfiles", ".pytest_cache"]
 
 [tool.bandit]
 exclude_dirs = [".venv", ".git", "staticfiles", "typings", "src", "node_modules"]
