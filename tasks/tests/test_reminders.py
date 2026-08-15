@@ -160,7 +160,7 @@ class TestGenerateReminderNotifications:
         generate_reminder_notifications()
 
         notification = Notification.objects.get(recipient=user)
-        assert notification.link == f"/tasks/update/{task.pk}/"
+        assert notification.link == f"/tasks/task/{task.pk}/"
         assert notification.target == task
 
 

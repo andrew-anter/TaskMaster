@@ -1,0 +1,92 @@
+{% load color_utils %}
+{% if editing %}
+    {% url 'task_detail' task.id as form_action_url %}
+    {% url 'task_detail' task.id as cancel_url %}
+    {% include "todo/partials/_task_form.html" with page_title="Edit Task" submit_label="Save Changes" %}
+{% else %}
+    <div id="task-detail-container"
+         class="layout-content-container flex flex-col w-full py-5">
+        <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+            <h1 class="text-3xl font-bold text-base-content">Task Details</h1>
+            <div class="flex items-center gap-2">
+                <button hx-get="{% url 'home' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML"
+                        class="btn btn-ghost rounded-full normal-case">Back</button>
+                <button hx-get="{% url 'task_detail' task.id %}?mode=edit"
+                        hx-target="#main-content"
+                        class="btn btn-primary rounded-full normal-case">
+                    <i class="nf nf-fa-edit text-lg"></i>
+                    Edit
+                </button>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-6">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="text-2xl font-bold text-base-content break-words">{{ task.title }}</h2>
+                    <span class="badge badge-lg {% if task.status == Status.COMPLETED %}badge-success{% elif task.status == Status.IN_PROGRESS %}badge-info{% elif task.status == Status.ON_HOLD %}badge-warning{% else %}badge-neutral{% endif %}">
+                        {{ task.get_status_display }}
+                    </span>
+                    <span class="badge badge-lg {% if task.priority == Priority.HIGH %}badge-error{% elif task.priority == Priority.MEDIUM %}badge-warning{% elif task.priority == Priority.LOW %}badge-info{% else %}badge-ghost{% endif %}">
+                        {{ task.get_priority_display }}
+                    </span>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <h3 class="label-text font-semibold uppercase tracking-wide text-base-content/70 mb-2">Description</h3>
+                    {% if task.description %}
+                        <p class="text-base-content whitespace-pre-line">{{ task.description }}</p>
+                    {% else %}
+                        <p class="text-base-content/50 text-sm italic">No description provided.</p>
+                    {% endif %}
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                    <div class="flex items-center gap-3 rounded-xl bg-base-200/60 p-4">
+                        <i class="nf nf-fa-calendar_check text-xl text-primary"></i>
+                        <div>
+                            <p class="label-text text-base-content/60 text-xs uppercase tracking-wide">Due Date & Time</p>
+                            {% if task.due_datetime %}
+                                <p class="text-base-content font-medium">{{ task.due_datetime|date:"F j, Y" }} at {{ task.due_datetime|time:"g:i A" }}</p>
+                            {% else %}
+                                <p class="text-base-content/50 text-sm">No due date</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl bg-base-200/60 p-4">
+                        <i class="nf nf-fa-calendar text-xl text-primary"></i>
+                        <div>
+                            <p class="label-text text-base-content/60 text-xs uppercase tracking-wide">Scheduled Date</p>
+                            {% if task.scheduled_date %}
+                                <p class="text-base-content font-medium">{{ task.scheduled_date|date:"F j, Y" }}</p>
+                            {% else %}
+                                <p class="text-base-content/50 text-sm">No scheduled date</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="label-text font-semibold uppercase tracking-wide text-base-content/70 mb-2">Labels</h3>
+                    {% if task.labels.exists %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for label in task.labels.all %}
+                                <span class="badge badge-lg font-medium px-3 py-3"
+                                      style="background-color: {{ label.color }}; color: {{ label.color|contrast_color }};">
+                                    {{ label.name }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-base-content/50 text-sm italic">No labels assigned.</p>
+                    {% endif %}
+                </div>
+                <div class="divider"></div>
+                <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-base-content/50">
+                    <p>Created: {{ task.created_at|date:"F j, Y" }}</p>
+                    <p>Last modified: {{ task.modified_at|date:"F j, Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+        </div>
+    {% endif %}
+<div id="toast-container" hx-swap-oob="afterbegin">{% include "partials/_messages.html" %}</div>

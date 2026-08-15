@@ -5,6 +5,7 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods
 from django.http import (
     HttpResponseRedirect,
+    Http404,
 )
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -269,6 +270,77 @@ def task_update_view(request, task_id):
         "selected_label_ids": list(task.labels.values_list("pk", flat=True)),
     }
     return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
+
+
+@require_http_methods(request_method_list=["GET", "POST"])
+def task_detail_view(request, task_id):
+    """
+    Renders a single task in read-only "view" mode by default.
+
+    Passing ``?mode=edit`` (or submitting the edit form via POST) switches the
+    same layout into editable form mode. Successful updates drop back to view
+    mode, so the page always opens read-only until the user opts to edit.
+    """
+    try:
+        task = get_task_for_user(user=request.user, task_id=task_id)
+    except Task.DoesNotExist:
+        messages.error(request, "No task associated with this id.")
+        if request.htmx:
+            return hx_location_response(reverse("home"))
+        raise Http404
+
+    editing = request.method == "POST" or request.GET.get("mode") == "edit"
+
+    form = TaskForm(
+        request.POST if request.method == "POST" else None,
+        instance=task,
+        user=request.user,
+    )
+    selected_label_ids = list(task.labels.values_list("pk", flat=True))
+
+    if request.method == "POST":
+        if form.is_valid():
+            try:
+                task, success = task_update_service(
+                    user=request.user,
+                    task_id=task_id,
+                    title=form.cleaned_data["title"],
+                    description=form.cleaned_data.get("description"),
+                    status=form.cleaned_data["status"],
+                    priority=form.cleaned_data["priority"],
+                    due_datetime=form.cleaned_data.get("due_datetime"),
+                    scheduled_date=form.cleaned_data.get("scheduled_date"),
+                    labels=form.cleaned_data.get("labels"),
+                )
+            except DueDateInPastError as e:
+                form.add_error("due_datetime", f"{e}")
+            except ScheduledDateInPastError as e:
+                form.add_error("scheduled_date", f"{e}")
+            except Exception:
+                logger.exception("An exception occurred in task_detail_view")
+            else:
+                if success:
+                    messages.success(request, "Task updated successfully.")
+                else:
+                    messages.warning(request, "No changes were made to the task.")
+                editing = False
+                form = TaskForm(instance=task, user=request.user)
+                selected_label_ids = list(task.labels.values_list("pk", flat=True))
+        else:
+            selected_label_ids = [lbl.pk for lbl in form.cleaned_data.get("labels", [])]
+
+    context = {
+        "task": task,
+        "form": form,
+        "editing": editing,
+        "user_labels": Label.objects.filter(owner=request.user),
+        "selected_label_ids": selected_label_ids,
+        "Status": Task.Status,
+        "Priority": Task.Priority,
+    }
+    if request.htmx and not request.htmx.boosted:
+        return render(request, "todo/partials/_task_detail.html", context)
+    return render(request, "todo/task_detail.html", context)
 
 
 @require_http_methods(request_method_list=["POST"])

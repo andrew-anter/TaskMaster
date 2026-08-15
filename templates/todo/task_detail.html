@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}
+    {{ task.title }} - TaskMaster
+{% endblock title %}
+{% block content %}
+    {% include "todo/partials/_task_detail.html" %}
+{% endblock content %}

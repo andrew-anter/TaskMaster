@@ -1,0 +1,132 @@
+<div id="task-form-container"
+     class="layout-content-container flex flex-col w-full py-5">
+    <form method="post"
+          x-data="{ showLabelForm: false }"
+          hx-post="{{ form_action_url }}"
+          hx-target="#main-content"
+          class="contents">
+        {% csrf_token %}
+        <script>
+            // Ensure focus on the title field when the partial is loaded via HTMX
+            (function() {
+                const titleField = document.getElementById('id_title');
+                if (titleField) {
+                    titleField.focus();
+                    // Move cursor to end if there's text
+                    const val = titleField.value;
+                    titleField.value = '';
+                    titleField.value = val;
+                }
+            })();
+        </script>
+        <div class="flex flex-wrap justify-between items-center gap-3 p-4">
+            <h1 class="text-3xl font-bold text-base-content">{{ page_title|default:"Manage Task" }}</h1>
+            <div class="flex items-center gap-2">
+                <button type="button"
+                        hx-get="{{ cancel_url }}"
+                        hx-target="#main-content"
+                        class="btn btn-ghost rounded-full normal-case">Cancel</button>
+                <button type="submit" class="btn btn-primary rounded-full normal-case">
+                    <i class="nf nf-fa-check text-lg"></i>
+                    {{ submit_label|default:"Add Task" }}
+                </button>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-6">
+                {% if form.non_field_errors %}
+                    <div role="alert" class="alert alert-error text-sm">
+                        <i class="nf nf-md-alpha_x_circle text-lg text-error"></i>
+                        <div>
+                            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ form.title.label|default:"Task Title" }}</legend>
+                    {{ form.title }}
+                    <div class="label">Required</div>
+                    {% for error in form.title.errors %}
+                        <div class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </div>
+                    {% endfor %}
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ form.description.label|default:"Description" }}</legend>
+                    {{ form.description }}
+                    {% for error in form.description.errors %}
+                        <div class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </div>
+                    {% endfor %}
+                </fieldset>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-0 sm:gap-4">
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">{{ form.due_datetime.label|default:"Due Date & Time" }}</legend>
+                        {{ form.due_datetime }}
+                        {% for error in form.due_datetime.errors %}
+                            <div class="label pt-0">
+                                <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    </fieldset>
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">{{ form.scheduled_date.label|default:"Scheduled Date" }}</legend>
+                        {{ form.scheduled_date }}
+                        {% for error in form.scheduled_date.errors %}
+                            <div class="label pt-0">
+                                <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    </fieldset>
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">{{ form.status.label|default:"Status" }}</legend>
+                        {{ form.status }}
+                        {% for error in form.status.errors %}
+                            <div class="label pt-0">
+                                <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    </fieldset>
+                    <fieldset class="fieldset">
+                        <legend class="fieldset-legend">{{ form.priority.label|default:"Priority" }}</legend>
+                        {{ form.priority }}
+                        {% for error in form.priority.errors %}
+                            <div class="label pt-0">
+                                <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                            </div>
+                        {% endfor %}
+                    </fieldset>
+                </div>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend flex items-center justify-between">
+                        <span>{{ form.labels.label|default:"Labels" }}</span>
+                        <button type="button"
+                                @click="showLabelForm = !showLabelForm; if (showLabelForm && !$refs.labelFormArea.innerHTML) { htmx.ajax('GET', '{% url 'inline_label_form' %}', {target: '#inline-label-form-area', swap: 'innerHTML'}); }"
+                                class="btn btn-ghost btn-xs rounded-full normal-case gap-1 text-primary">
+                            <i class="nf nf-fa-plus text-xs"></i>
+                            New
+                        </button>
+                    </legend>
+                    <div x-show="showLabelForm" x-transition x-cloak>
+                        <div id="inline-label-form-area" x-ref="labelFormArea"></div>
+                    </div>
+                    {% if user_labels %}
+                        {% include "todo/partials/_labels_selector.html" with selected_ids=selected_label_ids %}
+                    {% else %}
+                        <div class="flex flex-col items-center gap-2 py-4 text-base-content/60">
+                            <i class="nf nf-fa-tag text-2xl"></i>
+                            <span class="text-sm">No labels yet. Create one to get started!</span>
+                        </div>
+                    {% endif %}
+                    {% for error in form.labels.errors %}
+                        <div class="label pt-0">
+                            <span class="label-text-alt text-error text-xs">{{ error }}</span>
+                        </div>
+                    {% endfor %}
+                </fieldset>
+            </div>
+        </div>
+    </form>
+</div>

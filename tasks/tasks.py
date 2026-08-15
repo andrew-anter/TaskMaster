@@ -85,7 +85,7 @@ def generate_reminder_notifications() -> int:
                         "recipient": user,
                         "type": type_key,
                         "message": message,
-                        "link": reverse("task_update", args=[task.pk]),
+                        "link": reverse("task_detail", args=[task.pk]),
                         "target": task,
                         "dedupe_key": f"{type_key}:{task.pk}",
                     }
