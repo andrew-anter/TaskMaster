@@ -95,23 +95,26 @@
 
     {% if request.user.is_authenticated %}
     <script>
-        document.addEventListener('keydown', function(event) {
-            // Don't trigger if typing in an input or textarea
-            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) {
-                return;
-            }
-            
-            if (event.key === 'a' || event.key === 'A') {
-                const addTaskUrl = "{% url 'task_add' %}";
-                const target = document.getElementById('main-content');
-                
-                if (target && typeof htmx !== 'undefined') {
-                    htmx.ajax('GET', addTaskUrl, {target: '#main-content', swap: 'innerHTML'});
-                } else {
-                    window.location.href = addTaskUrl;
+        if (!window.__taskmasterKeyboardShortcuts) {
+            window.__taskmasterKeyboardShortcuts = true;
+            document.addEventListener('keydown', function(event) {
+                // Don't trigger if typing in an input or textarea
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) {
+                    return;
                 }
-            }
-        });
+                
+                if (event.key === 'a' || event.key === 'A') {
+                    const addTaskUrl = "{% url 'task_add' %}";
+                    const target = document.getElementById('main-content');
+                    
+                    if (target && typeof htmx !== 'undefined') {
+                        htmx.ajax('GET', addTaskUrl, {target: '#main-content', swap: 'innerHTML'});
+                    } else {
+                        window.location.href = addTaskUrl;
+                    }
+                }
+            });
+        }
     </script>
     {% endif %}
 </body>

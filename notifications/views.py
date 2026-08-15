@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
-from common.http import hx_location_response
+from common.http import hx_location_response, is_partial_request
 
 from .models import Notification
 from .selectors import (
@@ -34,7 +34,7 @@ def notification_list_view(request):
         "unread_count": unread_count,
         "page_title": "Notifications",
     }
-    if request.htmx and not request.htmx.boosted:
+    if is_partial_request(request):
         return render(request, LIST_PARTIAL_TEMPLATE, context)
     return render(request, LIST_TEMPLATE, context)
 

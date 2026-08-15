@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title|default:"Add New Task" }} - TaskMaster{% endblock %}
+
+{% block content %}
+    {% include "todo/partials/_add_task.html" %}
+{% endblock %}

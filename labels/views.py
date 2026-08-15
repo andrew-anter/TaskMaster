@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
+from common.http import is_partial_request
 from tasks.models import Task
 from tasks.selectors import get_tasks_by_label
 
@@ -21,7 +22,7 @@ def label_list_view(request):
         "labels": labels,
         "page_title": "Manage Labels",
     }
-    if request.htmx:
+    if is_partial_request(request):
         return render(request, "labels/partials/_label_list.html", context)
     return render(request, "labels/label_list.html", context)
 
@@ -74,7 +75,7 @@ def label_detail_view(request, pk):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
-    if request.htmx and not request.htmx.boosted:
+    if is_partial_request(request):
         return render(request, "labels/partials/_label_detail.html", context)
     return render(request, "labels/label_detail.html", context)
 
@@ -107,7 +108,7 @@ def label_create_view(request):
         "page_title": "Create Label",
         "label_colors": LABEL_COLORS,
     }
-    if request.htmx:
+    if is_partial_request(request):
         return render(request, "labels/label_form_partial.html", context)
     return render(request, "labels/label_form.html", context)
 
@@ -145,7 +146,7 @@ def label_update_view(request, pk):
         "page_title": "Update Label",
         "label_colors": LABEL_COLORS,
     }
-    if request.htmx:
+    if is_partial_request(request):
         return render(request, "labels/label_form_partial.html", context)
     return render(request, "labels/label_form.html", context)
 

@@ -9,9 +9,7 @@
         <div class="flex flex-wrap justify-between items-center gap-3 p-4">
             <h1 class="text-3xl font-bold text-base-content">Task Details</h1>
             <div class="flex items-center gap-2">
-                <button hx-get="{% url 'home' %}"
-                        hx-target="#main-content"
-                        hx-swap="innerHTML"
+                <button onclick="if (window.history.length > 1) { history.back(); } else { window.location.href = '{% url 'home' %}' }"
                         class="btn btn-ghost rounded-full normal-case">Back</button>
                 <button hx-get="{% url 'task_detail' task.id %}?mode=edit"
                         hx-target="#main-content"

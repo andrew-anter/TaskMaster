@@ -10,7 +10,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
-from common.http import hx_location_response
+from common.http import hx_location_response, is_partial_request
 
 from .exceptions import DueDateInPastError, ScheduledDateInPastError
 
@@ -131,7 +131,7 @@ def task_list_view(request):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
-    if request.htmx and not request.htmx.boosted:
+    if is_partial_request(request):
         return render(request, "todo/partials/_task_list.html", context)
     return render(request, "todo/task_list.html", context)
 
@@ -193,7 +193,9 @@ def task_add_partial_view(request):
         "user_labels": Label.objects.filter(owner=request.user),
         "selected_label_ids": [],
     }
-    return render(request, template_name, context)
+    if is_partial_request(request):
+        return render(request, template_name, context)
+    return render(request, "todo/task_add.html", context)
 
 
 @require_http_methods(request_method_list=["POST"])
@@ -288,7 +290,9 @@ def task_update_view(request, task_id):
         "user_labels": Label.objects.filter(owner=request.user),
         "selected_label_ids": list(task.labels.values_list("pk", flat=True)),
     }
-    return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
+    if is_partial_request(request):
+        return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
+    return render(request, template_name="todo/task_add.html", context=context)
 
 
 @require_http_methods(request_method_list=["GET", "POST"])
@@ -357,7 +361,7 @@ def task_detail_view(request, task_id):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
-    if request.htmx and not request.htmx.boosted:
+    if is_partial_request(request):
         return render(request, "todo/partials/_task_detail.html", context)
     return render(request, "todo/task_detail.html", context)
 
@@ -412,7 +416,7 @@ def all_tasks_view(request):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
-    if request.htmx and not request.htmx.boosted:
+    if is_partial_request(request):
         return render(
             request=request,
             template_name="todo/partials/_all_tasks_list.html",
@@ -450,7 +454,7 @@ def task_list_by_label_view(request, label_id):
         "Status": Task.Status,
         "Priority": Task.Priority,
     }
-    if request.htmx and not request.htmx.boosted:
+    if is_partial_request(request):
         return render(
             request=request,
             template_name="todo/partials/_all_tasks_list.html",
