@@ -165,7 +165,11 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         "LOCATION": "unique-snowflake",
-    }
+    },
+    "notifications": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "notifications-count",
+    },
 }
 
 if not DEBUG:
@@ -177,7 +181,15 @@ if not DEBUG:
             "OPTIONS": {
                 "MAX_ENTRIES": 1000,
             },
-        }
+        },
+        "notifications": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "cache_table",
+            "TIMEOUT": env.int("CACHE_TIMEOUT", default=300),  # type: ignore[reportArgumentType]
+            "OPTIONS": {
+                "MAX_ENTRIES": 1000,
+            },
+        },
     }
 
 # Session configuration
@@ -225,12 +237,29 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 
+# Notification retention (enforced by the daily cleanup beat task)
+NOTIFICATIONS_READ_RETENTION_DAYS = env.int(
+    "NOTIFICATIONS_READ_RETENTION_DAYS",
+    default=30,  # type: ignore[reportArgumentType]
+)
+NOTIFICATIONS_UNREAD_RETENTION_DAYS = env.int(
+    "NOTIFICATIONS_UNREAD_RETENTION_DAYS",
+    default=90,  # type: ignore[reportArgumentType]
+)
+
 CELERY_BEAT_SCHEDULE = {
     "generate-task-reminder-notifications": {
         "task": "tasks.tasks.generate_reminder_notifications",
         "schedule": env.int(
             "CELERY_BEAT_REMINDERS_INTERVAL_SECONDS",
             default=900,  # type: ignore[reportArgumentType]
+        ),
+    },
+    "cleanup-old-notifications": {
+        "task": "notifications.tasks.cleanup_old_notifications",
+        "schedule": env.int(
+            "CELERY_BEAT_NOTIFICATIONS_CLEANUP_INTERVAL_SECONDS",
+            default=86400,  # type: ignore[reportArgumentType]
         ),
     },
 }

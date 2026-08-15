@@ -259,5 +259,4 @@ def task_delete_service(*, user: User, task_id: int) -> None:
         Task.DoesNotExist: If the task does not exist for the user.
     """
     task = get_task_for_user(user=user, task_id=task_id)
-    _clear_task_reminder_notifications(task)
     _ = task.delete()

@@ -6,7 +6,7 @@ from ..selectors import (
     get_notifications_for_user,
     get_unread_notifications_count,
 )
-from ..services import notify
+from ..services import mark_all_notifications_read, notify
 
 
 @pytest.mark.django_db
@@ -36,6 +36,14 @@ class TestNotificationSelectors:
         notify(recipient=user, type="t", message="x")
         notify(recipient=user, type="t", message="y")
         assert get_unread_notifications_count(user=user) == 2
+
+    def test_unread_count_cache_tracks_writes(self, user):
+        # Warm the cache, then verify writes invalidate it immediately.
+        assert get_unread_notifications_count(user=user) == 0
+        notify(recipient=user, type="t", message="x")
+        assert get_unread_notifications_count(user=user) == 1
+        mark_all_notifications_read(recipient=user)
+        assert get_unread_notifications_count(user=user) == 0
 
     def test_get_notification_for_user(self, user, notification):
         fetched = get_notification_for_user(user=user, notification_id=notification.pk)

@@ -94,7 +94,7 @@ class TestNotificationViews:
         assert location is not None
         assert "/tasks/update/1/" in location
         notification.refresh_from_db()
-        assert notification.is_read is True
+        assert notification.read_at is not None
 
     def test_mark_read_is_owner_only(self, client, other_user, notification):
         client.force_login(other_user)
@@ -105,7 +105,7 @@ class TestNotificationViews:
 
         assert response.status_code == 404
         notification.refresh_from_db()
-        assert notification.is_read is False
+        assert notification.read_at is None
 
     def test_mark_read_ignores_external_links(self, client_logged_in, user):
         external = notify(

@@ -5,8 +5,10 @@ from typing import TYPE_CHECKING, Iterable
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
 from django.db.models import Model
+from django.utils import timezone
 
 from .models import Notification
+from .selectors import invalidate_unread_notifications_count
 
 if TYPE_CHECKING:
     from accounts.models import User
@@ -98,6 +100,7 @@ def notify(
     except IntegrityError:
         # Lost a race against a concurrent insert with the same dedupe_key.
         return None
+    invalidate_unread_notifications_count(user_id=recipient.pk)
     return notification
 
 
@@ -200,6 +203,9 @@ def notify_many(*, entries: Iterable[dict]) -> int:
         notifications.append(notification)
 
     created = Notification.objects.bulk_create(notifications, ignore_conflicts=True)
+    if created:
+        for recipient_id in {entry["recipient"].pk for entry in entry_list}:
+            invalidate_unread_notifications_count(user_id=recipient_id)
     return created.__len__()
 
 
@@ -207,15 +213,19 @@ def notify_many(*, entries: Iterable[dict]) -> int:
 def mark_notification_read(*, recipient: User, notification_id: int) -> Notification:
     """Mark a single notification as read (owner-only)."""
     notification = Notification.objects.get(pk=notification_id, recipient=recipient)
-    if not notification.is_read:
-        notification.is_read = True
-        notification.save(update_fields=["is_read"])
+    if notification.read_at is None:
+        notification.read_at = timezone.now()
+        notification.save(update_fields=["read_at"])
+    invalidate_unread_notifications_count(user_id=recipient.pk)
     return notification
 
 
 @transaction.atomic
 def mark_all_notifications_read(*, recipient: User) -> int:
     """Mark every notification for ``recipient`` as read; returns rows updated."""
-    return Notification.objects.filter(recipient=recipient, is_read=False).update(
-        is_read=True
-    )
+    updated = Notification.objects.filter(
+        recipient=recipient, read_at__isnull=True
+    ).update(read_at=timezone.now())
+    if updated:
+        invalidate_unread_notifications_count(user_id=recipient.pk)
+    return updated

@@ -1,8 +1,15 @@
 import pytest
+from django.core.cache import caches
 
 from accounts.models import User
 from notifications.models import Notification
 from notifications.services import notify
+
+
+@pytest.fixture(autouse=True)
+def _clear_notifications_cache():
+    """Isolate the per-user unread-count cache between tests."""
+    caches["notifications"].clear()
 
 
 @pytest.fixture

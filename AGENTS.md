@@ -80,6 +80,12 @@ return render(request, "todo/task_list.html", context)
 
 **Notifications**: Emit via `notifications.services.notify()` / `notify_bulk()`. Register per-type display metadata (`icon`, `label`) in `apps.py ready()` via `notifications.types.register_type`. Pass `dedupe_key` for idempotency. Periodic producers are Celery tasks (e.g. `tasks/tasks.py`); UI lives in `templates/notifications/`.
 
+Notification behavior to preserve when modifying this subsystem:
+- Read state is tracked solely by `read_at` (`services.py`): `read_at` is set to `now()` when a notification is marked read and stays `NULL` while unread. There is no `is_read` boolean.
+- The unread badge count is cached per-user on the dedicated `notifications` cache alias (`core/settings.py` → `CACHES["notifications"]`). `notifications/selectors.py:get_unread_notifications_count` reads/writes it; any code path that creates or deletes notifications must call `invalidate_unread_notifications_count()`.
+- Retention cleanup: `notifications/tasks.py:cleanup_old_notifications` (beat, daily) deletes read notifications older than `NOTIFICATIONS_READ_RETENTION_DAYS` (default 30) and unread ones older than `NOTIFICATIONS_UNREAD_RETENTION_DAYS` (default 90).
+- GFK cascade: notifications targeting a deleted object are cascade-deleted via `notifications.signals.register_notification_cascade(model)` — register any new target model from its app's `apps.py ready()` (as `tasks/apps.py` does for `Task`).
+
 ## Testing
 
 - Fixtures in `conftest.py` files per app

@@ -25,7 +25,7 @@ class TestNotify:
         assert notification.type == "test"
         assert notification.message == "Hello"
         assert notification.link == ""
-        assert notification.is_read is False
+        assert notification.read_at is None
         assert notification.actor is None
         assert notification.target is None
 
@@ -223,7 +223,7 @@ class TestMarkRead:
     def test_mark_notification_read(self, user, notification):
         marked = mark_notification_read(recipient=user, notification_id=notification.pk)
 
-        assert marked.is_read is True
+        assert marked.read_at is not None
 
     def test_mark_notification_read_is_owner_only(self, other_user, notification):
         with pytest.raises(Notification.DoesNotExist):
@@ -238,10 +238,47 @@ class TestMarkRead:
         updated = mark_all_notifications_read(recipient=user)
 
         assert updated == 2
-        assert Notification.objects.filter(recipient=user, is_read=False).count() == 0
+        assert (
+            Notification.objects.filter(recipient=user, read_at__isnull=True).count()
+            == 0
+        )
+        assert (
+            Notification.objects.filter(recipient=user, read_at__isnull=False).count()
+            == 2
+        )
 
     def test_mark_all_read_ignores_other_users(self, user, other_user, notification):
         mark_all_notifications_read(recipient=other_user)
 
         notification.refresh_from_db()
-        assert notification.is_read is False
+        assert notification.read_at is None
+
+
+@pytest.mark.django_db
+class TestCascadeDeleteOnTargetDelete:
+    def test_deleting_target_deletes_its_notifications(self, user, task):
+        notification = notify(recipient=user, type="reminder", message="x", target=task)
+        assert notification is not None
+
+        task.delete()
+
+        assert not Notification.objects.filter(pk=notification.pk).exists()
+
+    def test_delete_service_cascades_to_notifications(self, user, task):
+        from tasks.services import task_delete_service
+
+        notification = notify(recipient=user, type="reminder", message="x", target=task)
+        assert notification is not None
+
+        task_delete_service(user=user, task_id=task.pk)
+
+        assert not Notification.objects.filter(pk=notification.pk).exists()
+
+    def test_deleting_other_instances_keeps_notifications(self, user, task):
+        other = Task.objects.create(owner=user, title="unrelated")
+        notification = notify(recipient=user, type="reminder", message="x", target=task)
+        assert notification is not None
+
+        other.delete()
+
+        assert Notification.objects.filter(pk=notification.pk).exists()

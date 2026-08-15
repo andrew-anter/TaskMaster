@@ -8,6 +8,9 @@ class TasksConfig(AppConfig):
     verbose_name = _("Tasks")
 
     def ready(self) -> None:
+        from .models import Task
         from .reminder_types import register_reminder_types
+        from notifications.signals import register_notification_cascade
 
         register_reminder_types()
+        register_notification_cascade(Task)

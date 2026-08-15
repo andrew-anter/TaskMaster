@@ -40,13 +40,13 @@ class Notification(models.Model):
     target_object_id = models.PositiveBigIntegerField(null=True, blank=True)
     target = GenericForeignKey("target_content_type", "target_object_id")
     dedupe_key = models.CharField(max_length=255, blank=True)
-    is_read = models.BooleanField(default=False, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["recipient", "is_read"]),
+            models.Index(fields=["recipient", "read_at"]),
             models.Index(fields=["recipient", "-created_at"]),
         ]
         constraints = [
