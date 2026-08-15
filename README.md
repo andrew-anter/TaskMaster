@@ -1,218 +1,151 @@
 # TaskMaster
 
-A production-grade implementation of a decoupled Django web application demonstrating strict Separation of Concerns, advanced architecture patterns, and uncompromising software craftsmanship.
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=andrew-anter_todo&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=andrew-anter_todo)
-
-
-## 🏗️ Architectural Highlights
-- **Service/Selector Pattern:** Business logic encapsulated in services (`services.py`) with `@transaction.atomic`, queries in selectors (`selectors.py`). Views orchestrate but don't contain logic.
-- **Custom Domain Exceptions:** Type-safe error handling with exceptions like `DueDateInPastError`, `ScheduledDateInPastError`.
-- **Modern Tooling & Typing:** Utilizes `uv` for package management, `Ruff` for linting/formatting, `BasedPyright` for strict type checking, `bandit` for security analysis, and `osv-scanner` for dependency vulnerability scanning.
-- **Dynamic Frontend Integration:** Leverages HTMX for high-performance partial page updates with Alpine.js for client-side interactivity.
-- **REST API:** Full CRUD API at `/tasks/api/v1/` using Django REST Framework.
-
-## 🛠️ Tech Stack & Tooling
-- **Backend:** Python 3.13+, Django 5.2+, SQLite (Development) / PostgreSQL (Production ready)
-- **Frontend:** HTMX, Tailwind CSS v4, daisyUI, Alpine.js
-- **Admin:** Django's built-in admin interface
-- **Quality Guardrails:** BasedPyright, Ruff, bandit, osv-scanner, pytest
+A task management web application built with Django. It features a clean,
+HTMX-powered single-page feel, color-coded labels, searchable/filterable task
+lists, in-app notifications, task reminders, and a REST API — all wrapped in a
+modern Tailwind CSS + daisyUI interface with light/dark themes.
 
 ## Features
 
-* **Task Management:** Create, view, update, and delete tasks with title, description, status, priority, due date, and scheduled date.
-* **Label System:** Create custom labels with colors and associate multiple labels with tasks. Filter tasks by label.
-* **Notifications:** Generic in-app notification subsystem with a navbar bell, unread badge (HTMX polling), dropdown panel, and a full notifications page. Any app can emit notifications through the `notify()`/`notify_bulk()` service API. Read state tracks a `read_at` timestamp; the unread badge count is cached per-user and invalidated on writes; notifications whose target object is deleted are cascade-deleted; and a daily Celery beat task prunes notifications past configurable retention windows (see *Background Workers*).
-* **Task Reminders:** A Celery beat task generates notifications for tasks that are overdue, due today, due within 24 hours, or scheduled for today (idempotent via dedupe keys).
-* **User Interface:** Clean UI with Tailwind CSS and daisyUI, dynamic updates via HTMX, hover effects, and dedicated pages for task management.
-* **User Authentication:** Login/Register with username and password, plus Google login via django-allauth.
-* **REST API:** Full CRUD API at `/tasks/api/v1/` using Django REST Framework.
+- **Task management** — create, view, update, and delete tasks with a title,
+  description, status, priority, due date, scheduled date, and labels. A quick
+  status toggle marks tasks done/undone from the list, and inline editing on
+  the detail page keeps you in place.
+- **My Tasks dashboard** — an at-a-glance home page splitting today's,
+  upcoming, and overdue tasks.
+- **Search, filters & pagination** — filter the full task list by keyword,
+  status, priority, label, and due-date range; sort by any field; and page
+  through results with the browser's back/forward buttons working as expected.
+- **Labels** — create color-coded labels and assign multiple to each task;
+  click any label to see all its tasks.
+- **Notifications** — a navbar bell with a live unread badge, a quick dropdown
+  panel, and a full notifications page. Automatic task reminders are
+  generated when tasks are overdue, due today, due within 24 hours, or
+  scheduled for today.
+- **User accounts** — register, log in/out (username + password), with
+  optional Google sign-in via django-allauth.
+- **REST API** — full CRUD API at `/tasks/api/v1/` using Django REST
+  Framework (Session + Basic auth).
+- **Light/dark themes** — toggle between a light and dark theme; your choice
+  is remembered.
+
+## Tech Stack
+
+- **Backend:** Python 3.13, Django 5, SQLite (dev) / PostgreSQL (production)
+- **Frontend:** HTMX, Alpine.js, Tailwind CSS v4, daisyUI
+- **Async jobs:** Celery + Valkey/Redis (task reminders, notification cleanup)
+- **Tooling:** `uv`, Ruff, BasedPyright, bandit, osv-scanner, pytest
 
 ## Prerequisites
 
-* Python 3.13+
-* `uv` (Python package installer) - Can be installed with `pip install uv`
+- Python 3.13+
+- [`uv`](https://docs.astral.sh/uv/) — install with `pip install uv`
 
-## Setup and Installation
+## Setup & Run
 
-1. **Clone the Repository:**
+1. **Clone and enter the project:**
 
-    ```bash
-    git clone https://github.com/andrew-anter/todo.git
-    cd TaskMaster
-    ```
+   ```bash
+   git clone https://github.com/andrew-anter/TaskMaster.git
+   cd TaskMaster
+   ```
 
-2. **Create Virtual Environment and Install Dependencies:**
+2. **Install dependencies:**
 
-    ```bash
-    uv sync
-    ```
+   ```bash
+   uv sync
+   ```
 
-3. **Set Up Environment Variables:**
-Create a `.env` file in the `core/` directory. You can copy `.env.example`:
+3. **Configure environment variables:**
 
-    ```bash
-    cp core/.env.example core/.env
-    ```
+   ```bash
+   cp core/.env.example core/.env
+   ```
 
-    Edit `core/.env` and set your `SECRET_KEY` to a secure random value.
+   The defaults work out of the box for local development. Set a real
+   `SECRET_KEY` in `core/.env` when deploying. Leave `GOOGLE_CLIENT_ID` and
+   `GOOGLE_SECRET` empty unless you want Google login.
 
-4. **Run Database Migrations:**
+4. **Apply database migrations:**
 
-    ```bash
-    uv run python manage.py migrate
-    ```
+   ```bash
+   uv run python manage.py migrate
+   ```
 
-5. **Create a Superuser (Optional, for accessing the Django Admin):**
+5. **Build the frontend CSS** (required after a fresh clone — the compiled
+   CSS is not committed):
 
-    ```bash
-    uv run python manage.py createsuperuser
-    ```
+   ```bash
+   ./build-css.sh build
+   ```
 
-6. **Run the Development Server:**
+6. **Run the development server:**
 
-    ```bash
-    uv run python manage.py runserver
-    ```
+   ```bash
+   uv run python manage.py runserver
+   ```
 
-    The application should now be running at `http://127.0.0.1:8000/`.
+   Open <http://127.0.0.1:8000/> and register an account to get started.
 
-## Development
+### Optional: Seed demo data
 
-### Running Tests
-
-```bash
-uv run pytest
-```
-
-### Code Quality
-
-* **Linting & Formatting (Ruff):**
-
-    ```bash
-    uv run ruff check . --fix
-    uv run ruff format .
-    ```
-
-* **Type Checking (BasedPyright):**
-
-    ```bash
-    uv run basedpyright .
-    ```
-
-* **Security Checks (bandit):**
-
-    ```bash
-    uv run bandit -r . -x ./.venv
-    ```
-
-* **Dependency Vulnerability Scanning (osv-scanner):**
-
-    ```bash
-    osv-scanner scan -r .
-    ```
-
-### Building Frontend Assets
-
-After making changes to templates or forms, rebuild Tailwind CSS:
-
-```bash
-./build-css.sh build
-```
-
-For development with auto-rebuild on changes:
-
-```bash
-./build-css.sh watch
-```
-
-### Seeding Demo Data
-
-Populate the database with realistic demo data — users, labels, 100,000
-tasks, and notifications by default. Notifications include real task
-reminders (overdue / due soon / due today / scheduled today) generated by
-the same producer as the Celery beat task, plus a welcome message per user;
-both are idempotent via dedupe keys, so re-running never duplicates them.
+Populate the database with demo users, labels, and tasks (100 users, 50
+labels, 100,000 tasks, and reminder notifications by default):
 
 ```bash
 uv run python manage.py seed_data
 ```
 
-Customize counts or make the output deterministic:
+Customize the counts or make the output deterministic:
 
 ```bash
 uv run python manage.py seed_data --users 50 --labels 20 --tasks 50000 --seed 42
 ```
 
-Skip notification seeding (users, labels, and tasks only):
-
-```bash
-uv run python manage.py seed_data --no-notifications
-```
-
-Remove previously seeded data (identified by the `seed_user_` username and
-`Seed Label ` name prefixes), then re-seed:
+Remove previously seeded data and re-seed:
 
 ```bash
 uv run python manage.py seed_data --flush
 ```
 
-### Background Workers (Celery + Valkey)
-Task reminders are generated by a Celery beat task. Celery uses Valkey (a
-Redis-compatible broker) — point `CELERY_BROKER_URL` at your Valkey/Redis
-instance in `core/.env`.
+### Optional: Task reminders (Celery)
 
-A second beat task, `notifications.tasks.cleanup_old_notifications`, runs
-daily and prunes the notification table so it cannot grow without bound:
-read notifications are deleted after `NOTIFICATIONS_READ_RETENTION_DAYS`
-(default 30, measured from `read_at`), and unread notifications after
-`NOTIFICATIONS_UNREAD_RETENTION_DAYS` (default 90, measured from
-`created_at`). Both are configurable via env vars. The interval is set with
-`CELERY_BEAT_NOTIFICATIONS_CLEANUP_INTERVAL_SECONDS` (default 86400).
-
-Start a Valkey server, then run the worker and beat scheduler:
+Reminders are generated by a periodic Celery beat task. To enable them,
+start a Valkey/Redis server (or set `CELERY_TASK_ALWAYS_EAGER=True` in
+`core/.env` for synchronous, no-broker development) and run:
 
 ```bash
-# Terminal 1 - worker
-make worker
-
-# Terminal 2 - beat scheduler (periodic tasks)
-make beat
+make worker-beat   # worker + beat scheduler combined
 ```
 
-For local development you can combine both into a single process:
+## Development
 
 ```bash
-make worker-beat
+# Run the test suite
+uv run pytest
+
+# Lint & format
+uv run ruff check . --fix
+uv run ruff format .
+
+# Type checking
+uv run basedpyright .
+
+# Security & dependency checks
+uv run bandit -r . -x ./.venv -c pyproject.toml
+osv-scanner scan -r .
+
+# Rebuild Tailwind CSS after template/form changes
+./build-css.sh build      # production build
+./build-css.sh watch      # auto-rebuild while developing
 ```
 
-> No broker available? Set `CELERY_TASK_ALWAYS_EAGER=True` in `core/.env` to
-> run tasks synchronously (e.g. for tests), or trigger generation manually with
-> `uv run python manage.py shell -c "from tasks.tasks import generate_reminder_notifications; generate_reminder_notifications()"`.
+Useful `make` targets: `make run`, `make test`, `make lint`, `make format`,
+`make typecheck`, `make security`, `make deps`, `make css`, `make migrate`,
+and `make worker-beat`. Run `make help` to list them all.
 
-### Emitting a Notification
+## REST API
 
-Any app can notify users through the generic service API:
-
-```python
-from notifications.services import notify, notify_bulk
-
-notify(
-    recipient=some_user,
-    type="task_due_today",            # open string key
-    message='Task "X" is due today.',
-    link="/tasks/update/1/",          # destination
-    target=task,                      # optional: any model instance
-    dedupe_key="task_due_today:1",    # optional: makes the call idempotent
-)
-
-notify_bulk(recipients=User.objects.all(), type="system_announcement", message="...")
-
-# Heterogeneous batch (different messages/types per entry), single bulk insert:
-notify_many(entries=[
-    {"recipient": alice, "type": "task_due_today", "message": "Task A is due today.", "target": task_a},
-    {"recipient": bob, "type": "task_overdue", "message": "Task B is overdue.", "target": task_b},
-])
-```
-
-Register display metadata (icon/label) for new types in your app's `apps.py`
-`ready()` via `notifications.types.register_type`.
+The API lives at `/tasks/api/v1/` (e.g. `GET /tasks/api/v1/` lists your
+tasks) and is authenticated with Session or Basic auth. Endpoint definitions
+are in `tasks/api.py`.
