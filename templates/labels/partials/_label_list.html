@@ -18,7 +18,7 @@
         {% for label in labels %}
             {% with contrast=label.color|contrast_color %}
                 <div id="label-{{ label.id }}-item"
-                     class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 min-h-[72px] border-b rounded-xl border-base-200">
+                     class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 my-2 min-h-[72px] border-b rounded-xl border-base-200">
                     <div style="width: 16px; height: 16px; border-radius: 9999px; flex-shrink: 0; background-color: {{ label.color }}; border: 1px solid oklch(92% 0 0 / 0.3);"></div>
                     <div class="flex flex-col justify-center flex-grow min-w-0">
                         <span class="text-base-content text-base font-medium leading-normal truncate">{{ label.name }}</span>
