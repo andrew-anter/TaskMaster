@@ -17,6 +17,7 @@
                 {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
             </div>
         {% endfor %}
+        {% include "todo/partials/_pagination.html" with pagination_target="#today-tasks-list" %}
     {% else %}
         <div role="alert" class="alert shadow-sm m-4">
             <i class="nf nf-cod-info text-lg"></i>

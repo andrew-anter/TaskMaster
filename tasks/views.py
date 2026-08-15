@@ -1,4 +1,7 @@
+from datetime import date
+
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods
 from django.http import (
     HttpResponseRedirect,
@@ -13,11 +16,11 @@ from .exceptions import DueDateInPastError, ScheduledDateInPastError
 from .forms import TaskForm
 from .models import Task
 from .selectors import (
-    get_all_tasks_for_user,
     get_task_for_user,
     get_tasks_by_label,
     get_today_tasks_for_user,
     get_upcoming_tasks_for_user,
+    search_tasks_for_user,
 )
 from .services import (
     task_add_service,
@@ -30,6 +33,64 @@ import logging
 
 logger = logging.getLogger(__name__)
 ADD_TASK_TEMPLATE_NAME = "todo/partials/_add_task.html"
+TASKS_PER_PAGE = 25
+
+
+def parse_date_param(value: str | None) -> date | None:
+    """Parses an ISO date query param, returning None for empty/invalid values."""
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def parse_status_param(value: str | None) -> str | None:
+    """Validates a status query param against Task.Status values."""
+    if not value:
+        return None
+    value = value.upper()
+    return value if value in Task.Status.values else None
+
+
+def parse_priority_param(value: str | None) -> int | None:
+    """Validates a priority query param against Task.Priority values."""
+    if not value:
+        return None
+    try:
+        priority = int(value)
+    except (TypeError, ValueError):
+        return None
+    return priority if priority in Task.Priority.values else None
+
+
+def parse_label_param(user, value: str | None) -> int | None:
+    """Validates a label query param, ensuring it belongs to the user."""
+    if not value:
+        return None
+    try:
+        label_id = int(value)
+    except (TypeError, ValueError):
+        return None
+    if not user.labels.filter(pk=label_id).exists():
+        return None
+    return label_id
+
+
+def paginate_tasks(request, tasks, *, page_size: int = TASKS_PER_PAGE):
+    """Paginates a queryset and builds prev/next page URLs preserving GET params."""
+    paginator = Paginator(tasks, page_size)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    def page_url(page_number: int) -> str | None:
+        if page_number < 1 or page_number > paginator.num_pages:
+            return None
+        params = request.GET.copy()
+        params["page"] = page_number
+        return f"?{params.urlencode()}"
+
+    return page_obj, page_url(page_obj.number - 1), page_url(page_obj.number + 1)
 
 
 @require_http_methods(["GET"])
@@ -37,9 +98,15 @@ def task_list_view(request):
     today_tasks = get_today_tasks_for_user(user=request.user)
     upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
 
+    today_page_obj, prev_page_url, next_page_url = paginate_tasks(request, today_tasks)
+
     context = {
-        "today_tasks": today_tasks,
+        "today_tasks": today_page_obj.object_list,
         "upcoming_tasks": upcoming_tasks,
+        "page_obj": today_page_obj,
+        "prev_page_url": prev_page_url,
+        "next_page_url": next_page_url,
+        "page_base_url": reverse("home"),
         "page_title": "My Tasks",
         "Status": Task.Status,
         "Priority": Task.Priority,
@@ -220,10 +287,31 @@ def task_delete_view(request, task_id):
 
 @require_http_methods(request_method_list=["GET"])
 def all_tasks_view(request):
-    tasks = get_all_tasks_for_user(user=request.user)
+    filters = {
+        "query": request.GET.get("q", "").strip() or None,
+        "status": parse_status_param(request.GET.get("status")),
+        "priority": parse_priority_param(request.GET.get("priority")),
+        "label_id": parse_label_param(request.user, request.GET.get("label")),
+        "due_from": parse_date_param(request.GET.get("due_from")),
+        "due_to": parse_date_param(request.GET.get("due_to")),
+    }
+    filters_active = any(
+        request.GET.get(key, "").strip()
+        for key in ("q", "status", "priority", "label", "due_from", "due_to")
+    )
+
+    tasks = search_tasks_for_user(user=request.user, **filters)
+    page_obj, prev_page_url, next_page_url = paginate_tasks(request, tasks)
 
     context = {
-        "all_tasks": tasks,
+        "all_tasks": page_obj.object_list,
+        "page_obj": page_obj,
+        "prev_page_url": prev_page_url,
+        "next_page_url": next_page_url,
+        "page_base_url": reverse("all_tasks"),
+        "filters_active": filters_active,
+        "show_filters": True,
+        "user_labels": Label.objects.filter(owner=request.user).order_by("name"),
         "page_title": "All Tasks",
         "Status": Task.Status,
         "Priority": Task.Priority,
@@ -254,9 +342,14 @@ def refresh_task_labels_view(request):
 def task_list_by_label_view(request, label_id):
     tasks = get_tasks_by_label(user=request.user, label_id=label_id)
     label = get_object_or_404(request.user.labels, id=label_id)
+    page_obj, prev_page_url, next_page_url = paginate_tasks(request, tasks)
 
     context = {
-        "all_tasks": tasks,
+        "all_tasks": page_obj.object_list,
+        "page_obj": page_obj,
+        "prev_page_url": prev_page_url,
+        "next_page_url": next_page_url,
+        "page_base_url": reverse("tasks_by_label", args=[label_id]),
         "page_title": f"Tasks labeled '{label.name}'",
         "Status": Task.Status,
         "Priority": Task.Priority,

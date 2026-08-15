@@ -10,10 +10,89 @@
         </h1>
     </div>
     <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">{{ page_title }}</h2>
+    {% if show_filters %}
+    <div class="px-4 pb-2">
+        <form hx-get="{% url 'all_tasks' %}"
+              hx-target="#all-tasks-list"
+              hx-select="#all-tasks-list"
+              hx-swap="outerHTML"
+              hx-trigger="input changed delay:300ms, change"
+              hx-replace-url="true"
+              hx-indicator="#search-indicator"
+              class="card bg-base-100 shadow-sm p-4">
+            <div class="flex flex-wrap gap-3 items-end">
+                <label class="form-control flex-1 min-w-[220px]">
+                    <div class="label pb-1">
+                        <span class="label-text">Search</span>
+                    </div>
+                    <input type="search"
+                           name="q"
+                           value="{{ request.GET.q }}"
+                           placeholder="Search tasks..."
+                           class="input w-full" />
+                </label>
+                <label class="form-control">
+                    <div class="label pb-1">
+                        <span class="label-text">Status</span>
+                    </div>
+                    <select name="status" class="select w-full">
+                        <option value="">All statuses</option>
+                        {% for value, label in Status.choices %}
+                            <option value="{{ value }}" {% if request.GET.status|upper == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="form-control">
+                    <div class="label pb-1">
+                        <span class="label-text">Priority</span>
+                    </div>
+                    <select name="priority" class="select w-full">
+                        <option value="">All priorities</option>
+                        {% for value, label in Priority.choices %}
+                            <option value="{{ value }}" {% if request.GET.priority == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="form-control">
+                    <div class="label pb-1">
+                        <span class="label-text">Label</span>
+                    </div>
+                    <select name="label" class="select w-full">
+                        <option value="">All labels</option>
+                        {% for lbl in user_labels %}
+                            <option value="{{ lbl.id }}" {% if request.GET.label == lbl.id|stringformat:"s" %}selected{% endif %}>{{ lbl.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="form-control">
+                    <div class="label pb-1">
+                        <span class="label-text">Due from</span>
+                    </div>
+                    <input type="date"
+                           name="due_from"
+                           value="{{ request.GET.due_from }}"
+                           class="input" />
+                </label>
+                <label class="form-control">
+                    <div class="label pb-1">
+                        <span class="label-text">Due to</span>
+                    </div>
+                    <input type="date"
+                           name="due_to"
+                           value="{{ request.GET.due_to }}"
+                           class="input" />
+                </label>
+                <span id="search-indicator" class="htmx-indicator loading loading-spinner loading-md"></span>
+            </div>
+        </form>
+    </div>
+    {% endif %}
     <div id="all-tasks-list" class="flex flex-col mb-6">
         {% if all_tasks %}
             {% for task_item in all_tasks %}
-                {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
+                <div class="card my-2">
+                    {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
+                </div>
             {% endfor %}
         {% else %}
             {# Using DaisyUI alert for a nicer "no tasks" message #}
@@ -25,9 +104,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
                     </path>
                 </svg>
-                <span>No tasks have been created yet. Start by creating some!</span>
+                {% if filters_active %}
+                    <span>No tasks match your search. Try adjusting the filters.</span>
+                {% else %}
+                    <span>No tasks have been created yet. Start by creating some!</span>
+                {% endif %}
             </div>
         {% endif %}
+        {% include "todo/partials/_pagination.html" with pagination_target="#all-tasks-list" %}
     </div>
     {# "Quick Actions" Section #}
     <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Quick Actions</h2>

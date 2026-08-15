@@ -1,0 +1,32 @@
+{% if page_obj and page_obj.has_other_pages %}
+    <div class="flex flex-wrap justify-between items-center gap-3 px-4 py-3">
+        <span class="text-sm text-base-content/70">
+            Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} task{{ page_obj.paginator.count|pluralize }}
+        </span>
+        <div class="join">
+            {% if prev_page_url %}
+                <a class="btn btn-sm join-item"
+                   hx-get="{{ page_base_url }}{{ prev_page_url }}"
+                   hx-target="{{ pagination_target }}"
+                   hx-select="{{ pagination_target }}"
+                   hx-swap="outerHTML"
+                   hx-push-url="true">Prev</a>
+            {% else %}
+                <button class="btn btn-sm join-item btn-disabled" disabled>Prev</button>
+            {% endif %}
+            <button class="btn btn-sm join-item btn-neutral no-animation">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </button>
+            {% if next_page_url %}
+                <a class="btn btn-sm join-item"
+                   hx-get="{{ page_base_url }}{{ next_page_url }}"
+                   hx-target="{{ pagination_target }}"
+                   hx-select="{{ pagination_target }}"
+                   hx-swap="outerHTML"
+                   hx-push-url="true">Next</a>
+            {% else %}
+                <button class="btn btn-sm join-item btn-disabled" disabled>Next</button>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}

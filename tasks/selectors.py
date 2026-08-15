@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from django.conf import settings
 from django.db.models import Q, QuerySet
 from django.utils import timezone
@@ -97,3 +99,55 @@ def get_tasks_by_label(*, user: User, label_id: int) -> QuerySet[Task]:
     Retrieves all tasks for a user that have a specific label.
     """
     return get_all_tasks_for_user(user=user).filter(labels__id=label_id)
+
+
+def search_tasks_for_user(
+    *,
+    user: User,
+    query: str | None = None,
+    status: str | None = None,
+    priority: int | None = None,
+    label_id: int | None = None,
+    due_from: date | None = None,
+    due_to: date | None = None,
+) -> QuerySet[Task]:
+    """
+    Retrieves a user's tasks filtered by optional search criteria.
+
+    All criteria are optional and combined with AND semantics:
+    - ``query``: case-insensitive substring match on title or description.
+    - ``status`` / ``priority``: exact match on the respective field.
+    - ``label_id``: tasks carrying the given label.
+    - ``due_from`` / ``due_to``: tasks with a due date within the range
+      (inclusive, based on the date part).
+
+    Args:
+        user: The user whose tasks are to be retrieved.
+        query: Text to match against title or description.
+        status: A value from ``Task.Status``.
+        priority: A value from ``Task.Priority``.
+        label_id: Primary key of a label owned by the user.
+        due_from: Earliest due date (inclusive).
+        due_to: Latest due date (inclusive).
+
+    Returns:
+        A lazy QuerySet of matching tasks for the given user.
+    """
+    tasks = get_all_tasks_for_user(user=user)
+
+    if query:
+        tasks = tasks.filter(
+            Q(title__icontains=query) | Q(description__icontains=query)
+        )
+    if status:
+        tasks = tasks.filter(status=status)
+    if priority is not None:
+        tasks = tasks.filter(priority=priority)
+    if label_id is not None:
+        tasks = tasks.filter(labels__id=label_id)
+    if due_from:
+        tasks = tasks.filter(due_datetime__date__gte=due_from)
+    if due_to:
+        tasks = tasks.filter(due_datetime__date__lte=due_to)
+
+    return tasks
