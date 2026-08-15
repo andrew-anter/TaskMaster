@@ -40,20 +40,42 @@ class TestAddTaskService:
 
 @pytest.mark.django_db
 class TestToggleTaskStatusService:
-    def test_toggle_from_todo_to_completed(self, todo_task):
+    def test_cycle_advances_todo_to_in_progress(self, todo_task):
         """
-        Tests that a task with status 'TODO' becomes 'COMPLETED' after toggling.
+        Tests that a task with status 'TODO' advances to 'IN_PROGRESS'.
         """
         task = todo_task
 
         toggle_task_status_service(task=task)
         task.refresh_from_db()
 
+        assert task.status == Task.Status.IN_PROGRESS
+
+    def test_cycle_advances_in_progress_to_on_hold(self, in_progress_task):
+        """
+        Tests that a task with status 'IN_PROGRESS' advances to 'ON_HOLD'.
+        """
+        task = in_progress_task
+
+        toggle_task_status_service(task=task)
+        task.refresh_from_db()
+
+        assert task.status == Task.Status.ON_HOLD
+
+    def test_cycle_advances_on_hold_to_completed(self, on_hold_task):
+        """
+        Tests that a task with status 'ON_HOLD' advances to 'COMPLETED'.
+        """
+        task = on_hold_task
+
+        toggle_task_status_service(task=task)
+        task.refresh_from_db()
+
         assert task.status == Task.Status.COMPLETED
 
-    def test_toggle_from_completed_to_todo(self, completed_task):
+    def test_cycle_wraps_completed_back_to_todo(self, completed_task):
         """
-        Tests that a task with status 'COMPLETED' becomes 'TODO' after toggling.
+        Tests that a task with status 'COMPLETED' wraps around to 'TODO'.
         """
         task = completed_task
 
@@ -61,6 +83,18 @@ class TestToggleTaskStatusService:
         task.refresh_from_db()
 
         assert task.status == Task.Status.TODO
+
+    def test_unknown_status_advances_from_todo(self, owner):
+        """
+        A status outside the cycle (e.g. written via shell/admin) is treated
+        as though the cycle starts at TODO rather than raising.
+        """
+        task = Task.objects.create(owner=owner, title="Weird", status="ARCHIVED")
+
+        toggle_task_status_service(task=task)
+        task.refresh_from_db()
+
+        assert task.status == Task.Status.IN_PROGRESS
 
 
 @pytest.mark.django_db

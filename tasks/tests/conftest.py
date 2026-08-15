@@ -50,3 +50,17 @@ def completed_task(valid_task_data) -> Task:
     """Fixture to provide a task with a 'COMPLETED' status."""
     updated_data = {**valid_task_data, "status": Task.Status.COMPLETED}
     return task_add_service(**updated_data)
+
+
+@pytest.fixture
+def in_progress_task(valid_task_data) -> Task:
+    """Fixture to provide a task with an 'IN_PROGRESS' status."""
+    updated_data = {**valid_task_data, "status": Task.Status.IN_PROGRESS}
+    return task_add_service(**updated_data)
+
+
+@pytest.fixture
+def on_hold_task(valid_task_data) -> Task:
+    """Fixture to provide a task with an 'ON_HOLD' status."""
+    updated_data = {**valid_task_data, "status": Task.Status.ON_HOLD}
+    return task_add_service(**updated_data)

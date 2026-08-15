@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from notifications.models import Notification
+from notifications.selectors import get_unread_notifications_count
 
 from ..models import Task
 from ..reminder_types import (
@@ -13,7 +14,11 @@ from ..reminder_types import (
     TYPE_OVERDUE,
     TYPE_SCHEDULED_TODAY,
 )
-from ..services import task_delete_service, task_update_service
+from ..services import (
+    task_delete_service,
+    task_update_service,
+    toggle_task_status_service,
+)
 from ..tasks import generate_reminder_notifications, task_reminder_specs
 
 FIXED_NOW = timezone.make_aware(datetime.datetime(2026, 1, 1, 12, 0, 0))
@@ -214,3 +219,31 @@ class TestReminderRefreshOnUpdate:
         task_delete_service(user=user, task_id=task.pk)
 
         assert Notification.objects.filter(recipient=user).count() == 0
+
+    def test_toggle_to_completed_clears_reminders(self, user, frozen_now):
+        task = make_task(
+            user,
+            title="Today",
+            status=Task.Status.ON_HOLD,
+            due_datetime=FIXED_NOW + datetime.timedelta(hours=3),
+        )
+        generate_reminder_notifications()
+        assert Notification.objects.filter(recipient=user).count() == 1
+
+        toggle_task_status_service(task=task)
+
+        assert Notification.objects.filter(recipient=user).count() == 0
+
+    def test_toggle_to_completed_invalidates_unread_badge_cache(self, user, frozen_now):
+        task = make_task(
+            user,
+            title="Today",
+            status=Task.Status.ON_HOLD,
+            due_datetime=FIXED_NOW + datetime.timedelta(hours=3),
+        )
+        generate_reminder_notifications()
+        assert get_unread_notifications_count(user=user) == 1
+
+        toggle_task_status_service(task=task)
+
+        assert get_unread_notifications_count(user=user) == 0

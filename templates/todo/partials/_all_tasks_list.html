@@ -82,6 +82,21 @@
                            value="{{ request.GET.due_to }}"
                            class="input" />
                 </label>
+                <label class="form-control">
+                    <div class="label pb-1">
+                        <span class="label-text">Sort by</span>
+                    </div>
+                    <select name="sort" class="select w-full">
+                        <option value="">Default order</option>
+                        <option value="due_datetime" {% if request.GET.sort == "due_datetime" %}selected{% endif %}>Due date (soonest first)</option>
+                        <option value="-due_datetime" {% if request.GET.sort == "-due_datetime" %}selected{% endif %}>Due date (latest first)</option>
+                        <option value="priority" {% if request.GET.sort == "priority" %}selected{% endif %}>Priority (high to low)</option>
+                        <option value="-priority" {% if request.GET.sort == "-priority" %}selected{% endif %}>Priority (low to high)</option>
+                        <option value="status" {% if request.GET.sort == "status" %}selected{% endif %}>Status</option>
+                        <option value="-created_at" {% if request.GET.sort == "-created_at" %}selected{% endif %}>Newest first</option>
+                        <option value="title" {% if request.GET.sort == "title" %}selected{% endif %}>Title (A-Z)</option>
+                    </select>
+                </label>
                 <span id="search-indicator" class="htmx-indicator loading loading-spinner loading-md"></span>
             </div>
         </form>

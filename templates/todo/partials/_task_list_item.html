@@ -1,6 +1,6 @@
 {% load color_utils %}
 <div id="task-{{ task.id }}-item"
-     class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 min-h-[72px] border-b rounded-xl border-base-200">
+     class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 min-h-[72px] border-b rounded-xl border-base-200 {% if task.is_overdue %}ring-1 ring-error/60{% endif %}">
     {# Status Toggle Button/Form #}
     <form hx-post="{% url 'update_task_status' task.id %}"
           hx-target="#task-{{ task.id }}-item"
@@ -40,12 +40,15 @@
                 title="View task '{{ task.title|escapejs }}'">
             {{ task.title }}
         </button>
-        <p class="text-base-content opacity-70 text-sm font-normal leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}">
+        <p class="text-base-content opacity-70 text-sm font-normal leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %} {% if task.is_overdue %}text-error font-semibold opacity-90{% endif %}">
             {% if task.due_datetime %}
                 Due: {{ task.due_datetime|date:"F j, Y" }}
                 (at {{ task.due_datetime|time }})
             {% else %}
                 No due date
+            {% endif %}
+            {% if task.is_overdue %}
+                <span class="badge badge-error badge-sm ml-1">Overdue</span>
             {% endif %}
         </p>
         {% if task.labels.exists %}

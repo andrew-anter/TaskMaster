@@ -17,6 +17,8 @@ from .exceptions import DueDateInPastError, ScheduledDateInPastError
 from .forms import TaskForm
 from .models import Task
 from .selectors import (
+    SORTABLE_FIELDS,
+    get_overdue_tasks_for_user,
     get_task_for_user,
     get_tasks_by_label,
     get_today_tasks_for_user,
@@ -79,6 +81,21 @@ def parse_label_param(user, value: str | None) -> int | None:
     return label_id
 
 
+def parse_sort_param(value: str | None) -> tuple[str | None, str]:
+    """Parses a ``sort`` query param like ``-due_datetime`` into (field, dir).
+
+    Invalid or unknown values fall back to ``(None, "asc")``, leaving the
+    queryset on its default ``Meta.ordering``.
+    """
+    if not value:
+        return None, "asc"
+    sort_dir = "desc" if value.startswith("-") else "asc"
+    field = value[1:] if value.startswith("-") else value
+    if field not in SORTABLE_FIELDS:
+        return None, "asc"
+    return field, sort_dir
+
+
 def paginate_tasks(request, tasks, *, page_size: int = TASKS_PER_PAGE):
     """Paginates a queryset and builds prev/next page URLs preserving GET params."""
     paginator = Paginator(tasks, page_size)
@@ -98,12 +115,14 @@ def paginate_tasks(request, tasks, *, page_size: int = TASKS_PER_PAGE):
 def task_list_view(request):
     today_tasks = get_today_tasks_for_user(user=request.user)
     upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
+    overdue_tasks = get_overdue_tasks_for_user(user=request.user)
 
     today_page_obj, prev_page_url, next_page_url = paginate_tasks(request, today_tasks)
 
     context = {
         "today_tasks": today_page_obj.object_list,
         "upcoming_tasks": upcoming_tasks,
+        "overdue_tasks": overdue_tasks,
         "page_obj": today_page_obj,
         "prev_page_url": prev_page_url,
         "next_page_url": next_page_url,
@@ -367,12 +386,15 @@ def all_tasks_view(request):
         "due_from": parse_date_param(request.GET.get("due_from")),
         "due_to": parse_date_param(request.GET.get("due_to")),
     }
+    sort_by, sort_dir = parse_sort_param(request.GET.get("sort"))
     filters_active = any(
         request.GET.get(key, "").strip()
         for key in ("q", "status", "priority", "label", "due_from", "due_to")
     )
 
-    tasks = search_tasks_for_user(user=request.user, **filters)
+    tasks = search_tasks_for_user(
+        user=request.user, **filters, sort_by=sort_by, sort_dir=sort_dir
+    )
     page_obj, prev_page_url, next_page_url = paginate_tasks(request, tasks)
 
     context = {
@@ -383,6 +405,8 @@ def all_tasks_view(request):
         "page_base_url": reverse("all_tasks"),
         "filters_active": filters_active,
         "show_filters": True,
+        "sort_by": sort_by,
+        "sort_dir": sort_dir,
         "user_labels": Label.objects.filter(owner=request.user).order_by("name"),
         "page_title": "All Tasks",
         "Status": Task.Status,

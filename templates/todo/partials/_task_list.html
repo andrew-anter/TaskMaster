@@ -9,6 +9,16 @@
         , {{ request.user.first_name|default:request.user.username|capfirst }}
     </h1>
 </div>
+{% if overdue_tasks %}
+    <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content text-error">Overdue</h2>
+    <div id="overdue-tasks-list" class="flex flex-col mb-6">
+        {% for task_item in overdue_tasks %}
+            <div class="card my-2">
+                {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Today</h2>
 <div id="today-tasks-list" class="flex flex-col mb-6">
     {% if today_tasks %}

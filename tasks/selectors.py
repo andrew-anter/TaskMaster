@@ -3,12 +3,26 @@ from __future__ import annotations
 from datetime import date
 
 from django.conf import settings
-from django.db.models import Q, QuerySet
+from django.db.models import Case, Q, QuerySet, Value, When
 from django.utils import timezone
 
 from .models import Task
 
 User = settings.AUTH_USER_MODEL
+
+SORTABLE_FIELDS = frozenset(
+    {
+        "title",
+        "status",
+        "priority",
+        "due_datetime",
+        "scheduled_date",
+        "created_at",
+        "modified_at",
+    }
+)
+
+OVERDUE_TASKS_LIMIT = 50
 
 
 def get_task_for_user(*, user: User, task_id: int) -> Task:
@@ -50,11 +64,12 @@ def get_all_tasks_for_user(*, user: User) -> QuerySet[Task]:
 
 def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
     """
-    Retrieves the next 5 upcoming tasks for a user that have a due date.
+    Retrieves the next 5 upcoming tasks for a user that are due in the future.
 
-    This is useful for a "dashboard" or "agenda" view. It filters only for
-    tasks with a defined due date, orders them chronologically, and takes
-    the top 5 most imminent tasks.
+    This is useful for a "dashboard" or "agenda" view. It filters for tasks
+    with a due date at or after now (so overdue tasks live in their own
+    section), orders them chronologically, and takes the top 5 most imminent
+    tasks.
 
     Args:
         user: The user whose upcoming tasks are to be retrieved.
@@ -63,34 +78,53 @@ def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
         A limited and ordered QuerySet of the 5 nearest upcoming tasks.
     """
     tasks = get_all_tasks_for_user(user=user)
-    return tasks.filter(due_datetime__isnull=False).order_by("due_datetime")[:5]
+    return tasks.filter(
+        due_datetime__isnull=False, due_datetime__gte=timezone.now()
+    ).order_by("due_datetime")[:5]
 
 
 def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
     """
-    Retrieves tasks for a user that are considered relevant for today.
+    Retrieves tasks for a user that are due or scheduled for today.
 
-    A task is considered "relevant for today" if it meets any of the
-    following criteria:
-    1. It is due today.
-    2. It is scheduled for today.
-    3. It was created today.
-
-    This uses a complex lookup with Q objects to combine these conditions
-    with an OR operator.
+    Tasks are only included if they have an explicit due date or scheduled
+    date falling on today; newly created tasks without such a date are not
+    shown (they belong to "All Tasks", not today's agenda).
 
     Args:
         user: The user whose tasks for today are to be retrieved.
 
     Returns:
-        A QuerySet of tasks that are due, scheduled, or created today.
+        A QuerySet of tasks that are due or scheduled today.
     """
     tasks = get_all_tasks_for_user(user=user)
     today = timezone.now().date()
+    now = timezone.now()
     return tasks.filter(
-        Q(due_datetime__date=today)
-        | Q(scheduled_date=today)
-        | Q(created_at__date=today)
+        Q(due_datetime__date=today, due_datetime__gte=now) | Q(scheduled_date=today)
+    )
+
+
+def get_overdue_tasks_for_user(*, user: User) -> QuerySet[Task]:
+    """
+    Retrieves a user's incomplete tasks whose due date is in the past.
+
+    Completed tasks are excluded (they should not be nagged as overdue). The
+    result is capped at ``OVERDUE_TASKS_LIMIT`` oldest-overdue-first so the
+    dashboard stays bounded even with a large backlog.
+
+    Args:
+        user: The user whose overdue tasks are to be retrieved.
+
+    Returns:
+        A limited QuerySet of overdue tasks, ordered by due date (oldest first).
+    """
+    tasks = get_all_tasks_for_user(user=user)
+    now = timezone.now()
+    return (
+        tasks.filter(due_datetime__isnull=False, due_datetime__lt=now)
+        .exclude(status=Task.Status.COMPLETED)
+        .order_by("due_datetime")[:OVERDUE_TASKS_LIMIT]
     )
 
 
@@ -110,6 +144,8 @@ def search_tasks_for_user(
     label_id: int | None = None,
     due_from: date | None = None,
     due_to: date | None = None,
+    sort_by: str | None = None,
+    sort_dir: str = "asc",
 ) -> QuerySet[Task]:
     """
     Retrieves a user's tasks filtered by optional search criteria.
@@ -120,6 +156,9 @@ def search_tasks_for_user(
     - ``label_id``: tasks carrying the given label.
     - ``due_from`` / ``due_to``: tasks with a due date within the range
       (inclusive, based on the date part).
+    - ``sort_by``: a field from ``SORTABLE_FIELDS`` to order by; defaults to
+      the model's ``Meta.ordering``.
+    - ``sort_dir``: ``"asc"`` (default) or ``"desc"``.
 
     Args:
         user: The user whose tasks are to be retrieved.
@@ -129,6 +168,8 @@ def search_tasks_for_user(
         label_id: Primary key of a label owned by the user.
         due_from: Earliest due date (inclusive).
         due_to: Latest due date (inclusive).
+        sort_by: Field name to order results by.
+        sort_dir: Sort direction, ``"asc"`` or ``"desc"``.
 
     Returns:
         A lazy QuerySet of matching tasks for the given user.
@@ -149,5 +190,17 @@ def search_tasks_for_user(
         tasks = tasks.filter(due_datetime__date__gte=due_from)
     if due_to:
         tasks = tasks.filter(due_datetime__date__lte=due_to)
+
+    if sort_by == "priority":
+        rank = Case(
+            When(priority=Task.Priority.HIGH, then=Value(1)),
+            When(priority=Task.Priority.MEDIUM, then=Value(2)),
+            When(priority=Task.Priority.LOW, then=Value(3)),
+            default=Value(4),
+        )
+        tasks = tasks.order_by(rank.desc() if sort_dir == "desc" else rank.asc())
+    elif sort_by in SORTABLE_FIELDS:
+        field = f"-{sort_by}" if sort_dir == "desc" else sort_by
+        tasks = tasks.order_by(field)
 
     return tasks

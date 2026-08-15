@@ -17,6 +17,7 @@ from .reminder_types import (
 )
 from .selectors import get_task_for_user
 from notifications.models import Notification
+from notifications.selectors import invalidate_unread_notifications_count
 
 User = settings.AUTH_USER_MODEL
 
@@ -30,11 +31,13 @@ REMINDER_NOTIFICATION_TYPES = [
 
 def _clear_task_reminder_notifications(task: Task) -> None:
     """Delete generated reminder notifications for a task (so they regenerate)."""
-    Notification.objects.filter(
+    deleted = Notification.objects.filter(
         target_content_type=ContentType.objects.get_for_model(Task),
         target_object_id=task.pk,
         type__in=REMINDER_NOTIFICATION_TYPES,
     ).delete()
+    if deleted[0]:
+        invalidate_unread_notifications_count(user_id=task.owner.pk)
 
 
 # -- Helper Functions -- #
@@ -125,10 +128,22 @@ def task_add_service(
     return todo_item
 
 
+STATUS_CYCLE: list[str] = [
+    Task.Status.TODO,
+    Task.Status.IN_PROGRESS,
+    Task.Status.ON_HOLD,
+    Task.Status.COMPLETED,
+]
+
+
 @transaction.atomic
 def toggle_task_status_service(*, task: Task) -> Task:
     """
-    Toggles a task's status between 'TODO' and 'COMPLETED'.
+    Advances a task to the next status in the workflow cycle.
+
+    The cycle is TODO -> IN_PROGRESS -> ON_HOLD -> COMPLETED -> TODO, so every
+    status is reachable from the quick toggle rather than being collapsed into
+    a two-state COMPLETED/TODO switch.
 
     Args:
         task: The Task instance to be updated.
@@ -136,11 +151,19 @@ def toggle_task_status_service(*, task: Task) -> Task:
     Returns:
         The updated Task instance with the new status.
     """
-    if task.status == Task.Status.COMPLETED:
-        task.status = Task.Status.TODO
-    else:
-        task.status = Task.Status.COMPLETED
+    try:
+        current_index = STATUS_CYCLE.index(task.status)
+    except ValueError:
+        # Tolerate statuses written outside the choices (e.g. via shell/admin)
+        # by treating them as though the cycle starts at TODO.
+        current_index = STATUS_CYCLE.index(Task.Status.TODO)
+    next_status = STATUS_CYCLE[(current_index + 1) % len(STATUS_CYCLE)]
+    task.status = next_status
     task.save(update_fields=["status"])
+    if next_status == Task.Status.COMPLETED:
+        # A completed task should stop being nagged; the beat job will not
+        # regenerate reminders for it.
+        _clear_task_reminder_notifications(task)
     return task
 
 

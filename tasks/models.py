@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Task(models.Model):
@@ -35,6 +36,13 @@ class Task(models.Model):
 
     def __str__(self):
         return str(self.title)
+
+    @property
+    def is_overdue(self) -> bool:
+        """True for incomplete tasks whose due date is in the past."""
+        if not self.due_datetime or self.status == Task.Status.COMPLETED:
+            return False
+        return self.due_datetime < timezone.now()
 
     class Meta:
         ordering = ["status", "priority", "due_datetime"]

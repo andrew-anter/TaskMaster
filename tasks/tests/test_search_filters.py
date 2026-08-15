@@ -7,7 +7,13 @@ from django.utils import timezone
 from accounts.models import User
 from labels.models import Label
 from tasks.models import Task
-from tasks.selectors import search_tasks_for_user
+from tasks.selectors import (
+    OVERDUE_TASKS_LIMIT,
+    get_overdue_tasks_for_user,
+    get_today_tasks_for_user,
+    get_upcoming_tasks_for_user,
+    search_tasks_for_user,
+)
 from tasks.services import task_add_service
 
 pytestmark = pytest.mark.django_db
@@ -124,6 +130,121 @@ class TestSearchTasksSelector:
         assert set(result) == {sample_tasks["grocery"], sample_tasks["review"]}
 
 
+class TestSortTasksSelector:
+    def test_sort_by_title_ascending(self, owner):
+        for title in ["banana", "apple", "cherry"]:
+            make_task(owner, title=title)
+
+        result = search_tasks_for_user(user=owner, sort_by="title")
+        assert [t.title for t in result] == ["apple", "banana", "cherry"]
+
+    def test_sort_by_title_descending(self, owner):
+        for title in ["banana", "apple", "cherry"]:
+            make_task(owner, title=title)
+
+        result = search_tasks_for_user(user=owner, sort_by="title", sort_dir="desc")
+        assert [t.title for t in result] == ["cherry", "banana", "apple"]
+
+    def test_sort_by_priority_ranks_high_first(self, owner):
+        make_task(owner, title="low", priority=Task.Priority.LOW)
+        make_task(owner, title="none", priority=Task.Priority.NONE)
+        make_task(owner, title="high", priority=Task.Priority.HIGH)
+        make_task(owner, title="medium", priority=Task.Priority.MEDIUM)
+
+        result = search_tasks_for_user(user=owner, sort_by="priority")
+        assert [t.title for t in result] == ["high", "medium", "low", "none"]
+
+    def test_sort_by_priority_descending_ranks_lowest_first(self, owner):
+        make_task(owner, title="low", priority=Task.Priority.LOW)
+        make_task(owner, title="none", priority=Task.Priority.NONE)
+        make_task(owner, title="high", priority=Task.Priority.HIGH)
+
+        result = search_tasks_for_user(user=owner, sort_by="priority", sort_dir="desc")
+        assert [t.title for t in result] == ["none", "low", "high"]
+
+    def test_sort_by_created_at_descending(self, owner):
+        make_task(owner, title="first")
+        make_task(owner, title="second")
+
+        result = search_tasks_for_user(
+            user=owner, sort_by="created_at", sort_dir="desc"
+        )
+        assert [t.title for t in result] == ["second", "first"]
+
+    def test_invalid_sort_field_is_ignored(self, owner, sample_tasks):
+        result = search_tasks_for_user(user=owner, sort_by="bogus_field")
+        assert result.count() == len(sample_tasks)
+
+
+class TestOverdueTasksSelector:
+    def make_overdue(self, owner, **overrides):
+        data = {
+            "title": "Overdue task",
+            "owner": owner,
+            "due_datetime": timezone.now() - timedelta(days=1),
+        }
+        data.update(overrides)
+        return Task.objects.create(**data)
+
+    def test_returns_incomplete_overdue_tasks(self, owner):
+        overdue = self.make_overdue(owner, title="Overdue")
+        self.make_overdue(
+            owner, title="Completed overdue", status=Task.Status.COMPLETED
+        )
+        make_task(
+            owner, title="Future", due_datetime=timezone.now() + timedelta(days=1)
+        )
+
+        result = get_overdue_tasks_for_user(user=owner)
+        assert set(result) == {overdue}
+
+    def test_returns_empty_when_nothing_overdue(self, owner):
+        make_task(
+            owner, title="Future", due_datetime=timezone.now() + timedelta(days=1)
+        )
+        assert get_overdue_tasks_for_user(user=owner).count() == 0
+
+    def test_overdue_capped_at_limit(self, owner):
+        for i in range(OVERDUE_TASKS_LIMIT + 5):
+            Task.objects.create(
+                owner=owner,
+                title=f"Late {i}",
+                due_datetime=timezone.now() - timedelta(days=i + 1),
+            )
+
+        assert get_overdue_tasks_for_user(user=owner).count() == OVERDUE_TASKS_LIMIT
+
+    def test_is_overdue_property(self, owner):
+        overdue = self.make_overdue(owner)
+        make_task(
+            owner, title="Future", due_datetime=timezone.now() + timedelta(days=1)
+        )
+        completed = self.make_overdue(owner, status=Task.Status.COMPLETED)
+        no_due = make_task(owner, title="No due date")
+
+        assert overdue.is_overdue is True
+        assert completed.is_overdue is False
+        assert no_due.is_overdue is False
+
+
+class TestTodayTasksSelector:
+    def test_created_today_without_due_date_is_not_in_today(self, owner):
+        make_task(owner, title="Created today, no due date")
+
+        result = get_today_tasks_for_user(user=owner)
+        assert list(result) == []
+
+    def test_due_today_past_due_time_only_counts_as_overdue(self, owner):
+        task = Task.objects.create(
+            owner=owner,
+            title="Slipped today",
+            due_datetime=timezone.now() - timedelta(hours=2),
+        )
+
+        assert task not in get_today_tasks_for_user(user=owner)
+        assert task in get_overdue_tasks_for_user(user=owner)
+
+
 ALL_TASKS_URL = reverse("all_tasks")
 
 
@@ -137,6 +258,20 @@ class TestAllTasksSearchFiltersView:
         assert b'name="label"' in response.content
         assert b'name="due_from"' in response.content
         assert b'name="due_to"' in response.content
+        assert b'name="sort"' in response.content
+
+    def test_sort_param_orders_results(self, client_logged_in, owner):
+        make_task(owner, title="banana")
+        make_task(owner, title="apple")
+
+        response = client_logged_in.get(ALL_TASKS_URL, {"sort": "title"})
+        assert response.status_code == 200
+        assert response.content.index(b"apple") < response.content.index(b"banana")
+
+    def test_invalid_sort_param_is_ignored(self, client_logged_in, owner, sample_tasks):
+        response = client_logged_in.get(ALL_TASKS_URL, {"sort": "bogus"})
+        assert response.status_code == 200
+        assert sample_tasks["grocery"].title.encode() in response.content
 
     def test_text_search_narrows_results(self, client_logged_in, owner, sample_tasks):
         response = client_logged_in.get(ALL_TASKS_URL, {"q": "report"})
@@ -279,3 +414,44 @@ class TestHomePagination:
 
         assert b"Solo task" in response.content
         assert b"Page 1 of" not in response.content
+
+
+class TestHomeOverdueSection:
+    def make_overdue(self, owner, **overrides):
+        data = {
+            "title": "Overdue task",
+            "owner": owner,
+            "due_datetime": timezone.now() - timedelta(days=1),
+        }
+        data.update(overrides)
+        return Task.objects.create(**data)
+
+    def test_overdue_section_shown_with_overdue_tasks(self, client_logged_in, owner):
+        self.make_overdue(owner, title="My late task")
+
+        response = client_logged_in.get(HOME_URL)
+
+        assert response.status_code == 200
+        assert b">Overdue<" in response.content
+        assert b"My late task" in response.content
+        assert b"Overdue" in response.content
+
+    def test_overdue_section_hidden_without_overdue_tasks(
+        self, client_logged_in, owner
+    ):
+        make_task(
+            owner, title="Future", due_datetime=timezone.now() + timedelta(days=1)
+        )
+
+        response = client_logged_in.get(HOME_URL)
+
+        assert b">Overdue<" not in response.content
+
+    def test_overdue_tasks_excluded_from_upcoming(self, owner):
+        self.make_overdue(owner, title="Late task")
+        future = make_task(
+            owner, title="Soon", due_datetime=timezone.now() + timedelta(days=1)
+        )
+
+        upcoming = get_upcoming_tasks_for_user(user=owner)
+        assert set(upcoming) == {future}
