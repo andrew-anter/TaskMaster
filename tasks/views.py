@@ -375,9 +375,13 @@ def task_delete_view(request, task_id):
         messages.warning(
             request, message="An error occurred, no changes have been made"
         )
-
-    response = hx_location_response(reverse("home"))
-    return response
+        task = get_object_or_404(Task, pk=task_id, owner=request.user)
+        return render(
+            request,
+            "todo/partials/_task_list_item.html",
+            {"task": task, "Status": Task.Status},
+        )
+    return render(request, "partials/_messages_oob.html")
 
 
 @require_http_methods(request_method_list=["GET"])

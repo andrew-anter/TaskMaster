@@ -55,7 +55,9 @@ def notifications_panel_view(request):
 def notification_badge_view(request):
     """Renders just the unread-count badge, for HTMX polling."""
     context = {"unread_count": get_unread_notifications_count(user=request.user)}
-    return render(request, BADGE_TEMPLATE, context)
+    response = render(request, BADGE_TEMPLATE, context)
+    response["HX-Trigger"] = "refresh-notification-panel"
+    return response
 
 
 @require_http_methods(["POST"])

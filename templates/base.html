@@ -95,6 +95,11 @@
 
     {% if request.user.is_authenticated %}
     <script>
+        document.body.addEventListener('refresh-notification-panel', function() {
+            htmx.ajax('GET', '{% url "notification_panel" %}', {target: '#notification-panel', swap: 'innerHTML'});
+        });
+    </script>
+    <script>
         if (!window.__taskmasterKeyboardShortcuts) {
             window.__taskmasterKeyboardShortcuts = true;
             document.addEventListener('keydown', function(event) {

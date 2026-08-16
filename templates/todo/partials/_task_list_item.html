@@ -74,7 +74,7 @@
             <i class="nf nf-fa-edit text-lg "></i>
         </button>
         <form hx-post="{% url 'task_delete' task.id %}"
-              hx-target="#task-{{ task.id }}-item"
+              hx-target="closest .card"
               hx-swap="outerHTML"
               hx-confirm="Are you sure you want to delete '{{ task.title|escapejs }}'?"
               class="contents">
