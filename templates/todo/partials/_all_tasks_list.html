@@ -134,6 +134,7 @@
         <div class="flex flex-1 gap-3 flex-wrap px-4 py-3">
             <a hx-get="{% url 'task_add' %}"
                hx-target="#main-content"
+               hx-push-url="true"
                class="btn btn-primary rounded-full normal-case">
                 <span class="truncate">Add Task</span>
             </a>

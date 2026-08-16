@@ -13,8 +13,7 @@
                 <h1 class="text-3xl font-bold text-base-content">Edit Label</h1>
                 <div class="flex items-center gap-2">
                     <button type="button"
-                            hx-get="{% url 'label_detail' label.pk %}"
-                            hx-target="#main-content"
+                            onclick="history.back()"
                             class="btn btn-ghost rounded-full normal-case">Cancel</button>
                     <button type="submit" class="btn btn-primary rounded-full normal-case">
                         <i class="nf nf-fa-check text-lg"></i>
@@ -40,11 +39,11 @@
         <div class="flex flex-wrap justify-between items-center gap-3 p-4">
             <h1 class="text-3xl font-bold text-base-content">Label Details</h1>
             <div class="flex items-center gap-2">
-                <button hx-get="{% url 'label_list' %}"
-                        hx-target="#main-content"
+                <button onclick="if (window.history.length > 1) { history.back(); } else { window.location.href = '{% url 'label_list' %}' }"
                         class="btn btn-ghost rounded-full normal-case">Back</button>
                 <button hx-get="{% url 'label_detail' label.pk %}?mode=edit"
                         hx-target="#main-content"
+                        hx-push-url="true"
                         class="btn btn-primary rounded-full normal-case">
                     <i class="nf nf-fa-edit text-lg"></i>
                     Edit

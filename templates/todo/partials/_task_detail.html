@@ -13,6 +13,7 @@
                         class="btn btn-ghost rounded-full normal-case">Back</button>
                 <button hx-get="{% url 'task_detail' task.id %}?mode=edit"
                         hx-target="#main-content"
+                        hx-push-url="true"
                         class="btn btn-primary rounded-full normal-case">
                     <i class="nf nf-fa-edit text-lg"></i>
                     Edit
@@ -69,9 +70,8 @@
                         <div class="flex flex-wrap gap-2">
                             {% for label in task.labels.all %}
                                 <span class="badge badge-lg font-medium px-3 py-3"
-                                      style="background-color: {{ label.color }}; color: {{ label.color|contrast_color }};">
-                                    {{ label.name }}
-                                </span>
+                                      style="background-color: {{ label.color }};
+                                             color: {{ label.color|contrast_color }}">{{ label.name }}</span>
                             {% endfor %}
                         </div>
                     {% else %}
@@ -85,6 +85,6 @@
                 </div>
             </div>
         </div>
-        </div>
-    {% endif %}
+    </div>
+{% endif %}
 <div id="toast-container" hx-swap-oob="afterbegin">{% include "partials/_messages.html" %}</div>

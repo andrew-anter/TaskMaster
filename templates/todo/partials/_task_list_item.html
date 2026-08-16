@@ -36,6 +36,7 @@
         {# Added min-w-0 for proper truncation with flex #}
         <button hx-get="{% url 'task_detail' task.id %}"
                 hx-target="#main-content"
+                hx-push-url="true"
                 class="text-left text-base-content text-base font-medium leading-normal truncate hover:text-primary transition-colors {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %}"
                 title="View task '{{ task.title|escapejs }}'">
             {{ task.title }}
@@ -69,6 +70,7 @@
         {# Edit Task Button #}
         <button hx-get="{% url 'task_detail' task.id %}?mode=edit"
                 hx-target="#main-content"
+                hx-push-url="true"
                 class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-white hover:bg-primary focus:bg-primary"
                 title="Edit task '{{ task.title|escapejs }}'">
             <i class="nf nf-fa-edit text-lg "></i>

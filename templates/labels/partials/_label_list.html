@@ -23,6 +23,7 @@
                     <div class="flex flex-col justify-center flex-grow min-w-0">
                         <button hx-get="{% url 'label_detail' label.pk %}"
                                 hx-target="#main-content"
+                                hx-push-url="true"
                                 class="text-left text-base-content text-base font-medium leading-normal truncate hover:text-primary transition-colors"
                                 title="View label '{{ label.name|escapejs }}'">
                             {{ label.name }}
@@ -38,6 +39,7 @@
                     <div class="ml-auto flex items-center gap-1 md:gap-2 pl-2 shrink-0">
                         <button hx-get="{% url 'label_detail' label.pk %}?mode=edit"
                                 hx-target="#main-content"
+                                hx-push-url="true"
                                 class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-white hover:bg-primary focus:bg-primary"
                                 title="Edit label">
                             <i class="nf nf-fa-edit text-lg"></i>
