@@ -1,5 +1,11 @@
-.PHONY: run test lint format typecheck security deps css css-build css-watch \
+.PHONY: run dev test lint format typecheck security deps css css-build css-watch \
         migrations migrate migrate-full shell check worker beat worker-beat
+
+dev: ## Run server + Celery worker/beat with eager tasks (full local dev)
+	@trap 'kill 0' INT TERM; \
+	CELERY_TASK_ALWAYS_EAGER=True CELERY_BROKER_URL=memory:// uv run python manage.py runserver & \
+	CELERY_TASK_ALWAYS_EAGER=True CELERY_BROKER_URL=memory:// uv run celery -A core worker -B -l info & \
+	wait
 
 run: ## Run the development server
 	uv run python manage.py runserver
