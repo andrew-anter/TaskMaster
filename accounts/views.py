@@ -1,17 +1,18 @@
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_not_required  # type: ignore
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
+from .decorators import require_non_authenticated_user
 from .forms import CustomLoginForm, CustomRegisterForm
 
 
 @require_http_methods(request_method_list=["GET"])
 @login_not_required
-def root_redirect_view(request) -> HttpResponse:
+def root_redirect_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return HttpResponseRedirect(reverse("home"))
     return HttpResponseRedirect(reverse("login"))
@@ -19,7 +20,8 @@ def root_redirect_view(request) -> HttpResponse:
 
 @require_http_methods(request_method_list=["GET", "POST"])
 @login_not_required
-def login_view(request) -> HttpResponse:
+@require_non_authenticated_user
+def login_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = CustomLoginForm(request, data=request.POST)
         if form.is_valid():
@@ -40,7 +42,8 @@ def login_view(request) -> HttpResponse:
 
 @require_http_methods(request_method_list=["GET", "POST"])
 @login_not_required
-def register_view(request) -> HttpResponse:
+@require_non_authenticated_user
+def register_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = CustomRegisterForm(request.POST)
         if form.is_valid():
@@ -61,7 +64,7 @@ def register_view(request) -> HttpResponse:
 
 
 @require_http_methods(request_method_list=["POST"])
-def logout_view(request) -> HttpResponse:
+def logout_view(request: HttpRequest) -> HttpResponse:
     logout(request=request)
 
     response = HttpResponse()
