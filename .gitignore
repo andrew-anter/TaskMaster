@@ -24,6 +24,11 @@ selftest-cert.*
 # Temporary files (screenshots, scripts)
 /tmp/
 
+# Celery Beat Temporary Files
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+
 # Tooling
 tailwindcss
 daisyui.js
@@ -33,3 +38,4 @@ daisyui-theme.js
 .agents/
 .pytest_cache/
 .ruff_cache/
+
