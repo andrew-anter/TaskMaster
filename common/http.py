@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 
 from django.http import HttpResponse
+from django.urls import reverse
+
+_REFERER_SESSION_KEY = "_http_referrer"
 
 
 def is_partial_request(request) -> bool:
@@ -30,3 +33,14 @@ def hx_location_response(path: str, *, target: str = "#main-content") -> HttpRes
     response = HttpResponse()
     response["HX-Location"] = json.dumps({"path": path, "target": target})
     return response
+
+
+def get_referrer_path(request, *, fallback: str | None = None) -> str:
+    """Return the path of the previous page stored by ``ReferrerMiddleware``.
+
+    Pops the value from the session so the next navigation starts fresh.
+    Falls back to ``fallback`` (defaults to the ``home`` URL).
+    """
+    if fallback is None:
+        fallback = reverse("home")
+    return request.session.pop(_REFERER_SESSION_KEY, fallback)

@@ -10,7 +10,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
-from common.http import hx_location_response, is_partial_request
+from common.http import get_referrer_path, hx_location_response, is_partial_request
 
 from .exceptions import DueDateInPastError, ScheduledDateInPastError
 
@@ -165,13 +165,14 @@ def task_add_partial_view(request):
                 }
                 return render(request, template_name, context)
 
+            referer_path = get_referrer_path(request)
             if request.htmx:
-                response = hx_location_response(reverse("home"))
+                response = hx_location_response(referer_path)
                 messages.success(request, "Task added successfully")
                 return response
             else:
                 messages.success(request, "Task added successfully!")
-                return HttpResponseRedirect(reverse("home"))
+                return HttpResponseRedirect(referer_path)
         else:
             if request.htmx:
                 context = {
