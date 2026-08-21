@@ -15,9 +15,8 @@
                 hx-push-url="true">Labels</button>
         {# Add Task Button #}
         <button class="btn btn-primary btn-xs sm:btn-sm btn-circle"
-                hx-get="{% url 'task_add' %}"
-                hx-target="#main-content"
-                hx-push-url="true"
+                x-data
+                @click="const url = '{% url 'task_add' %}?next=' + encodeURIComponent(window.location.pathname + window.location.search); history.pushState(null, '', '{% url 'task_add' %}'); htmx.ajax('GET', url, {target: '#main-content', swap: 'innerHTML'});"
                 title="Add Task"
                 aria-label="Add Task">
             <i class="nf nf-fa-plus text-sm sm:text-lg"></i>

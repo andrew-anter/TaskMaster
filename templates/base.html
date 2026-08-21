@@ -25,6 +25,50 @@
                         }
                     });
 
+                    Alpine.store('navHistory', {
+                        stack: [window.location.pathname + window.location.search],
+                        push: function(path) {
+                            if (this.stack[this.stack.length - 1] !== path) {
+                                this.stack.push(path);
+                            }
+                        },
+                        back: function(fallbackUrl) {
+                            if (this.stack.length > 1) {
+                                this.stack.pop();
+                                const previousUrl = this.stack[this.stack.length - 1];
+                                history.pushState(null, '', previousUrl);
+                                htmx.ajax('GET', previousUrl, {
+                                    target: '#main-content',
+                                    swap: 'innerHTML'
+                                });
+                            } else if (fallbackUrl) {
+                                history.pushState(null, '', fallbackUrl);
+                                htmx.ajax('GET', fallbackUrl, {
+                                    target: '#main-content',
+                                    swap: 'innerHTML'
+                                });
+                            } else {
+                                history.back();
+                            }
+                        }
+                    });
+
+                    document.body.addEventListener('htmx:pushedIntoHistory', function(evt) {
+                        Alpine.store('navHistory').push(evt.detail.path);
+                    });
+
+                    window.addEventListener('popstate', function() {
+                        const currentPath = window.location.pathname + window.location.search;
+                        const store = Alpine.store('navHistory');
+                        if (store.stack[store.stack.length - 1] !== currentPath) {
+                            if (store.stack.length > 1 && store.stack[store.stack.length - 2] === currentPath) {
+                                store.stack.pop();
+                            } else {
+                                store.push(currentPath);
+                            }
+                        }
+                    });
+
                     var mq = window.matchMedia('(prefers-color-scheme: dark)');
                     mq.addEventListener('change', function () {
                         var t = localStorage.getItem('theme');
@@ -109,7 +153,7 @@
                 }
                 
                 if (event.key === 'a' || event.key === 'A') {
-                    const addTaskUrl = "{% url 'task_add' %}";
+                    const addTaskUrl = "{% url 'task_add' %}?next=" + encodeURIComponent(window.location.pathname + window.location.search);
                     const target = document.getElementById('main-content');
                     
                     if (target && typeof htmx !== 'undefined') {

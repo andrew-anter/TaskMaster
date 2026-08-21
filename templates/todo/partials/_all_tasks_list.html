@@ -132,7 +132,7 @@
     <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Quick Actions</h2>
     <div class="flex justify-start">
         <div class="flex flex-1 gap-3 flex-wrap px-4 py-3">
-            <a hx-get="{% url 'task_add' %}"
+            <a hx-get="{% url 'task_add' %}?next={{ request.path|urlencode }}"
                hx-target="#main-content"
                hx-push-url="true"
                class="btn btn-primary rounded-full normal-case">

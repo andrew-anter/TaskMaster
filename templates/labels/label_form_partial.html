@@ -11,7 +11,8 @@
             <h1 class="text-3xl font-bold text-base-content">{{ page_title|default:"Label" }}</h1>
             <div class="flex items-center gap-2">
                 <button type="button"
-                        onclick="history.back()"
+                        x-data
+                        @click="$store.navHistory.back('{% url 'label_list' %}')"
                         class="btn btn-ghost rounded-full normal-case">Cancel</button>
                 <button type="submit" class="btn btn-primary rounded-full normal-case">
                     <i class="nf nf-fa-check text-lg"></i>

@@ -1,4 +1,5 @@
 from datetime import date
+from urllib.parse import quote as url_quote
 
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -10,7 +11,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
-from common.http import get_referrer_path, hx_location_response, is_partial_request
+from common.http import hx_location_response, is_partial_request
 
 from .exceptions import DueDateInPastError, ScheduledDateInPastError
 
@@ -139,6 +140,18 @@ def task_list_view(request):
 @require_http_methods(request_method_list=["GET", "POST"])
 def task_add_partial_view(request):
     template_name = ADD_TASK_TEMPLATE_NAME
+    raw_next = request.POST.get("next") or request.GET.get("next", "")
+    if raw_next.startswith("/") and not raw_next.startswith("//"):
+        next_url = raw_next
+    else:
+        next_url = ""
+    add_task_base_url = reverse("task_add")
+    add_task_url = (
+        f"{add_task_base_url}?next={url_quote(next_url)}"
+        if next_url
+        else add_task_base_url
+    )
+
     if request.method == "POST":
         form = TaskForm(request.POST, user=request.user)
         if form.is_valid():
@@ -162,17 +175,19 @@ def task_add_partial_view(request):
                     "selected_label_ids": [
                         lbl.pk for lbl in form.cleaned_data.get("labels", [])
                     ],
+                    "add_task_url": add_task_url,
+                    "next_url": next_url,
                 }
                 return render(request, template_name, context)
 
-            referer_path = get_referrer_path(request)
+            redirect_target = next_url or reverse("home")
             if request.htmx:
-                response = hx_location_response(referer_path)
+                response = hx_location_response(redirect_target)
                 messages.success(request, "Task added successfully")
                 return response
             else:
                 messages.success(request, "Task added successfully!")
-                return HttpResponseRedirect(referer_path)
+                return HttpResponseRedirect(redirect_target)
         else:
             if request.htmx:
                 context = {
@@ -182,6 +197,8 @@ def task_add_partial_view(request):
                     "selected_label_ids": [
                         lbl.pk for lbl in form.cleaned_data.get("labels", [])
                     ],
+                    "add_task_url": add_task_url,
+                    "next_url": next_url,
                 }
                 return render(request, template_name, context)
 
@@ -193,6 +210,8 @@ def task_add_partial_view(request):
         "page_title": "Add New Task",
         "user_labels": Label.objects.filter(owner=request.user),
         "selected_label_ids": [],
+        "add_task_url": add_task_url,
+        "next_url": next_url,
     }
     if is_partial_request(request):
         return render(request, template_name, context)

@@ -6,6 +6,7 @@
           hx-target="#main-content"
           class="contents">
         {% csrf_token %}
+        {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
         <script>
             // Ensure focus on the title field when the partial is loaded via HTMX
             (function() {
@@ -22,9 +23,18 @@
         <div class="flex flex-wrap justify-between items-center gap-3 p-4">
             <h1 class="text-3xl font-bold text-base-content">{{ page_title|default:"Manage Task" }}</h1>
             <div class="flex items-center gap-2">
-                <button type="button"
-                        onclick="history.back()"
-                        class="btn btn-ghost rounded-full normal-case">Cancel</button>
+                {% if next_url %}
+                    <button type="button"
+                            hx-get="{{ next_url }}"
+                            hx-target="#main-content"
+                            hx-push-url="true"
+                            class="btn btn-ghost rounded-full normal-case">Cancel</button>
+                {% else %}
+                    <button type="button"
+                            x-data
+                            @click="$store.navHistory.back('{% url 'home' %}')"
+                            class="btn btn-ghost rounded-full normal-case">Cancel</button>
+                {% endif %}
                 <button type="submit" class="btn btn-primary rounded-full normal-case">
                     <i class="nf nf-fa-check text-lg"></i>
                     {{ submit_label|default:"Add Task" }}
