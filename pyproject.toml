@@ -28,6 +28,7 @@ stubPath = "./typings"
 pythonVersion = "3.13"
 pythonPlatform = "Linux"
 reportMissingTypeStubs = false
+reportAssignmentType = "error"
 
 [tool.django-stubs]
 django_settings_module = "core.settings"
