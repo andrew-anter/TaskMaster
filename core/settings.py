@@ -15,8 +15,8 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR, "core", ".env"))
 
 
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-build-time-key")  # type: ignore[reportArgumentType]
-DEBUG = env.bool("DEBUG", default=True)  # type: ignore[reportArgumentType]
+SECRET_KEY = env("SECRET_KEY")  # type: ignore[reportArgumentType]
+DEBUG = env.bool("DEBUG", default=False)  # type: ignore[reportArgumentType]
 
 if DEBUG:
     import django_stubs_ext
