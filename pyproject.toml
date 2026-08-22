@@ -24,7 +24,13 @@ authors = [{ name = "Andrew Anter", email = "andrew.anter@gmail.com" }]
 include = ["."]
 exclude = ["**/node_modules", "**/__pycache__", ".venv", "**/migrations/*.py", "src", "tmp"]
 typeCheckingMode = "standard"
-stubPath = "./typings/"
+stubPath = "./typings"
+pythonVersion = "3.13"
+pythonPlatform = "Linux"
+reportMissingTypeStubs = false
+
+[tool.django-stubs]
+django_settings_module = "core.settings"
 
 
 [dependency-groups]
