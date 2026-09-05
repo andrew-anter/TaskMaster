@@ -263,7 +263,7 @@ def handle_valid_update_form(request, task_id, form):
 
     except Task.DoesNotExist:
         response = hx_location_response(reverse("home"))
-        messages.error(request, "No task assiociated with this id.")
+        messages.error(request, "No task associated with this id.")
         return response
 
     except DueDateInPastError as e:
@@ -289,19 +289,20 @@ def handle_valid_update_form(request, task_id, form):
 
 @require_http_methods(request_method_list=["GET", "POST"])
 def task_update_view(request, task_id):
-    task = get_task_for_user(user=request.user, task_id=task_id)
-
-    if not task:
+    try:
+        task = get_task_for_user(user=request.user, task_id=task_id)
+    except Task.DoesNotExist:
         response = hx_location_response(reverse("home"))
-        messages.error(request, "No task assiociated with this id.")
+        messages.error(request, "No task associated with this id.")
         return response
 
     if request.method == "POST":
         form = TaskForm(request.POST, instance=task, user=request.user)
         if form.is_valid():
             return handle_valid_update_form(request, task_id, form)
+    else:
+        form = TaskForm(instance=task, user=request.user)
 
-    form = TaskForm(instance=task, user=request.user)
     page_title = "Update Task"
     context = {
         "form": form,

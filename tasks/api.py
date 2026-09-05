@@ -69,7 +69,12 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
         Get details for a specific task
         """
         user = request.user
-        task: Task = get_task_for_user(user=user, task_id=pk)
+        try:
+            task: Task = get_task_for_user(user=user, task_id=pk)
+        except Task.DoesNotExist:
+            return Response(
+                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         data = TaskSerializer(instance=task).data
         return Response(data)
 
@@ -119,13 +124,23 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
 
     def delete(self, request, pk: int) -> Response:
         user = request.user
-        task_delete_service(user=user, task_id=pk)
+        try:
+            task_delete_service(user=user, task_id=pk)
+        except Task.DoesNotExist:
+            return Response(
+                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ToggleStatusAPI(BaseAPIView):
     def post(self, request, pk: int) -> Response:
         user = request.user
-        task = get_task_for_user(user=user, task_id=pk)
+        try:
+            task = get_task_for_user(user=user, task_id=pk)
+        except Task.DoesNotExist:
+            return Response(
+                {"error": "Task not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         toggle_task_status_service(task=task)
         return Response(status=status.HTTP_200_OK)

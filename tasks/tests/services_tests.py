@@ -160,6 +160,64 @@ class TestUpdateTaskService:
         assert task.due_datetime == aware_datetime
         assert task.scheduled_date == new_scheduled_date
 
+    def test_clear_title_with_empty_string(self, task_for_testing):
+        """Tests that passing an empty string clears the title."""
+        task = task_for_testing
+        assert task.title != ""
+
+        task, updated = task_update_service(
+            task_id=task.pk,
+            user=task.owner,
+            title="",
+        )
+
+        task.refresh_from_db()
+        assert task.title == ""
+        assert updated is True
+
+    def test_clear_description_with_empty_string(self, task_for_testing):
+        """Tests that passing an empty string clears the description."""
+        task = task_for_testing
+        assert task.description != ""
+
+        task, updated = task_update_service(
+            task_id=task.pk,
+            user=task.owner,
+            description="",
+        )
+
+        task.refresh_from_db()
+        assert task.description == ""
+        assert updated is True
+
+    def test_none_does_not_overwrite_existing_title(self, task_for_testing):
+        """Tests that passing None leaves the title unchanged."""
+        task = task_for_testing
+        original_title = task.title
+
+        task, updated = task_update_service(
+            task_id=task.pk,
+            user=task.owner,
+            title=None,
+        )
+
+        task.refresh_from_db()
+        assert task.title == original_title
+
+    def test_none_does_not_overwrite_existing_description(self, task_for_testing):
+        """Tests that passing None leaves the description unchanged."""
+        task = task_for_testing
+        original_description = task.description
+
+        task, updated = task_update_service(
+            task_id=task.pk,
+            user=task.owner,
+            description=None,
+        )
+
+        task.refresh_from_db()
+        assert task.description == original_description
+
 
 @pytest.mark.django_db
 class TestDeleteTaskService:

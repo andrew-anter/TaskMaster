@@ -202,11 +202,11 @@ def task_update_service(
 
     fields_to_update = []
     updated = False
-    if title and task.title != title:
+    if title is not None and task.title != title:
         task.title = title
         fields_to_update.append("title")
 
-    if description and task.description != description:
+    if description is not None and task.description != description:
         task.description = description
         fields_to_update.append("description")
 

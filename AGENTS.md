@@ -119,3 +119,24 @@ uv run python manage.py migrate
 ## API
 
 REST API at `/tasks/api/v1/` using DRF. Endpoints in `tasks/api.py`. Authentication: Session + Basic.
+
+## Code Review Rules
+
+When reviewing code changes (via the `review` tool or self-review), enforce these project-specific patterns:
+
+### Cross-Layer Consistency
+- **Service vs API vs Form validation**: When changing validation in one layer (service, serializer, form), check all other layers for consistency. The service layer is the source of truth for business rules. Forms and serializers may add UI/API-specific constraints, but must not contradict the service.
+- **Selectors raise, never return None**: `get_task_for_user` raises `Task.DoesNotExist`. All callers must handle it with `try/except`, not `if not obj`. Grep for all callers when fixing one.
+
+### Pattern Sweep
+- When fixing a bug in one endpoint/function, search the entire codebase for the same pattern before declaring done. Example: if adding `DoesNotExist` handling to `get`, also check `patch`, `delete`, `toggle`, and any other caller.
+- When changing a function signature or behavior, check all call sites (views, API, tests, management commands).
+
+### Error Handling
+- Every view/API endpoint that calls `get_task_for_user` or `task_delete_service` must handle `Task.DoesNotExist`.
+- Forms re-rendered on invalid POST must preserve the bound form with errors, not recreate an unbound form.
+
+### Testing
+- New service behavior requires tests at the service level.
+- New/changed views require view-level tests.
+- API endpoint changes require API tests.
