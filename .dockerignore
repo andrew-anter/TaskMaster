@@ -4,6 +4,7 @@
 db.sqlite3
 dockerfile
 .env
+core/.env
 .dockerignore
 typings
 selftest-cert.*

@@ -45,6 +45,7 @@ dev = [
 	"pyopenssl>=25.1.0",
 	"pytest>=8.4.1",
 	"pytest-django>=4.11.1",
+	"ruff>=0.15",
 	"werkzeug>=3.1.3",
 ]
 

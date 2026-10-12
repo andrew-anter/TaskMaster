@@ -22,8 +22,8 @@ modern Tailwind CSS + daisyUI interface with light/dark themes.
   panel, and a full notifications page. Automatic task reminders are
   generated when tasks are overdue, due today, due within 24 hours, or
   scheduled for today.
-- **User accounts** — register, log in/out (username + password), with
-  optional Google sign-in via django-allauth.
+- **User accounts** — register, log in/out with your username or email,
+  password reset, with optional Google sign-in via django-allauth.
 - **REST API** — full CRUD API at `/tasks/api/v1/` using Django REST
   Framework (Session + Basic auth).
 - **Light/dark themes** — toggle between a light and dark theme; your choice

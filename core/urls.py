@@ -16,7 +16,6 @@ optional_apps = {
 urlpatterns = [
     path("", root_redirect_view, name="root_redirect"),
     path("admin/", admin.site.urls),
-    path("accounts/", include("accounts.urls")),
     path("allauth/", include("allauth.urls")),
     path("api-auth/", include("rest_framework.urls")),
 ]

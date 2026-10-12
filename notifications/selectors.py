@@ -53,14 +53,3 @@ def get_unread_notifications_count(*, user: User) -> int:
 def invalidate_unread_notifications_count(*, user_id: int) -> None:
     """Drop the cached unread count for a user (called on notification writes)."""
     cache.delete(UNREAD_COUNT_CACHE_KEY.format(user_id=user_id))
-
-
-def get_notification_for_user(*, user: User, notification_id: int) -> Notification:
-    """
-    Fetch a single notification, ensuring it belongs to ``user``.
-
-    Raises:
-        Notification.DoesNotExist: if the notification does not exist or is
-            addressed to a different user.
-    """
-    return Notification.objects.get(pk=notification_id, recipient=user)

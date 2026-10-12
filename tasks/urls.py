@@ -7,7 +7,6 @@ main_patterns = [
     path("home/", views.task_list_view, name="home"),
     path("all-tasks/", views.all_tasks_view, name="all_tasks"),
     path("add/", views.task_add_partial_view, name="task_add"),
-    path("update/<int:task_id>/", views.task_update_view, name="task_update"),
     path("task/<int:task_id>/", views.task_detail_view, name="task_detail"),
     path(
         "update-status/<int:task_id>/",

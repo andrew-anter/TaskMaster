@@ -1,4 +1,5 @@
 import pytest
+from django.test import Client
 from django.urls import reverse
 
 from accounts.models import User
@@ -105,38 +106,20 @@ class TestTaskDetailView:
         assert response.status_code == 200
         assert response.context["editing"] is True
 
-
-class TestTaskUpdateView:
-    def test_get_renders_form(self, client_logged_in, sample_task):
-        response = client_logged_in.get(reverse("task_update", args=[sample_task.pk]))
-        assert response.status_code == 200
-        assert "form" in response.context
-
-    def test_post_updates_task(self, client_logged_in, sample_task):
-        data = {
-            "title": "Updated via update view",
-            "description": "Updated desc",
-            "status": Task.Status.ON_HOLD,
-            "priority": Task.Priority.LOW,
-        }
-        response = client_logged_in.post(
-            reverse("task_update", args=[sample_task.pk]), data
-        )
-        assert response.status_code in (200, 302)
-        sample_task.refresh_from_db()
-        assert sample_task.title == "Updated via update view"
-
-    def test_post_invalid_form_returns_errors(self, client_logged_in, sample_task):
+    def test_post_invalid_form_returns_bound_errors(
+        self, client_logged_in, sample_task
+    ):
         data = {
             "title": "",
             "status": Task.Status.TODO,
             "priority": Task.Priority.MEDIUM,
         }
         response = client_logged_in.post(
-            reverse("task_update", args=[sample_task.pk]), data
+            reverse("task_detail", args=[sample_task.pk]), data
         )
         assert response.status_code == 200
         assert response.context["form"].errors
+        assert response.context["editing"] is True
 
 
 class TestTaskStatusToggleView:
@@ -166,6 +149,36 @@ class TestTaskStatusToggleView:
         task.refresh_from_db()
         assert task.status == Task.Status.TODO
 
+    def test_other_user_cannot_toggle_task(self, sample_task):
+        """Regression: the toggle view must scope tasks to their owner."""
+        other_user = User.objects.create_user(username="intruder", password="pass1234")
+        intruder_client = Client()
+        intruder_client.force_login(other_user)
+
+        response = intruder_client.post(
+            reverse("update_task_status", args=[sample_task.pk])
+        )
+
+        assert response.status_code == 404
+        sample_task.refresh_from_db()
+        assert sample_task.status == Task.Status.TODO
+
+    def test_other_user_htmx_toggle_redirects_without_change(self, sample_task):
+        """The HTMX branch must not mutate another user's task either."""
+        other_user = User.objects.create_user(username="intruder2", password="pass1234")
+        intruder_client = Client()
+        intruder_client.force_login(other_user)
+
+        response = intruder_client.post(
+            reverse("update_task_status", args=[sample_task.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        assert response.status_code == 200
+        assert "HX-Location" in response.headers
+        sample_task.refresh_from_db()
+        assert sample_task.status == Task.Status.TODO
+
 
 class TestTaskDeleteView:
     def test_post_deletes_task(self, client_logged_in, sample_task):
@@ -173,6 +186,27 @@ class TestTaskDeleteView:
         response = client_logged_in.post(reverse("task_delete", args=[task_id]))
         assert response.status_code == 200
         assert not Task.objects.filter(pk=task_id).exists()
+
+    def test_other_user_cannot_delete_task(self, sample_task):
+        other_user = User.objects.create_user(username="intruder", password="pass1234")
+        intruder_client = Client()
+        intruder_client.force_login(other_user)
+
+        response = intruder_client.post(reverse("task_delete", args=[sample_task.pk]))
+
+        assert response.status_code == 404
+        assert Task.objects.filter(pk=sample_task.pk).exists()
+
+
+class TestRefreshTaskLabelsView:
+    def test_invalid_form_labels_param_is_ignored(self, client_logged_in):
+        # ``²`` is a Unicode digit that ``isdigit()`` accepts but ``int()`` rejects.
+        response = client_logged_in.get(
+            reverse("refresh_task_labels") + "?form_labels=abc,7,garbage,%C2%B2"
+        )
+
+        assert response.status_code == 200
+        assert response.context["selected_ids"] == [7]
 
 
 class TestAllTasksView:

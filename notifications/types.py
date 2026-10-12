@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-DEFAULT_NOTIFICATION_TYPE = "default"
-
 DEFAULT_ICON = "nf-cod-bell"
 
 

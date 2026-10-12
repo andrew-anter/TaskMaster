@@ -26,6 +26,8 @@
 
       {% if request.GET.next %}
       <input type="hidden" name="next" value="{{ request.GET.next }}">
+      {% elif request.POST.next %}
+      <input type="hidden" name="next" value="{{ request.POST.next }}">
       {% endif %}
 
 

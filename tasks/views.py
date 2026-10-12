@@ -33,9 +33,7 @@ from .services import (
     toggle_task_status_service,
 )
 from labels.models import Label
-import logging
 
-logger = logging.getLogger(__name__)
 ADD_TASK_TEMPLATE_NAME = "todo/partials/_add_task.html"
 TASKS_PER_PAGE = 25
 
@@ -166,7 +164,7 @@ def task_add_partial_view(request):
                     owner=request.user,
                     labels=form.cleaned_data.get("labels"),
                 )
-            except DueDateInPastError as e:
+            except (DueDateInPastError, ValueError) as e:
                 form.add_error(None, f"{e}")
                 context = {
                     "form": form,
@@ -220,7 +218,13 @@ def task_add_partial_view(request):
 
 @require_http_methods(request_method_list=["POST"])
 def task_update_status_view(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
+    try:
+        task = get_task_for_user(user=request.user, task_id=task_id)
+    except Task.DoesNotExist:
+        messages.error(request, "No task associated with this id.")
+        if request.htmx:
+            return hx_location_response(reverse("home"))
+        raise Http404
     toggle_task_status_service(task=task)
 
     if request.htmx:
@@ -234,86 +238,6 @@ def task_update_status_view(request, task_id):
         # Fallback for non-HTMX requests (though this view is primarily for HTMX now)
         messages.info(request, f"Task '{task.title}' status updated.")
         return HttpResponseRedirect(reverse("all_tasks"))
-
-
-def handle_valid_update_form(request, task_id, form):
-    page_title = "Update Task"
-    try:
-        _, success = task_update_service(
-            user=request.user,
-            task_id=task_id,
-            title=form.cleaned_data["title"],
-            description=form.cleaned_data.get("description"),
-            status=form.cleaned_data["status"],
-            priority=form.cleaned_data["priority"],
-            due_datetime=form.cleaned_data.get("due_datetime"),
-            scheduled_date=form.cleaned_data.get("scheduled_date"),
-            labels=form.cleaned_data.get("labels"),
-        )
-        if success:
-            messages.success(request, "Task have been updated successfully.")
-
-        else:
-            messages.warning(
-                request,
-                "Task update failed. Maybe all the task attributes are still the same",
-            )
-        response = hx_location_response(reverse("home"))
-        return response
-
-    except Task.DoesNotExist:
-        response = hx_location_response(reverse("home"))
-        messages.error(request, "No task associated with this id.")
-        return response
-
-    except DueDateInPastError as e:
-        form.add_error("due_datetime", f"{e}")
-        page_title = "Update Task (Errors)"
-
-    except ScheduledDateInPastError as e:
-        form.add_error("scheduled_date", f"{e}")
-        page_title = "Update Task (Errors)"
-
-    except Exception:
-        logger.exception("An exception occurred in task_update_view")
-
-    context = {
-        "form": form,
-        "task_id": task_id,
-        "page_title": page_title,
-        "user_labels": Label.objects.filter(owner=request.user),
-        "selected_label_ids": [lbl.pk for lbl in form.cleaned_data.get("labels", [])],
-    }
-    return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
-
-
-@require_http_methods(request_method_list=["GET", "POST"])
-def task_update_view(request, task_id):
-    try:
-        task = get_task_for_user(user=request.user, task_id=task_id)
-    except Task.DoesNotExist:
-        response = hx_location_response(reverse("home"))
-        messages.error(request, "No task associated with this id.")
-        return response
-
-    if request.method == "POST":
-        form = TaskForm(request.POST, instance=task, user=request.user)
-        if form.is_valid():
-            return handle_valid_update_form(request, task_id, form)
-    else:
-        form = TaskForm(instance=task, user=request.user)
-
-    page_title = "Update Task"
-    context = {
-        "form": form,
-        "task_id": task_id,
-        "page_title": page_title,
-        "user_labels": Label.objects.filter(owner=request.user),
-        "selected_label_ids": list(task.labels.values_list("pk", flat=True)),
-    }
-    if is_partial_request(request):
-        return render(request, template_name=ADD_TASK_TEMPLATE_NAME, context=context)
-    return render(request, template_name="todo/task_add.html", context=context)
 
 
 @require_http_methods(request_method_list=["GET", "POST"])
@@ -360,8 +284,8 @@ def task_detail_view(request, task_id):
                 form.add_error("due_datetime", f"{e}")
             except ScheduledDateInPastError as e:
                 form.add_error("scheduled_date", f"{e}")
-            except Exception:
-                logger.exception("An exception occurred in task_detail_view")
+            except ValueError as e:
+                form.add_error(None, f"{e}")
             else:
                 if success:
                     messages.success(request, "Task updated successfully.")
@@ -391,17 +315,12 @@ def task_detail_view(request, task_id):
 def task_delete_view(request, task_id):
     try:
         task_delete_service(user=request.user, task_id=task_id)
-        messages.success(request, message="Task deleted successfully.")
-    except Exception:
-        messages.warning(
-            request, message="An error occurred, no changes have been made"
-        )
-        task = get_object_or_404(Task, pk=task_id, owner=request.user)
-        return render(
-            request,
-            "todo/partials/_task_list_item.html",
-            {"task": task, "Status": Task.Status},
-        )
+    except Task.DoesNotExist:
+        messages.error(request, "No task associated with this id.")
+        if request.htmx:
+            return hx_location_response(reverse("home"))
+        raise Http404
+    messages.success(request, message="Task deleted successfully.")
     return render(request, "partials/_messages_oob.html")
 
 
@@ -458,7 +377,9 @@ def all_tasks_view(request):
 def refresh_task_labels_view(request):
     user_labels = Label.objects.filter(owner=request.user)
     form_labels = request.GET.get("form_labels", "")
-    selected_ids = [int(x) for x in form_labels.split(",") if x] if form_labels else []
+    selected_ids = [
+        int(chunk) for chunk in form_labels.split(",") if chunk.strip().isdecimal()
+    ]
     context = {"user_labels": user_labels, "selected_ids": selected_ids}
     return render(request, "todo/partials/_labels_selector.html", context)
 

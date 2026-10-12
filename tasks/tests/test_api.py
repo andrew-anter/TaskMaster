@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from tasks.models import Task
@@ -51,6 +54,17 @@ class TestListCreateApi:
         response = api_client.get(reverse("list-tasks-api"))
         assert response.status_code in (401, 403)
 
+    def test_create_defaults_to_todo_status(self, auth_client, owner):
+        """Omitting status/description must not crash (NOT NULL) and defaults to TODO."""
+        response = auth_client.post(
+            reverse("list-tasks-api"), {"title": "Defaulted"}, format="json"
+        )
+
+        assert response.status_code == 201
+        task = Task.objects.get(owner=owner, title="Defaulted")
+        assert task.status == Task.Status.TODO
+        assert task.description == ""
+
 
 class TestDetailUpdateDeleteApi:
     def test_get_task(self, auth_client, sample_task):
@@ -68,6 +82,38 @@ class TestDetailUpdateDeleteApi:
         assert response.status_code == 200
         sample_task.refresh_from_db()
         assert sample_task.title == "Patched title"
+
+    def test_patch_clears_due_datetime(self, auth_client, sample_task):
+        sample_task.due_datetime = timezone.now() + timedelta(days=3)
+        sample_task.save(update_fields=["due_datetime"])
+
+        response = auth_client.patch(
+            reverse("task-detail-api", args=[sample_task.pk]),
+            {"due_datetime": None},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        sample_task.refresh_from_db()
+        assert sample_task.due_datetime is None
+
+    def test_patch_title_only_preserves_dates(self, auth_client, sample_task):
+        """A partial PATCH that omits the date fields must not clear them."""
+        sample_task.due_datetime = timezone.now() + timedelta(days=3)
+        sample_task.scheduled_date = (timezone.now() + timedelta(days=3)).date()
+        sample_task.save(update_fields=["due_datetime", "scheduled_date"])
+
+        response = auth_client.patch(
+            reverse("task-detail-api", args=[sample_task.pk]),
+            {"title": "Only the title"},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        sample_task.refresh_from_db()
+        assert sample_task.title == "Only the title"
+        assert sample_task.due_datetime is not None
+        assert sample_task.scheduled_date is not None
 
     def test_delete_task(self, auth_client, sample_task):
         response = auth_client.delete(reverse("task-detail-api", args=[sample_task.pk]))

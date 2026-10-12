@@ -1,5 +1,5 @@
 .PHONY: run dev test lint format typecheck security deps css css-build css-watch \
-        migrations migrate migrate-full shell check worker beat worker-beat
+        migrations migrate migrate-full cachetable shell check worker beat worker-beat
 
 dev: ## Run server + Celery worker/beat with eager tasks (full local dev)
 	@trap 'kill 0' INT TERM; \
@@ -52,6 +52,9 @@ migrate: ## Apply migrations
 	uv run python manage.py migrate
 
 migrate-full: migrations migrate ## Make and apply migrations
+
+cachetable: ## Create the database cache table
+	uv run python manage.py createcachetable
 
 shell: ## Open the Django shell
 	uv run python manage.py shell

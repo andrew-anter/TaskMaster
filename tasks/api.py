@@ -10,6 +10,7 @@ from .exceptions import DueDateInPastError, ScheduledDateInPastError
 from .models import Task
 from .selectors import get_all_tasks_for_user, get_task_for_user
 from .services import (
+    UNSET,
     task_add_service,
     task_delete_service,
     task_update_service,
@@ -53,7 +54,7 @@ class ListCreateApiView(BaseAPIView):
         task_add_service(
             title=data["title"],
             description=data.get("description"),
-            status=data.get("status", Task.Status.IN_PROGRESS),
+            status=data.get("status", Task.Status.TODO),
             priority=data.get("priority", Task.Priority.MEDIUM),
             due_datetime=data.get("due_datetime"),
             scheduled_date=data.get("scheduled_date"),
@@ -94,8 +95,8 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
                 description=data.get("description"),
                 status=data.get("status"),
                 priority=data.get("priority"),
-                due_datetime=data.get("due_datetime"),
-                scheduled_date=data.get("scheduled_date"),
+                due_datetime=data.get("due_datetime", UNSET),
+                scheduled_date=data.get("scheduled_date", UNSET),
                 labels=data.get("labels"),
             )
 
@@ -106,12 +107,6 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
 
         except (ValueError, DueDateInPastError, ScheduledDateInPastError) as e:
             return Response(data={"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        except Exception:
-            return Response(
-                data={"error": "An unexpected error occurred."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
 
         if updated:
             response_serializer = TaskSerializer(instance=task)

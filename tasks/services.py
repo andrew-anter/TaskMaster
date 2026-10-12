@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from enum import Enum
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -29,6 +30,16 @@ REMINDER_NOTIFICATION_TYPES = [
 ]
 
 
+class _Unset(Enum):
+    """Enum token used as the ``UNSET`` sentinel (narrowable via ``is`` checks)."""
+
+    VALUE = "unset"
+
+
+UNSET = _Unset.VALUE
+"""Default marker for optional update arguments: ``None`` clears, ``UNSET`` skips."""
+
+
 def _clear_task_reminder_notifications(task: Task) -> None:
     """Delete generated reminder notifications for a task (so they regenerate)."""
     deleted = Notification.objects.filter(
@@ -41,12 +52,11 @@ def _clear_task_reminder_notifications(task: Task) -> None:
 
 
 # -- Helper Functions -- #
-def status_check(status: str, task: Task):
-    if task.status != status:
-        if status not in [choice[0] for choice in Task.Status.choices]:
-            raise ValueError(f"'{status}' is not a valid status.")
-        return True
-    return False
+def status_check(status: str, task: Task) -> bool:
+    """Validate ``status`` and report whether it differs from the task's current one."""
+    if status not in Task.Status.values:
+        raise ValueError(f"'{status}' is not a valid status.")
+    return task.status != status
 
 
 def scheduled_date_check(scheduled_date: date, task: Task):
@@ -57,12 +67,11 @@ def scheduled_date_check(scheduled_date: date, task: Task):
     return False
 
 
-def priority_check(priority: int, task: Task):
-    if task.priority != priority:
-        if priority not in [choice[0] for choice in Task.Priority.choices]:
-            raise ValueError(f"'{priority}' is not a valid priority.")
-        return True
-    return False
+def priority_check(priority: int, task: Task) -> bool:
+    """Validate ``priority`` and report whether it differs from the current one."""
+    if priority not in Task.Priority.values:
+        raise ValueError(f"'{priority}' is not a valid priority.")
+    return task.priority != priority
 
 
 def due_datetime_check(due_datetime: datetime, task: Task):
@@ -80,7 +89,7 @@ def task_add_service(
     *,
     title: str,
     description: str | None,
-    status: str = Task.Status.IN_PROGRESS,
+    status: str = Task.Status.TODO,
     priority: int = Task.Priority.MEDIUM,
     due_datetime: datetime | None = None,
     scheduled_date: date | None = None,
@@ -108,15 +117,19 @@ def task_add_service(
 
     Raises:
         DueDateInPastError: If the provided due_datetime is in the past.
-        # Note: Further validation for status, priority, etc., could be added here.
+        ValueError: If ``status`` or ``priority`` is not a valid choice.
     """
     today = timezone.now().date()
     if due_datetime and due_datetime.date() < today:
         raise DueDateInPastError("Due date cannot be in the past.")
+    if status not in Task.Status.values:
+        raise ValueError(f"'{status}' is not a valid status.")
+    if priority not in Task.Priority.values:
+        raise ValueError(f"'{priority}' is not a valid priority.")
 
     todo_item = Task.objects.create(
         title=title,
-        description=description,
+        description=description or "",
         status=status,
         priority=priority,
         due_datetime=due_datetime,
@@ -164,8 +177,8 @@ def task_update_service(
     description: str | None = None,
     status: str | None = None,
     priority: int | None = None,
-    due_datetime: datetime | None = None,
-    scheduled_date: date | None = None,
+    due_datetime: datetime | None | _Unset = UNSET,
+    scheduled_date: date | None | _Unset = UNSET,
     labels: list[int] | None = None,
 ) -> tuple[Task, bool]:
     """
@@ -182,8 +195,10 @@ def task_update_service(
         description: The new description, if provided.
         status: The new status, if provided.
         priority: The new priority, if provided.
-        due_datetime: The new due datetime, if provided.
-        scheduled_date: The new scheduled date, if provided.
+        due_datetime: The new due datetime, if provided; ``None`` clears it,
+            ``UNSET`` (the default) leaves it unchanged.
+        scheduled_date: The new scheduled date, if provided; ``None`` clears it,
+            ``UNSET`` (the default) leaves it unchanged.
         labels: The new list of label IDs, if provided.
 
     Returns:
@@ -210,23 +225,31 @@ def task_update_service(
         task.description = description
         fields_to_update.append("description")
 
-    if status and status_check(status=status, task=task):
+    if status is not None and status_check(status=status, task=task):
         task.status = status
         fields_to_update.append("status")
 
-    if priority and priority_check(priority=priority, task=task):
+    if priority is not None and priority_check(priority=priority, task=task):
         task.priority = priority
         fields_to_update.append("priority")
 
-    if due_datetime and due_datetime_check(due_datetime=due_datetime, task=task):
-        task.due_datetime = due_datetime
-        fields_to_update.append("due_datetime")
+    if due_datetime is not UNSET:
+        if due_datetime is None:
+            if task.due_datetime is not None:
+                task.due_datetime = None
+                fields_to_update.append("due_datetime")
+        elif due_datetime_check(due_datetime=due_datetime, task=task):
+            task.due_datetime = due_datetime
+            fields_to_update.append("due_datetime")
 
-    if scheduled_date and scheduled_date_check(
-        scheduled_date=scheduled_date, task=task
-    ):
-        task.scheduled_date = scheduled_date
-        fields_to_update.append("scheduled_date")
+    if scheduled_date is not UNSET:
+        if scheduled_date is None:
+            if task.scheduled_date is not None:
+                task.scheduled_date = None
+                fields_to_update.append("scheduled_date")
+        elif scheduled_date_check(scheduled_date=scheduled_date, task=task):
+            task.scheduled_date = scheduled_date
+            fields_to_update.append("scheduled_date")
 
     if fields_to_update:
         task.save(update_fields=fields_to_update)
@@ -236,13 +259,15 @@ def task_update_service(
         task.labels.set(labels)
         updated = True
 
-    if updated and any(
+    reminders_stale = any(
         field in fields_to_update
         for field in ("title", "due_datetime", "scheduled_date")
-    ):
+    ) or ("status" in fields_to_update and task.status == Task.Status.COMPLETED)
+    if updated and reminders_stale:
         # A title or date change invalidates previously generated reminders
         # (stale message text / stale dates); the next beat run will
-        # regenerate them for the current task state.
+        # regenerate them for the current task state. Completing the task
+        # must stop the nagging, matching the quick-toggle behavior.
         _clear_task_reminder_notifications(task)
 
     return task, updated

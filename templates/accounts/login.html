@@ -26,6 +26,8 @@
 
       {% if request.GET.next %}
       <input type="hidden" name="next" value="{{ request.GET.next }}">
+      {% elif request.POST.next %}
+      <input type="hidden" name="next" value="{{ request.POST.next }}">
       {% endif %}
 
       <div class="space-y-4"> {# Using space-y for consistent gap #}
@@ -50,6 +52,10 @@
           <span class="label pt-1 label-text-alt text-error text-xs">{{ error }}</span>
           {% endfor %}
         </div>
+
+        <div class="text-right">
+          <a href="{% url 'account_reset_password' %}" class="link link-hover text-primary text-sm">Forgot password?</a>
+        </div>
       </div>
 
 
@@ -58,6 +64,7 @@
           Log in
         </button>
 
+        {% if google_login_enabled %}
         <div class="text-sm mt-3 text-right">
           <a 
              href="{% provider_login_url "google" %}"
@@ -67,6 +74,7 @@
              <i class="nf nf-dev-google"></i>Sign in with Google 
           </a>  
         </div>
+        {% endif %}
       </div>
 
       <div class="text-center mt-4 text-sm">

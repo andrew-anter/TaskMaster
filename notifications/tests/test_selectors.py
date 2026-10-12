@@ -1,8 +1,6 @@
 import pytest
 
-from ..models import Notification
 from ..selectors import (
-    get_notification_for_user,
     get_notifications_for_user,
     get_unread_notifications_count,
 )
@@ -44,11 +42,3 @@ class TestNotificationSelectors:
         assert get_unread_notifications_count(user=user) == 1
         mark_all_notifications_read(recipient=user)
         assert get_unread_notifications_count(user=user) == 0
-
-    def test_get_notification_for_user(self, user, notification):
-        fetched = get_notification_for_user(user=user, notification_id=notification.pk)
-        assert fetched == notification
-
-    def test_get_notification_is_owner_only(self, other_user, notification):
-        with pytest.raises(Notification.DoesNotExist):
-            get_notification_for_user(user=other_user, notification_id=notification.pk)

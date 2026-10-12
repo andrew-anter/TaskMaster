@@ -1,8 +1,2 @@
-{% url 'home' as cancel_url %}
-{% if task_id %}
-    {% url 'task_update' task_id as form_action_url %}
-    {% include "todo/partials/_task_form.html" with page_title=page_title|default:"Update Task" submit_label="Update Task" %}
-{% else %}
-    {% include "todo/partials/_task_form.html" with form_action_url=add_task_url next_url=next_url page_title=page_title|default:"Add New Task" submit_label="Add Task" %}
-{% endif %}
+{% include "todo/partials/_task_form.html" with form_action_url=add_task_url next_url=next_url page_title=page_title|default:"Add New Task" submit_label="Add Task" %}
 <div id="toast-container" hx-swap-oob="afterbegin">{% include "partials/_messages.html" %}</div>
