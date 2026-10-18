@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
@@ -5,6 +6,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
 from common.http import hx_location_response, is_partial_request
+from common.pagination import paginate
 
 from .models import Notification
 from .selectors import (
@@ -14,6 +16,7 @@ from .selectors import (
 from .services import mark_all_notifications_read, mark_notification_read
 
 PANEL_LIMIT = 10
+NOTIFICATIONS_PER_PAGE = 25
 
 PANEL_TEMPLATE = "notifications/partials/_notification_panel.html"
 BADGE_TEMPLATE = "notifications/partials/_notification_badge.html"
@@ -26,11 +29,20 @@ LIST_PARTIAL_TEMPLATE = "notifications/partials/_notification_list.html"
 @require_http_methods(["GET"])
 def notification_list_view(request):
     """Full-page list of all notifications for the current user."""
-    notifications = get_notifications_for_user(user=request.user)
+    page_obj, prev_page_url, next_page_url = paginate(
+        request,
+        get_notifications_for_user(user=request.user),
+        page_size=NOTIFICATIONS_PER_PAGE,
+    )
     unread_count = get_unread_notifications_count(user=request.user)
 
     context = {
-        "notifications": notifications,
+        "notifications": page_obj.object_list,
+        "page_obj": page_obj,
+        "prev_page_url": prev_page_url,
+        "next_page_url": next_page_url,
+        "page_base_url": reverse("notification_list"),
+        "item_name": "notification",
         "unread_count": unread_count,
         "page_title": "Notifications",
     }
@@ -64,10 +76,21 @@ def notification_badge_view(request):
 def mark_all_notifications_read_view(request):
     """Marks every notification read and refreshes the requesting UI."""
     mark_all_notifications_read(recipient=request.user)
+    messages.success(request, "All notifications marked as read.")
 
     if request.POST.get("source") == "page":
+        page_obj, prev_page_url, next_page_url = paginate(
+            request,
+            get_notifications_for_user(user=request.user),
+            page_size=NOTIFICATIONS_PER_PAGE,
+        )
         context = {
-            "notifications": get_notifications_for_user(user=request.user),
+            "notifications": page_obj.object_list,
+            "page_obj": page_obj,
+            "prev_page_url": prev_page_url,
+            "next_page_url": next_page_url,
+            "page_base_url": reverse("notification_list"),
+            "item_name": "notification",
             "unread_count": 0,
             "page_title": "Notifications",
         }
@@ -97,4 +120,8 @@ def mark_notification_read_view(request, notification_id):
         require_https=request.is_secure(),
     ):
         destination = reverse("notification_list")
-    return hx_location_response(destination)
+    response = hx_location_response(destination)
+    # Keep the bell badge (and the open panel) in sync without waiting for the
+    # next poll cycle.
+    response["HX-Trigger"] = "refresh-notification-panel"
+    return response

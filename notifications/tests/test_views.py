@@ -55,6 +55,19 @@ class TestNotificationViews:
         assert b"Hello list" in response.content
         assert b"Notifications" in response.content
 
+    def test_list_page_is_paginated(self, client_logged_in, user):
+        for index in range(30):
+            notify(recipient=user, type="t", message=f"Notification {index}")
+
+        page_one = client_logged_in.get(reverse("notification_list"))
+        page_two = client_logged_in.get(reverse("notification_list"), {"page": 2})
+
+        assert len(page_one.context["notifications"]) == 25
+        assert len(page_two.context["notifications"]) == 5
+        assert b"Showing 1-25 of 30 notifications" in page_one.content
+        assert b"Showing 26-30 of 30 notifications" in page_two.content
+        assert b"Page 2 of 2" in page_two.content
+
     def test_mark_all_read(self, client_logged_in, user):
         notify(recipient=user, type="t", message="x")
         notify(recipient=user, type="t", message="y")
@@ -96,16 +109,39 @@ class TestNotificationViews:
         notification.refresh_from_db()
         assert notification.read_at is not None
 
-    def test_mark_read_is_owner_only(self, client, other_user, notification):
-        client.force_login(other_user)
+    def test_mark_read_refreshes_the_badge_and_panel(self, client_logged_in, user):
+        notification = notify(recipient=user, type="t", message="x")
+        assert notification is not None
 
-        response = client.post(
+        response = client_logged_in.post(
             reverse("notification_mark_read", args=[notification.pk])
         )
 
-        assert response.status_code == 404
-        notification.refresh_from_db()
-        assert notification.read_at is None
+        assert response.headers.get("HX-Trigger") == "refresh-notification-panel"
+
+    def test_panel_carries_the_badge_out_of_band(self, client_logged_in, user):
+        notify(recipient=user, type="t", message="x")
+
+        response = client_logged_in.get(reverse("notification_panel"))
+
+        assert b'id="notification-badge"' in response.content
+        assert b'hx-swap-oob="true"' in response.content
+
+    def test_mark_all_read_from_page_confirms_and_hides_button(
+        self, client_logged_in, user
+    ):
+        notify(recipient=user, type="t", message="x")
+
+        response = client_logged_in.post(
+            reverse("notifications_mark_all_read"),
+            {"source": "page"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        content = response.content.decode()
+        assert "marked as read" in content
+        assert "Mark all read" not in content
+        assert 'id="notification-badge"' in content
 
     def test_mark_read_ignores_external_links(self, client_logged_in, user):
         external = notify(

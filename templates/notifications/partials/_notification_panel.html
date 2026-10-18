@@ -1,8 +1,15 @@
 {% load notifications_extras %}
+{% comment %}
+Bell dropdown panel.
+
+Includes the unread badge out-of-band so every refresh of the panel also
+refreshes the badge (marking a notification read must not wait for the next
+poll). The "Mark all read" action only makes sense while something is unread.
+{% endcomment %}
 <div id="notification-panel-content" class="w-80 max-w-[90vw]">
     <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
         <h3 class="font-semibold text-sm">Notifications</h3>
-        {% if notifications %}
+        {% if unread_count %}
             <button class="btn btn-ghost btn-xs normal-case"
                     hx-post="{% url 'notifications_mark_all_read' %}"
                     hx-vals='{"source": "panel"}'
@@ -26,7 +33,9 @@
        hx-get="{% url 'notification_list' %}"
        hx-target="#main-content"
        hx-push-url="true"
+       data-close-dropdown
        class="block text-center text-sm font-medium py-3 border-t border-base-300 hover:bg-base-200">
         See all notifications
     </a>
 </div>
+{% include "notifications/partials/_notification_badge.html" with unread_count=unread_count swap_oob=True %}

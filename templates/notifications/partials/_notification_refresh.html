@@ -1,2 +1,6 @@
-{% include "notifications/partials/_notification_badge.html" with unread_count=unread_count swap_oob=True %}
-{% include "notifications/partials/_notification_panel.html" with notifications=notifications %}
+{% comment %}
+Response for the panel's "Mark all read": the panel brings the unread badge
+along out-of-band, so this only adds the toast for the confirmation message.
+{% endcomment %}
+{% include "notifications/partials/_notification_panel.html" with notifications=notifications unread_count=unread_count %}
+{% include "partials/_messages_oob.html" %}
