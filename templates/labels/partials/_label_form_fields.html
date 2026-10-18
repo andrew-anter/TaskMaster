@@ -3,7 +3,7 @@
     <legend class="fieldset-legend">Label Name</legend>
     {{ form.name }}
     {% for error in form.name.errors %}
-        <div class="label pt-0">
+        <div class="label pt-0" id="id_name_error">
             <span class="label-text-alt text-error text-xs">{{ error }}</span>
         </div>
     {% endfor %}
@@ -19,8 +19,8 @@
                         <button type="button"
                                 data-color="{{ hex }}"
                                 data-contrast="{{ contrast }}"
-                                class="color-swatch"
-                                style="width: 36px; height: 36px; border-radius: 9999px; border: 2px solid white; background-color: {{ hex }}; box-shadow: 0 0 0 2px #f59e0b; cursor: pointer; flex-shrink: 0; transition: box-shadow 0.15s, transform 0.15s;"
+                                class="color-swatch focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
+                                style="width: 36px; height: 36px; border-radius: 9999px; border: 2px solid var(--color-base-100); background-color: {{ hex }}; box-shadow: 0 0 0 2px var(--color-primary); cursor: pointer; flex-shrink: 0; transition: box-shadow 0.15s, transform 0.15s;"
                                 aria-label="Select color {{ hex }}"
                                 title="{{ hex }}">
                             <i class="nf nf-fa-check text-xs flex items-center justify-center leading-none" style="color: {{ contrast }}; line-height: 32px;"></i>
@@ -29,7 +29,7 @@
                         <button type="button"
                                 data-color="{{ hex }}"
                                 data-contrast="{{ contrast }}"
-                                class="color-swatch"
+                                class="color-swatch focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
                                 style="width: 36px; height: 36px; border-radius: 9999px; border: 2px solid transparent; background-color: {{ hex }}; cursor: pointer; flex-shrink: 0; transition: box-shadow 0.15s, transform 0.15s;"
                                 aria-label="Select color {{ hex }}"
                                 title="{{ hex }}"></button>
@@ -38,7 +38,7 @@
             {% endfor %}
         </div>
         {% for error in form.color.errors %}
-            <div class="label pt-0">
+            <div class="label pt-0" id="id_color_error">
                 <span class="label-text-alt text-error text-xs">{{ error }}</span>
             </div>
         {% endfor %}
@@ -81,8 +81,8 @@
         s.style.boxShadow = 'none';
         s.innerHTML = '';
       }
-      swatch.style.border = '2px solid white';
-      swatch.style.boxShadow = '0 0 0 2px #f59e0b';
+      swatch.style.border = '2px solid var(--color-base-100)';
+      swatch.style.boxShadow = '0 0 0 2px var(--color-primary)';
       var check = document.createElement('i');
       check.className = 'nf nf-fa-check text-xs flex items-center justify-center leading-none';
       check.style.color = swatch.dataset.contrast;

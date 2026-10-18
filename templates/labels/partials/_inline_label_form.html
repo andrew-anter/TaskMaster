@@ -1,19 +1,38 @@
 {% load color_utils %}
+{% comment %}
+Inline "create label" card, loaded into the task form.
+
+On success the endpoint answers with the refreshed label picker (out-of-band)
+and empty content, which empties ``#inline-label-form-area`` again. Errors are
+re-rendered in place, keeping the typed name and the picked colour.
+
+Context: ``label_colors``, optional ``error``, ``form_name``, ``selected_color``.
+{% endcomment %}
+{% firstof selected_color label_colors.0 as active_color %}
 <div class="card bg-base-100 rounded-xl border border-base-300 shadow-sm my-8">
     <div class="card-body p-6">
         <h3 class="text-base font-semibold text-base-content mb-5">Create New Label</h3>
         <form hx-post="{% url 'inline_label_create' %}"
               hx-target="#inline-label-form-area"
-              hx-swap="outerHTML"
+              hx-swap="innerHTML"
+              hx-include="#labels-selector input:checked"
               class="space-y-4">
             {% csrf_token %}
+            {% if error %}
+                <div role="alert" class="alert alert-error text-sm" id="inline-label-error">
+                    <i class="nf nf-md-alpha_x_circle text-lg"></i>
+                    <span>{{ error }}</span>
+                </div>
+            {% endif %}
             <div>
                 <input type="text"
                        name="name"
+                       value="{{ form_name }}"
                        placeholder="Label name"
                        class="input input-sm w-full"
                        required
                        maxlength="50"
+                       {% if error %}aria-invalid="true" aria-describedby="inline-label-error"{% endif %}
                        autofocus>
             </div>
             <div>
@@ -23,19 +42,20 @@
                         <button type="button"
                                 data-color="{{ hex }}"
                                 data-contrast="{{ contrast }}"
-                                class="inline-color-swatch rounded-full cursor-pointer flex-shrink-0 transition-all duration-150 hover:scale-110"
-                                style="width: 32px; height: 32px; background-color: {{ hex }}; border: 2px solid transparent;">
-                        </button>
+                                class="inline-color-swatch rounded-full cursor-pointer flex-shrink-0 transition-all duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                style="width: 32px; height: 32px; background-color: {{ hex }}; border: 2px solid transparent;"
+                                aria-label="Select color {{ hex }}"
+                                title="{{ hex }}"></button>
                         {% endwith %}
                     {% endfor %}
                 </div>
-                <input type="hidden" name="color" id="inline-label-color" value="{{ label_colors.0 }}">
+                <input type="hidden" name="color" id="inline-label-color" value="{{ active_color }}">
             </div>
             <div class="flex items-center justify-between pt-3">
                 <span id="inline-label-preview"
                       class="badge badge-lg font-medium px-4"
-                      style="background-color: {{ label_colors.0 }}; color: {{ label_colors.0|contrast_color }};">
-                    Preview
+                      style="background-color: {{ active_color }}; color: {{ active_color|contrast_color }};">
+                    {{ form_name|default:"Preview" }}
                 </span>
                 <button type="submit" class="btn btn-primary btn-sm rounded-full normal-case gap-1">
                     <i class="nf nf-fa-check text-sm"></i>
@@ -52,7 +72,7 @@
     var hiddenInput = document.getElementById('inline-label-color');
     var preview = document.getElementById('inline-label-preview');
     var nameInput = document.querySelector('#inline-label-form-area input[name="name"]');
-    var firstSwatch = palette?.querySelector('.inline-color-swatch');
+    if (!palette || !hiddenInput || !preview) return;
 
     function selectSwatch(swatch) {
         if (!swatch) return;
@@ -60,16 +80,18 @@
             s.style.border = '2px solid transparent';
             s.style.boxShadow = 'none';
         });
-        swatch.style.border = '2px solid white';
-        swatch.style.boxShadow = '0 0 0 2px oklch(85% 0.199 91.936)';
+        swatch.style.border = '2px solid var(--color-base-100)';
+        swatch.style.boxShadow = '0 0 0 2px var(--color-primary)';
         hiddenInput.value = swatch.dataset.color;
         preview.style.backgroundColor = swatch.dataset.color;
         preview.style.color = swatch.dataset.contrast;
     }
 
-    if (firstSwatch) selectSwatch(firstSwatch);
+    // Reflect the current selection (default or re-rendered after an error).
+    var current = palette.querySelector('.inline-color-swatch[data-color="' + hiddenInput.value + '"]');
+    if (current) selectSwatch(current);
 
-    palette?.addEventListener('click', function(e) {
+    palette.addEventListener('click', function(e) {
         var swatch = e.target.closest('.inline-color-swatch');
         if (swatch) selectSwatch(swatch);
     });

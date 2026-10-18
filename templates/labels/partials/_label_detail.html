@@ -39,14 +39,28 @@
     {% else %}
         <div class="flex flex-wrap justify-between items-center gap-3 p-4">
             <h1 class="text-3xl font-bold text-base-content">Label Details</h1>
-            <div class="flex items-center gap-2">
-                <button x-data
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button"
+                        x-data
                         @click="$store.navHistory.back('{% url 'label_list' %}')"
                         class="btn btn-ghost rounded-full normal-case">Back</button>
+                <form hx-post="{% url 'label_delete' label.pk %}"
+                      hx-target="#main-content"
+                      hx-swap="innerHTML"
+                      hx-confirm="Delete label '{{ label.name }}'? Tasks keep their other labels."
+                      class="contents">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-ghost rounded-full normal-case text-error hover:bg-error hover:text-error-content">
+                        <i class="nf nf-cod-trash text-lg"></i>
+                        Delete
+                    </button>
+                </form>
                 <button hx-get="{% url 'label_detail' label.pk %}?mode=edit"
                         hx-target="#main-content"
                         hx-push-url="true"
-                        class="btn btn-primary rounded-full normal-case">
+                        class="btn btn-primary rounded-full normal-case"
+                        type="button">
                     <i class="nf nf-fa-edit text-lg"></i>
                     Edit
                 </button>
@@ -70,32 +84,13 @@
                         <i class="nf nf-fa-tag text-xl text-primary"></i>
                         <div>
                             <p class="label-text text-base-content/60 text-xs uppercase tracking-wide">Tasks</p>
-                            <p class="text-base-content font-medium">{{ label.tasks.count }} task{{ label.tasks.count|pluralize }}</p>
+                            <p class="text-base-content font-medium">{{ label_task_count }} task{{ label_task_count|pluralize }}</p>
                         </div>
                     </div>
                 </div>
-                <div class="divider"></div>
-                <div>
-                    <h3 class="label-text font-semibold uppercase tracking-wide text-base-content/70 mb-2">Tasks with this label</h3>
-                    {% if label_tasks %}
-                        {% for task in label_tasks %}
-                            <div class="card my-2">
-                                {% include "todo/partials/_task_list_item.html" with task=task Status=Status Priority=Priority %}
-                            </div>
-                        {% endfor %}
-                        <button hx-get="{% url 'tasks_by_label' label.pk %}"
-                                hx-target="#main-content"
-                                hx-push-url="true"
-                                class="btn btn-ghost rounded-full normal-case gap-1 mt-3">
-                            <i class="nf nf-fa-arrow_right text-sm"></i>
-                            View all {{ label.tasks.count }} task{{ label.tasks.count|pluralize }}
-                        </button>
-                    {% else %}
-                        <p class="text-base-content/50 text-sm italic">No tasks have this label yet.</p>
-                    {% endif %}
-                </div>
+                {% include "labels/partials/_label_detail_tasks.html" %}
             </div>
         </div>
     {% endif %}
 </div>
-<div id="toast-container" hx-swap-oob="afterbegin">{% include "partials/_messages.html" %}</div>
+{% include "partials/_page_title.html" %}

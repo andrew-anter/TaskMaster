@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from django.urls import reverse
 
@@ -95,6 +97,23 @@ class TestLabelUpdateView:
         assert response.status_code == 200
         assert "form" in response.context
 
+    def test_missing_label_returns_404(self, client_logged_in):
+        response = client_logged_in.get(reverse("label_update", args=[99999]))
+        assert response.status_code == 404
+
+    def test_duplicate_name_is_rejected(self, client_logged_in, user, sample_label):
+        Label.objects.create(name="Taken", color="#111111", owner=user)
+
+        response = client_logged_in.post(
+            reverse("label_update", args=[sample_label.pk]),
+            {"name": "Taken", "color": "#3B82F6"},
+        )
+
+        assert response.status_code == 200
+        assert response.context["form"].errors["name"]
+        sample_label.refresh_from_db()
+        assert sample_label.name == "Work"
+
     def test_post_updates_label(self, client_logged_in, sample_label):
         data = {"name": "Updated Label", "color": "#F59E0B"}
         response = client_logged_in.post(
@@ -112,6 +131,55 @@ class TestLabelDeleteView:
         assert response.status_code in (200, 302)
         assert not Label.objects.filter(pk=label_id).exists()
 
+    def test_missing_label_returns_404(self, client_logged_in):
+        response = client_logged_in.post(reverse("label_delete", args=[99999]))
+
+        assert response.status_code == 404
+
+    def test_missing_label_htmx_redirects_to_list(self, client_logged_in):
+        response = client_logged_in.post(
+            reverse("label_delete", args=[99999]), HTTP_HX_REQUEST="true"
+        )
+
+        assert response.status_code == 200
+        assert "HX-Location" in response.headers
+
+
+class TestLabelDetailViewActions:
+    def test_htmx_update_drops_edit_mode_from_the_url(
+        self, client_logged_in, sample_label
+    ):
+        response = client_logged_in.post(
+            reverse("label_detail", args=[sample_label.pk]) + "?mode=edit",
+            {"name": "Renamed", "color": "#22C55E"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        assert response.status_code == 200
+        assert response.headers["HX-Replace-Url"] == reverse(
+            "label_detail", args=[sample_label.pk]
+        )
+
+    def test_detail_offers_delete_and_task_rows(self, client_logged_in, sample_label):
+        response = client_logged_in.get(reverse("label_detail", args=[sample_label.pk]))
+
+        content = response.content.decode()
+        assert reverse("label_delete", args=[sample_label.pk]) in content
+        assert 'id="label-detail-tasks"' in content
+
+    def test_duplicate_name_is_rejected(self, client_logged_in, user, sample_label):
+        Label.objects.create(name="Taken", color="#111111", owner=user)
+
+        response = client_logged_in.post(
+            reverse("label_detail", args=[sample_label.pk]),
+            {"name": "Taken", "color": "#3B82F6"},
+        )
+
+        assert response.status_code == 200
+        assert response.context["form"].errors["name"]
+        sample_label.refresh_from_db()
+        assert sample_label.name == "Work"
+
 
 class TestInlineLabelFormView:
     def test_get_renders(self, client_logged_in):
@@ -126,8 +194,35 @@ class TestInlineLabelCreateView:
         assert response.status_code == 200
         assert Label.objects.filter(owner=user, name="Inline Label").exists()
 
+    def test_new_label_comes_back_checked_in_the_picker(self, client_logged_in, user):
+        existing = Label.objects.create(name="Existing", color="#111111", owner=user)
+
+        response = client_logged_in.post(
+            reverse("inline_label_create"),
+            {"name": "Fresh", "color": "#8B5CF6", "labels": str(existing.pk)},
+        )
+
+        content = response.content.decode()
+        fresh = Label.objects.get(owner=user, name="Fresh")
+        assert 'hx-swap-oob="true"' in content
+        # Both the previously ticked and the freshly created label come back checked.
+        assert re.search(rf'value="{fresh.pk}"[^>]*\bchecked\b', content)
+        assert re.search(rf'value="{existing.pk}"[^>]*\bchecked\b', content)
+
+    def test_duplicate_name_shows_error(self, client_logged_in, user):
+        Label.objects.create(name="Taken", color="#111111", owner=user)
+
+        response = client_logged_in.post(
+            reverse("inline_label_create"), {"name": "Taken", "color": "#8B5CF6"}
+        )
+
+        assert response.status_code == 200
+        assert b"already have a label" in response.content
+        assert Label.objects.filter(owner=user, name="Taken").count() == 1
+
     def test_post_empty_name_does_not_create(self, client_logged_in, user):
         data = {"name": "", "color": "#8B5CF6"}
         response = client_logged_in.post(reverse("inline_label_create"), data)
         assert response.status_code == 200
-        assert not Label.objects.filter(owner=user, name="").exists()
+        assert b"Enter a label name." in response.content
+        assert not Label.objects.filter(owner=user).exists()

@@ -1,14 +1,14 @@
 from django.contrib import messages
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
-from common.http import is_partial_request
-from tasks.models import Task
-from tasks.selectors import get_tasks_by_label
+from common.http import hx_location_response, is_partial_request
 
-from .forms import LabelForm, LABEL_COLORS
+from .context import build_label_detail_context
+from .exceptions import DuplicateLabelError
+from .forms import LABEL_COLORS, LabelForm
 from .models import Label
 from .selectors import LabelSelector
 from .services import LabelService
@@ -34,74 +34,80 @@ def label_detail_view(request, pk):
 
     Passing ``?mode=edit`` (or submitting the edit form via POST) switches the
     same layout into editable form mode. Successful updates drop back to view
-    mode, mirroring the task detail page.
+    mode and replace the ``?mode=edit`` URL, mirroring the task detail page.
     """
-    selector = LabelSelector(user=request.user)
     try:
-        label = selector.get_label(pk=pk)
+        label = LabelSelector(user=request.user).get_label(pk=pk)
     except Label.DoesNotExist:
         messages.error(request, "No label associated with this id.")
         if request.htmx:
-            response = HttpResponse()
-            response["HX-Location"] = (
-                '{"path": "' + reverse("label_list") + '", "target": "#main-content"}'
-            )
-            return response
+            return hx_location_response(reverse("label_list"))
         raise Http404
 
     editing = request.method == "POST" or request.GET.get("mode") == "edit"
+    update_succeeded = False
 
     if request.method == "POST":
-        form = LabelForm(request.POST, instance=label)
+        form = LabelForm(request.POST, instance=label, user=request.user)
         if form.is_valid():
             service = LabelService(user=request.user)
-            label = service.update_label(
-                pk=pk,
-                name=form.cleaned_data["name"],
-                color=form.cleaned_data["color"],
-            )
-            messages.success(request, "Label updated successfully")
-            editing = False
-            form = LabelForm(instance=label)
+            try:
+                label = service.update_label(
+                    pk=pk,
+                    name=form.cleaned_data["name"],
+                    color=form.cleaned_data["color"],
+                )
+            except DuplicateLabelError as e:
+                form.add_error("name", f"{e}")
+            else:
+                messages.success(request, "Label updated successfully")
+                editing = False
+                update_succeeded = True
+                form = LabelForm(instance=label, user=request.user)
     else:
-        form = LabelForm(instance=label)
+        form = LabelForm(instance=label, user=request.user)
 
-    context = {
-        "label": label,
-        "form": form,
-        "editing": editing,
-        "label_colors": LABEL_COLORS,
-        "label_tasks": get_tasks_by_label(user=request.user, label_id=pk)[:5],
-        "Status": Task.Status,
-        "Priority": Task.Priority,
-    }
+    if editing:
+        context = {
+            "label": label,
+            "form": form,
+            "editing": True,
+            "label_colors": LABEL_COLORS,
+            "page_title": label.name,
+        }
+    else:
+        context = build_label_detail_context(user=request.user, label=label)
+
     if is_partial_request(request):
-        return render(request, "labels/partials/_label_detail.html", context)
+        response = render(request, "labels/partials/_label_detail.html", context)
+        if update_succeeded:
+            # Leave edit mode in the address bar too, so a reload shows the
+            # read-only view instead of the form again.
+            response["HX-Replace-Url"] = reverse("label_detail", args=[label.pk])
+        return response
     return render(request, "labels/label_detail.html", context)
 
 
 @require_http_methods(["GET", "POST"])
 def label_create_view(request):
     if request.method == "POST":
-        form = LabelForm(request.POST)
+        form = LabelForm(request.POST, user=request.user)
         if form.is_valid():
             service = LabelService(user=request.user)
-            service.create_label(
-                name=form.cleaned_data["name"],
-                color=form.cleaned_data["color"],
-            )
-            messages.success(request, "Label created successfully")
-            if request.htmx:
-                response = HttpResponse()
-                response["HX-Location"] = (
-                    '{"path": "'
-                    + reverse("label_list")
-                    + '", "target": "#main-content"}'
+            try:
+                service.create_label(
+                    name=form.cleaned_data["name"],
+                    color=form.cleaned_data["color"],
                 )
-                return response
-            return HttpResponseRedirect(reverse("label_list"))
+            except DuplicateLabelError as e:
+                form.add_error("name", f"{e}")
+            else:
+                messages.success(request, "Label created successfully")
+                if request.htmx:
+                    return hx_location_response(reverse("label_list"))
+                return HttpResponseRedirect(reverse("label_list"))
     else:
-        form = LabelForm()
+        form = LabelForm(user=request.user)
 
     context = {
         "form": form,
@@ -115,30 +121,33 @@ def label_create_view(request):
 
 @require_http_methods(["GET", "POST"])
 def label_update_view(request, pk):
-    selector = LabelSelector(user=request.user)
-    label = selector.get_label(pk=pk)
+    try:
+        label = LabelSelector(user=request.user).get_label(pk=pk)
+    except Label.DoesNotExist:
+        messages.error(request, "No label associated with this id.")
+        if request.htmx:
+            return hx_location_response(reverse("label_list"))
+        raise Http404
 
     if request.method == "POST":
-        form = LabelForm(request.POST, instance=label)
+        form = LabelForm(request.POST, instance=label, user=request.user)
         if form.is_valid():
             service = LabelService(user=request.user)
-            service.update_label(
-                pk=pk,
-                name=form.cleaned_data["name"],
-                color=form.cleaned_data["color"],
-            )
-            messages.success(request, "Label updated successfully")
-            if request.htmx:
-                response = HttpResponse()
-                response["HX-Location"] = (
-                    '{"path": "'
-                    + reverse("label_list")
-                    + '", "target": "#main-content"}'
+            try:
+                service.update_label(
+                    pk=pk,
+                    name=form.cleaned_data["name"],
+                    color=form.cleaned_data["color"],
                 )
-                return response
-            return HttpResponseRedirect(reverse("label_list"))
+            except DuplicateLabelError as e:
+                form.add_error("name", f"{e}")
+            else:
+                messages.success(request, "Label updated successfully")
+                if request.htmx:
+                    return hx_location_response(reverse("label_list"))
+                return HttpResponseRedirect(reverse("label_list"))
     else:
-        form = LabelForm(instance=label)
+        form = LabelForm(instance=label, user=request.user)
 
     context = {
         "form": form,
@@ -154,14 +163,16 @@ def label_update_view(request, pk):
 @require_http_methods(["POST"])
 def label_delete_view(request, pk):
     service = LabelService(user=request.user)
-    service.delete_label(pk=pk)
+    try:
+        service.delete_label(pk=pk)
+    except Label.DoesNotExist:
+        messages.error(request, "No label associated with this id.")
+        if request.htmx:
+            return hx_location_response(reverse("label_list"))
+        raise Http404
     messages.success(request, "Label deleted successfully")
     if request.htmx:
-        response = HttpResponse()
-        response["HX-Location"] = (
-            '{"path": "' + reverse("label_list") + '", "target": "#main-content"}'
-        )
-        return response
+        return hx_location_response(reverse("label_list"))
     return HttpResponseRedirect(reverse("label_list"))
 
 
@@ -173,13 +184,42 @@ def inline_label_form_view(request):
 
 @require_http_methods(["POST"])
 def inline_label_create_view(request):
+    """Creates a label from the task form and returns the refreshed picker."""
     name = request.POST.get("name", "").strip()
     color = request.POST.get("color", LABEL_COLORS[0])
+    checked_ids = [
+        int(value) for value in request.POST.getlist("labels") if value.isdigit()
+    ]
 
-    if name and color in LABEL_COLORS:
+    error = ""
+    if not name:
+        error = "Enter a label name."
+    elif color not in LABEL_COLORS:
+        error = "Please select a valid color."
+    else:
         service = LabelService(user=request.user)
-        service.create_label(name=name, color=color)
+        try:
+            label = service.create_label(name=name, color=color)
+        except DuplicateLabelError as e:
+            error = f"{e}"
+        else:
+            checked_ids.append(label.pk)
 
-    response = HttpResponse()
-    response["HX-Trigger"] = "labelCreated"
+    if error:
+        context = {
+            "label_colors": LABEL_COLORS,
+            "error": error,
+            "form_name": name,
+            "selected_color": color,
+        }
+        return render(request, "labels/partials/_inline_label_form.html", context)
+
+    context = {
+        "user_labels": Label.objects.filter(owner=request.user).order_by("name"),
+        "selected_ids": checked_ids,
+        "oob": True,
+    }
+    response = render(request, "todo/partials/_labels_selector.html", context)
+    # Let the task form collapse its now-empty inline label card again.
+    response["HX-Trigger"] = "tm-inline-label-created"
     return response

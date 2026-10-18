@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+
 from .models import Label
 
 LABEL_COLORS = [
@@ -28,6 +29,20 @@ LABEL_COLORS = [
 
 class LabelForm(forms.ModelForm):
     color = forms.CharField(widget=forms.HiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self) -> str:
+        name = self.cleaned_data["name"].strip()
+        if self.user is not None:
+            duplicates = Label.objects.filter(owner=self.user, name__iexact=name)
+            if self.instance.pk:
+                duplicates = duplicates.exclude(pk=self.instance.pk)
+            if duplicates.exists():
+                raise ValidationError("You already have a label with this name.")
+        return name
 
     def clean_color(self):
         color = self.cleaned_data.get("color")

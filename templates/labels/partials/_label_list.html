@@ -12,7 +12,6 @@
         New Label
     </button>
 </div>
-
 {% if labels %}
     <div id="labels-list" class="flex flex-col mb-6">
         {% for label in labels %}
@@ -40,19 +39,19 @@
                         <button hx-get="{% url 'label_detail' label.pk %}?mode=edit"
                                 hx-target="#main-content"
                                 hx-push-url="true"
-                                class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-white hover:bg-primary focus:bg-primary"
-                                title="Edit label">
+                                class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-primary hover:text-primary-content focus:bg-primary focus:text-primary-content"
+                                title="Edit label"
+                                aria-label="Edit label '{{ label.name }}'">
                             <i class="nf nf-fa-edit text-lg"></i>
                         </button>
                         <form hx-post="{% url 'label_delete' label.pk %}"
-                              hx-target="#label-{{ label.id }}-item"
-                              hx-swap="outerHTML"
-                              hx-confirm="Delete label '{{ label.name }}'?"
+                              hx-confirm="Delete label '{{ label.name }}'? Tasks keep their other labels."
                               class="contents">
                             {% csrf_token %}
                             <button type="submit"
-                                    class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-error hover:text-error-content hover:text-white focus:bg-error focus:text-error-content"
-                                    title="Delete label">
+                                    class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-error hover:text-error-content focus:bg-error focus:text-error-content"
+                                    title="Delete label"
+                                    aria-label="Delete label '{{ label.name }}'">
                                 <i class="nf nf-cod-trash text-lg"></i>
                             </button>
                         </form>
@@ -68,6 +67,5 @@
     </div>
 {% endif %}
 
-<div id="toast-container" hx-swap-oob="afterbegin">
-    {% include "partials/_messages.html" %}
-</div>
+{% include "partials/_page_title.html" %}
+{% include "partials/_messages_oob.html" %}
