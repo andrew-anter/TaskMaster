@@ -1,0 +1,45 @@
+{% comment %}
+Task list region: every row plus pagination, in one swappable container.
+
+Context: ``all_tasks``, ``page_obj``, ``origin``, ``label``, ``filters_active``.
+{% endcomment %}
+<div id="all-tasks-list" class="flex flex-col mb-6">
+    {% if filters_active %}
+        {# Lives inside the swapped region so it always matches the active filters. #}
+        <div class="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
+            <span class="text-sm text-base-content/60">Filters applied</span>
+            <a href="{% url 'all_tasks' %}"
+               hx-get="{% url 'all_tasks' %}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="btn btn-ghost btn-xs rounded-full normal-case">Clear filters</a>
+        </div>
+    {% endif %}
+    {% if all_tasks %}
+        {% for task_item in all_tasks %}
+            <div class="card my-2">
+                {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority region="all-tasks-list" origin=origin dom_prefix="task" %}
+            </div>
+        {% endfor %}
+    {% else %}
+        {# Using DaisyUI alert for a nicer "no tasks" message #}
+        <div role="alert" class="alert alert-info shadow-sm m-4">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 class="stroke-current shrink-0 w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                </path>
+            </svg>
+            {% if label %}
+                <span>No tasks have this label yet. Add it to a task to see it here.</span>
+            {% elif filters_active %}
+                <span>No tasks match your search. Try adjusting the filters.</span>
+            {% else %}
+                <span>No tasks have been created yet. Start by creating some!</span>
+            {% endif %}
+        </div>
+    {% endif %}
+    {% include "todo/partials/_pagination.html" with pagination_target="#all-tasks-list" %}
+</div>
+{% include "partials/_messages_oob.html" %}

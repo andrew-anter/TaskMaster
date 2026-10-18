@@ -1,60 +1,20 @@
+{% comment %}
+Home dashboard body (HTMX partial and page body).
+
+Context: ``today_tasks``, ``upcoming_tasks``, ``overdue_tasks``, pagination.
+{% endcomment %}
 <div class="flex flex-wrap justify-between items-center gap-3 p-4">
     <h1 class="text-3xl lg:text-4xl font-bold text-base-content">
-        Good {% now "A" as current_greeting %}
-        {% if current_greeting == "AM" %}
-            morning
-        {% else %}
-            afternoon
-        {% endif %}
-        , {{ request.user.first_name|default:request.user.username|capfirst }}
+        Good {% now "G" as current_hour %}{% if current_hour|add:"0" < 12 %}morning{% elif current_hour|add:"0" < 18 %}afternoon{% else %}evening{% endif %}, {{ request.user.first_name|default:request.user.username|capfirst }}
     </h1>
 </div>
-{% if overdue_tasks %}
-    <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content text-error">Overdue</h2>
-    <div id="overdue-tasks-list" class="flex flex-col mb-6">
-        {% for task_item in overdue_tasks %}
-            <div class="card my-2">
-                {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
-            </div>
-        {% endfor %}
-    </div>
-{% endif %}
-<h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Today</h2>
-<div id="today-tasks-list" class="flex flex-col mb-6">
-    {% if today_tasks %}
-        {% for task_item in today_tasks %}
-            <div class="card my-2">
-                {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
-            </div>
-        {% endfor %}
-        {% include "todo/partials/_pagination.html" with pagination_target="#today-tasks-list" %}
-    {% else %}
-        <div role="alert" class="alert shadow-sm m-4">
-            <i class="nf nf-cod-info text-lg"></i>
-            <span>No tasks for today. Relax!</span>
-        </div>
-    {% endif %}
-</div>
-<h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Upcoming</h2>
-<div id="upcoming-tasks-list" class="flex flex-col mb-6">
-    {% if upcoming_tasks %}
-        {% for task_item in upcoming_tasks %}
-            <div class="card my-2">
-                {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
-            </div>
-        {% endfor %}
-    {% else %}
-        <div role="alert" class="alert shadow-sm m-4">
-            <i class="nf nf-cod-info text-lg"></i>
-            <span>No upcoming tasks.</span>
-        </div>
-    {% endif %}
-</div>
+{% include "todo/partials/_dashboard_lists.html" %}
 {# "Quick Actions" Section #}
 <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Quick Actions</h2>
 <div class="flex justify-start">
     <div class="flex flex-1 gap-3 flex-wrap px-4 py-3">
-        <a hx-get="{% url 'task_add' %}?next={{ request.path|urlencode }}"
+        <a href="{% url 'task_add' %}?next={{ request.path|urlencode }}"
+           hx-get="{% url 'task_add' %}?next={{ request.path|urlencode }}"
            hx-target="#main-content"
            hx-push-url="true"
            class="btn btn-primary rounded-full normal-case">
@@ -62,7 +22,4 @@
         </a>
     </div>
 </div>
-
-<div id="toast-container" hx-swap-oob="afterbegin">
-    {% include "partials/_messages.html" %}
-</div>
+{% include "partials/_page_title.html" %}

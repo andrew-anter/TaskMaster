@@ -8,14 +8,45 @@
          class="layout-content-container flex flex-col w-full py-5">
         <div class="flex flex-wrap justify-between items-center gap-3 p-4">
             <h1 class="text-3xl font-bold text-base-content">Task Details</h1>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <button x-data
                         @click="$store.navHistory.back('{% url 'home' %}')"
-                        class="btn btn-ghost rounded-full normal-case">Back</button>
+                        class="btn btn-ghost rounded-full normal-case"
+                        type="button">Back</button>
+                <form hx-post="{% url 'update_task_status' task.id %}"
+                      hx-target="#main-content"
+                      hx-swap="innerHTML"
+                      class="contents">
+                    {% csrf_token %}
+                    <input type="hidden" name="origin" value="task_detail:{{ task.id }}">
+                    <button type="submit" class="btn btn-ghost rounded-full normal-case">
+                        {% if task.status == Status.COMPLETED %}
+                            <i class="nf nf-fa-undo text-lg"></i>
+                            Reopen
+                        {% else %}
+                            <i class="nf nf-fa-check_circle text-lg"></i>
+                            Complete
+                        {% endif %}
+                    </button>
+                </form>
+                <form hx-post="{% url 'task_delete' task.id %}"
+                      hx-target="#main-content"
+                      hx-swap="innerHTML"
+                      hx-confirm="Are you sure you want to delete '{{ task.title|escapejs }}'?"
+                      class="contents">
+                    {% csrf_token %}
+                    <input type="hidden" name="origin" value="task_detail:{{ task.id }}">
+                    <button type="submit"
+                            class="btn btn-ghost rounded-full normal-case text-error hover:bg-error hover:text-error-content">
+                        <i class="nf nf-cod-trash text-lg"></i>
+                        Delete
+                    </button>
+                </form>
                 <button hx-get="{% url 'task_detail' task.id %}?mode=edit"
                         hx-target="#main-content"
                         hx-push-url="true"
-                        class="btn btn-primary rounded-full normal-case">
+                        class="btn btn-primary rounded-full normal-case"
+                        type="button">
                     <i class="nf nf-fa-edit text-lg"></i>
                     Edit
                 </button>
@@ -47,7 +78,7 @@
                         <div>
                             <p class="label-text text-base-content/60 text-xs uppercase tracking-wide">Due Date & Time</p>
                             {% if task.due_datetime %}
-                                <p class="text-base-content font-medium">{{ task.due_datetime|date:"F j, Y" }} at {{ task.due_datetime|time:"g:i A" }}</p>
+                                <p class="text-base-content font-medium">{{ task.due_datetime|date:"F j, Y" }} at {{ task.due_datetime|time }}</p>
                             {% else %}
                                 <p class="text-base-content/50 text-sm">No due date</p>
                             {% endif %}
@@ -70,9 +101,12 @@
                     {% if task.labels.exists %}
                         <div class="flex flex-wrap gap-2">
                             {% for label in task.labels.all %}
-                                <span class="badge badge-lg font-medium px-3 py-3"
-                                      style="background-color: {{ label.color }};
-                                             color: {{ label.color|contrast_color }}">{{ label.name }}</span>
+                                <button hx-get="{% url 'tasks_by_label' label.pk %}"
+                                        hx-target="#main-content"
+                                        hx-push-url="true"
+                                        class="badge badge-lg font-medium px-3 py-3 hover:opacity-80 transition-opacity"
+                                        style="background-color: {{ label.color }};
+                                               color: {{ label.color|contrast_color }}">{{ label.name }}</button>
                             {% endfor %}
                         </div>
                     {% else %}
@@ -82,10 +116,11 @@
                 <div class="divider"></div>
                 <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-base-content/50">
                     <p>Created: {{ task.created_at|date:"F j, Y" }}</p>
-                    <p>Last modified: {{ task.modified_at|date:"F j, Y H:i" }}</p>
+                    <p>Last modified: {{ task.modified_at|date:"F j, Y" }} at {{ task.modified_at|time }}</p>
                 </div>
             </div>
         </div>
     </div>
 {% endif %}
-<div id="toast-container" hx-swap-oob="afterbegin">{% include "partials/_messages.html" %}</div>
+{% include "partials/_page_title.html" %}
+{% include "partials/_messages_oob.html" %}

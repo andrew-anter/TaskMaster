@@ -1,3 +1,12 @@
-<div id="toast-container" hx-swap-oob="afterbegin">
-    {% include "partials/_messages.html" %}
-</div>
+{% comment %}
+Toast messages emitted from an HTMX response.
+
+Only rendered for plain (non-boosted) HTMX requests: boosted navigations swap
+the whole body (so ``base.html`` renders the messages) and full page loads have
+nothing to add. This keeps exactly one ``#toast-container`` in the document.
+{% endcomment %}
+{% if request.htmx and not request.htmx.boosted %}
+    <div id="toast-container" hx-swap-oob="afterbegin">
+        {% include "partials/_messages.html" %}
+    </div>
+{% endif %}

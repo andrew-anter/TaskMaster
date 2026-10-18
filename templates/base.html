@@ -81,7 +81,7 @@
             })();
         </script>
         <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
-        <title>
+        <title id="page-title">
             {% block title %}
                 TaskMaster
             {% endblock title %}
@@ -113,6 +113,8 @@
     <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
           hx-boost="true"
           class="bg-base-200">
+        {# Thin progress bar for HTMX navigation; purely decorative. #}
+        <div id="nav-progress" aria-hidden="true"></div>
         {# The DaisyUI toast container. It sits in a corner of the screen. #}
         <div id="toast-container" class="toast toast-top toast-end z-50">
             {% include "partials/_messages.html" %}
@@ -147,24 +149,109 @@
         if (!window.__taskmasterKeyboardShortcuts) {
             window.__taskmasterKeyboardShortcuts = true;
             document.addEventListener('keydown', function(event) {
-                // Don't trigger if typing in an input or textarea
-                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) {
+                // Ignore shortcuts with modifiers (Ctrl/Cmd+A is "select all").
+                if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
                     return;
                 }
-                
+                // Ignore typing and other interactive elements.
+                var target = event.target;
+                if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(target.tagName))) {
+                    return;
+                }
                 if (event.key === 'a' || event.key === 'A') {
-                    const addTaskUrl = "{% url 'task_add' %}?next=" + encodeURIComponent(window.location.pathname + window.location.search);
-                    const target = document.getElementById('main-content');
-                    
-                    if (target && typeof htmx !== 'undefined') {
-                        htmx.ajax('GET', addTaskUrl, {target: '#main-content', swap: 'innerHTML'});
-                    } else {
-                        window.location.href = addTaskUrl;
+                    var addButton = document.querySelector('[data-nav-add-task]');
+                    if (addButton) {
+                        event.preventDefault();
+                        addButton.click();
+                        return;
                     }
+                    window.location.href = "{% url 'task_add' %}";
                 }
             });
         }
     </script>
     {% endif %}
+    <script>
+        // Navigation inside a dropdown (bell panel, menus) must close it again,
+        // otherwise it keeps floating above the newly loaded page.
+        document.body.addEventListener('click', function(event) {
+            var link = event.target.closest ? event.target.closest('[data-close-dropdown]') : null;
+            if (!link) {
+                return;
+            }
+            var active = document.activeElement;
+            if (active && active.blur) {
+                active.blur();
+            }
+        });
+
+        if (!window.__taskmasterUiChrome) {
+            window.__taskmasterUiChrome = true;
+
+            // Escape closes an open dropdown (DaisyUI closes them on blur only).
+            document.addEventListener('keydown', function(event) {
+                if (event.key !== 'Escape') {
+                    return;
+                }
+                var active = document.activeElement;
+                if (active && active.closest && active.closest('.dropdown') && active.blur) {
+                    active.blur();
+                }
+            });
+
+            // Thin progress bar for HTMX navigation (skips the badge polling).
+            (function() {
+                var bar = document.getElementById('nav-progress');
+                if (!bar) {
+                    return;
+                }
+                var pending = 0;
+                var timer = null;
+                function start() {
+                    pending += 1;
+                    if (pending === 1) {
+                        timer = setTimeout(function() { bar.classList.add('is-active'); }, 150);
+                    }
+                }
+                function stop() {
+                    pending = Math.max(0, pending - 1);
+                    if (pending === 0) {
+                        clearTimeout(timer);
+                        bar.classList.remove('is-active');
+                    }
+                }
+                document.body.addEventListener('htmx:beforeRequest', function(event) {
+                    var elt = event.detail && event.detail.elt;
+                    if (elt && elt.closest && elt.closest('#notification-badge')) {
+                        return;
+                    }
+                    start();
+                });
+                ['htmx:afterRequest', 'htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach(function(name) {
+                    document.body.addEventListener(name, function(event) {
+                        var elt = event.detail && event.detail.elt;
+                        if (elt && elt.closest && elt.closest('#notification-badge')) {
+                            return;
+                        }
+                        stop();
+                    });
+                });
+            })();
+
+            // Keep the address bar free of empty filter parameters.
+            document.body.addEventListener('htmx:configRequest', function(event) {
+                var elt = event.detail.elt;
+                if (!elt || !elt.closest || !elt.closest('#tasks-filter-form')) {
+                    return;
+                }
+                Object.keys(event.detail.parameters).forEach(function(key) {
+                    var value = event.detail.parameters[key];
+                    if (value === '' || value === null) {
+                        delete event.detail.parameters[key];
+                    }
+                });
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,15 +1,31 @@
 {% load color_utils %}
-<div id="task-{{ task.id }}-item"
+{% comment %}
+One task row.
+
+Mutating forms carry the ``origin`` of the list they live in (plus the current
+query string), so the views can re-render exactly that list region instead of a
+single row: completed/removed tasks drop out of the list they no longer belong
+to, and counts stay accurate.
+
+Context: ``task``, ``Status``, ``Priority``, ``region`` (DOM id to re-render),
+``origin``, ``dom_prefix`` (unique element id prefix per section).
+{% endcomment %}
+{% firstof dom_prefix "task" as item_prefix %}
+{% firstof region "all-tasks-list" as region_id %}
+{% firstof origin "all_tasks" as origin_key %}
+<div id="{{ item_prefix }}-{{ task.id }}-item"
      class="flex items-center gap-3 md:gap-4 bg-base-100 px-4 py-3 min-h-[72px] border-b rounded-xl border-base-200 {% if task.is_overdue %}ring-1 ring-error/60{% endif %}">
     {# Status Toggle Button/Form #}
-    <form hx-post="{% url 'update_task_status' task.id %}"
-          hx-target="#task-{{ task.id }}-item"
+    <form hx-post="{% url 'update_task_status' task.id %}{% querystring %}"
+          hx-target="#{{ region_id }}"
           hx-swap="outerHTML"
           class="contents">
         {% csrf_token %}
+        <input type="hidden" name="origin" value="{{ origin_key }}">
         <button type="submit"
             class="btn btn-ghost btn-circle btn-sm md:btn-md" {# DaisyUI button, circle, ghost for minimal style, size sm or md #}
-            title="Toggle status for '{{ task.title|escapejs }}'">
+            title="Toggle status for '{{ task.title|escapejs }}'"
+            aria-label="Toggle status for '{{ task.title|escapejs }}'">
             {% if task.status == Status.COMPLETED %}
                 <svg xmlns="http://www.w3.org/2000/svg"
                      width="24px"
@@ -43,8 +59,9 @@
         </button>
         <p class="text-base-content opacity-70 text-sm font-normal leading-normal truncate {% if task.status == Status.COMPLETED %}line-through opacity-60{% endif %} {% if task.is_overdue %}text-error font-semibold opacity-90{% endif %}">
             {% if task.due_datetime %}
-                Due: {{ task.due_datetime|date:"F j, Y" }}
-                (at {{ task.due_datetime|time }})
+                Due: {{ task.due_datetime|date:"F j, Y" }} at {{ task.due_datetime|time }}
+            {% elif task.scheduled_date %}
+                Scheduled: {{ task.scheduled_date|date:"F j, Y" }}
             {% else %}
                 No due date
             {% endif %}
@@ -71,20 +88,23 @@
         <button hx-get="{% url 'task_detail' task.id %}?mode=edit"
                 hx-target="#main-content"
                 hx-push-url="true"
-                class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-white hover:bg-primary focus:bg-primary"
-                title="Edit task '{{ task.title|escapejs }}'">
-            <i class="nf nf-fa-edit text-lg "></i>
+                class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-primary hover:text-primary-content focus:bg-primary focus:text-primary-content"
+                title="Edit task '{{ task.title|escapejs }}'"
+                aria-label="Edit task '{{ task.title|escapejs }}'">
+            <i class="nf nf-fa-edit text-lg"></i>
         </button>
-        <form hx-post="{% url 'task_delete' task.id %}"
-              hx-target="closest .card"
+        <form hx-post="{% url 'task_delete' task.id %}{% querystring %}"
+              hx-target="#{{ region_id }}"
               hx-swap="outerHTML"
               hx-confirm="Are you sure you want to delete '{{ task.title|escapejs }}'?"
               class="contents">
             {% csrf_token %}
+            <input type="hidden" name="origin" value="{{ origin_key }}">
             <button type="submit"
-                    class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-error hover:text-error-content hover:text-white focus:bg-error focus:text-error-content"
-                    title="Delete task '{{ task.title|escapejs }}'">
-                <i class="nf nf-cod-trash text-lg hover:text-white"></i> {# Nerd Font icon #}
+                    class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:bg-error hover:text-error-content focus:bg-error focus:text-error-content"
+                    title="Delete task '{{ task.title|escapejs }}'"
+                    aria-label="Delete task '{{ task.title|escapejs }}'">
+                <i class="nf nf-cod-trash text-lg"></i> {# Nerd Font icon #}
             </button>
         </form>
     </div>

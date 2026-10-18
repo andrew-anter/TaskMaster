@@ -10,6 +10,7 @@ from tasks.models import Task
 from tasks.selectors import (
     OVERDUE_TASKS_LIMIT,
     get_overdue_tasks_for_user,
+    get_tasks_by_label,
     get_today_tasks_for_user,
     get_upcoming_tasks_for_user,
     search_tasks_for_user,
@@ -245,10 +246,94 @@ class TestTodayTasksSelector:
         assert task in get_overdue_tasks_for_user(user=owner)
 
 
+class TestUpcomingTasksSelector:
+    def test_includes_tasks_scheduled_beyond_today(self, owner):
+        scheduled_only = make_task(
+            owner,
+            title="Scheduled only",
+            scheduled_date=timezone.localdate() + timedelta(days=3),
+        )
+
+        upcoming = list(get_upcoming_tasks_for_user(user=owner))
+
+        assert scheduled_only in upcoming
+
+    def test_scheduled_today_or_past_is_not_upcoming(self, owner):
+        make_task(
+            owner,
+            title="Scheduled today",
+            scheduled_date=timezone.localdate(),
+        )
+
+        assert list(get_upcoming_tasks_for_user(user=owner)) == []
+
+    def test_due_dated_tasks_come_first(self, owner):
+        scheduled_only = make_task(
+            owner,
+            title="Scheduled only",
+            scheduled_date=timezone.localdate() + timedelta(days=2),
+        )
+        due_later = make_task(
+            owner,
+            title="Due later",
+            due_datetime=timezone.now() + timedelta(days=5),
+        )
+
+        upcoming = list(get_upcoming_tasks_for_user(user=owner))
+
+        assert upcoming == [due_later, scheduled_only]
+
+
+class TestDefaultTaskOrder:
+    def test_open_tasks_come_before_completed_ones(self, owner):
+        completed = make_task(
+            owner, title="Completed", status=Task.Status.COMPLETED
+        )
+        open_task = make_task(owner, title="Open")
+
+        titles = [task.title for task in search_tasks_for_user(user=owner)]
+
+        assert titles == [open_task.title, completed.title]
+
+    def test_completed_tasks_do_not_lead_the_label_list(self, owner, sample_label):
+        completed = make_task(
+            owner,
+            title="Completed labelled",
+            status=Task.Status.COMPLETED,
+            labels=[sample_label.pk],
+        )
+        open_task = make_task(owner, title="Open labelled", labels=[sample_label.pk])
+
+        titles = [task.title for task in get_tasks_by_label(
+            user=owner, label_id=sample_label.pk
+        )]
+
+        assert titles == [open_task.title, completed.title]
+
+    def test_explicit_sort_still_wins(self, owner):
+        make_task(owner, title="Alpha", status=Task.Status.COMPLETED)
+        make_task(owner, title="Beta", status=Task.Status.TODO)
+
+        result = search_tasks_for_user(
+            user=owner, sort_by="title", sort_dir="asc"
+        )
+
+        assert [task.title for task in result] == ["Alpha", "Beta"]
+
+
 ALL_TASKS_URL = reverse("all_tasks")
 
 
 class TestAllTasksSearchFiltersView:
+    def test_clear_filters_only_shown_when_filtering(self, client_logged_in):
+        unfiltered = client_logged_in.get(ALL_TASKS_URL).content.decode()
+        filtered = client_logged_in.get(
+            ALL_TASKS_URL + "?status=TODO"
+        ).content.decode()
+
+        assert "Clear filters" not in unfiltered
+        assert "Clear filters" in filtered
+
     def test_renders_filter_form(self, client_logged_in):
         response = client_logged_in.get(ALL_TASKS_URL)
         assert response.status_code == 200
@@ -390,22 +475,61 @@ class TestHomePagination:
         assert b"Today task 29" in page_two.content
         assert b"Page 2 of 2" in page_two.content
 
-    def test_upcoming_section_still_renders_top_five(self, client_logged_in, owner):
+    def test_upcoming_section_only_lists_future_days(self, client_logged_in, owner):
         now = timezone.now()
-        for i in range(30):
+        for i in range(3):
             make_task(
                 owner,
                 title=f"Today task {i}",
                 due_datetime=now + timedelta(minutes=i),
             )
+        tomorrow = make_task(
+            owner, title="Tomorrow task", due_datetime=now + timedelta(days=1)
+        )
 
         response = client_logged_in.get(HOME_URL)
 
         assert b"Upcoming" in response.content
-        assert b"Today task 4" in response.content  # 5th earliest -> upcoming top 5
-        assert (
-            b"Page 1 of 2" in response.content
-        )  # today section paginates independently
+        assert b"Tomorrow task" in response.content
+        assert list(response.context["upcoming_tasks"]) == [tomorrow]
+
+    def test_upcoming_is_disjoint_from_today_and_overdue(self, client_logged_in, owner):
+        now = timezone.now()
+        make_task(owner, title="Due later today", due_datetime=now + timedelta(hours=1))
+        Task.objects.create(
+            owner=owner,
+            title="Overdue",
+            due_datetime=now - timedelta(hours=1),
+        )
+
+        response = client_logged_in.get(HOME_URL)
+
+        context = response.context
+        upcoming_ids = {task.pk for task in context["upcoming_tasks"]}
+        today_ids = {task.pk for task in context["today_tasks"]}
+        overdue_ids = {task.pk for task in context["overdue_tasks"]}
+
+        assert upcoming_ids.isdisjoint(today_ids)
+        assert upcoming_ids.isdisjoint(overdue_ids)
+        assert today_ids.isdisjoint(overdue_ids)
+
+    def test_every_dashboard_row_id_is_unique(self, client_logged_in, owner):
+        """Regression: duplicated row ids made toggles hit the wrong section."""
+        now = timezone.now()
+        for i in range(3):
+            make_task(
+                owner,
+                title=f"Today task {i}",
+                due_datetime=now + timedelta(minutes=i),
+            )
+        make_task(owner, title="Tomorrow", due_datetime=now + timedelta(days=1))
+
+        content = client_logged_in.get(HOME_URL).content.decode()
+
+        for task in Task.objects.filter(owner=owner):
+            assert content.count(f'id="today-{task.pk}-item"') <= 1
+            assert content.count(f'id="upcoming-{task.pk}-item"') <= 1
+        assert content.count('id="task-form-container"') == 0
 
     def test_no_pagination_when_few_today_tasks(self, client_logged_in, owner):
         make_task(owner, title="Solo task", due_datetime=timezone.now())

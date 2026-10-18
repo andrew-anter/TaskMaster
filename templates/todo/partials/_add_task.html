@@ -1,2 +1,3 @@
 {% include "todo/partials/_task_form.html" with form_action_url=add_task_url next_url=next_url page_title=page_title|default:"Add New Task" submit_label="Add Task" %}
-<div id="toast-container" hx-swap-oob="afterbegin">{% include "partials/_messages.html" %}</div>
+{% include "partials/_page_title.html" %}
+{% include "partials/_messages_oob.html" %}

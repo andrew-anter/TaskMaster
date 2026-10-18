@@ -4,6 +4,25 @@
     display: none !important;
 }
 
+#nav-progress {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    height: 3px;
+    z-index: 60;
+    pointer-events: none;
+    background: var(--color-primary);
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left center;
+}
+
+#nav-progress.is-active {
+    opacity: 1;
+    transform: scaleX(0.75);
+    transition: transform 8s cubic-bezier(0.1, 0.6, 0.2, 1), opacity 150ms ease-in;
+}
+
 .htmx-indicator {
     opacity: 0;
     transition: opacity 200ms ease-in;

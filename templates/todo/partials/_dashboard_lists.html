@@ -1,0 +1,69 @@
+{% comment %}
+Dashboard sections: one region, so completing or deleting a task re-renders
+all three lists and every task lands in (or leaves) the section that actually
+matches its new state.
+
+Context: ``origin`` (region key), ``Status``, ``Priority``.
+{% endcomment %}
+<div id="dashboard-lists" class="flex flex-col">
+    {% if overdue_tasks %}
+        <div class="flex flex-wrap items-baseline justify-between gap-2 px-4 pb-3 pt-5">
+            <h2 class="text-2xl font-bold tracking-tight text-base-content text-error">Overdue</h2>
+            {% if overdue_tasks_total > overdue_tasks_limit %}
+                <span class="text-sm text-base-content/60">
+                    Oldest {{ overdue_tasks_limit }} of {{ overdue_tasks_total }}
+                </span>
+            {% endif %}
+        </div>
+        <div id="overdue-tasks-list" class="flex flex-col mb-6">
+            {% for task_item in overdue_tasks %}
+                <div class="card my-2">
+                    {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority region="dashboard-lists" origin=origin dom_prefix="overdue" %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="flex flex-wrap items-baseline justify-between gap-2 px-4 pb-3 pt-5">
+        <h2 class="text-2xl font-bold tracking-tight text-base-content">Today</h2>
+    </div>
+    <div id="today-tasks-list" class="flex flex-col mb-6">
+        {% if today_tasks %}
+            {% for task_item in today_tasks %}
+                <div class="card my-2">
+                    {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority region="dashboard-lists" origin=origin dom_prefix="today" %}
+                </div>
+            {% endfor %}
+            {% include "todo/partials/_pagination.html" with pagination_target="#dashboard-lists" %}
+        {% else %}
+            <div role="alert" class="alert shadow-sm m-4">
+                <i class="nf nf-cod-info text-lg"></i>
+                <span>No tasks for today. Relax!</span>
+            </div>
+        {% endif %}
+    </div>
+    <div class="flex flex-wrap items-baseline justify-between gap-2 px-4 pb-3 pt-5">
+        <h2 class="text-2xl font-bold tracking-tight text-base-content">Upcoming</h2>
+        {% if upcoming_tasks %}
+            <a href="{{ upcoming_tasks_url }}"
+               hx-get="{{ upcoming_tasks_url }}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="link link-hover text-sm text-primary">View all due tasks</a>
+        {% endif %}
+    </div>
+    <div id="upcoming-tasks-list" class="flex flex-col mb-6">
+        {% if upcoming_tasks %}
+            {% for task_item in upcoming_tasks %}
+                <div class="card my-2">
+                    {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority region="dashboard-lists" origin=origin dom_prefix="upcoming" %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div role="alert" class="alert shadow-sm m-4">
+                <i class="nf nf-cod-info text-lg"></i>
+                <span>No upcoming tasks.</span>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% include "partials/_messages_oob.html" %}

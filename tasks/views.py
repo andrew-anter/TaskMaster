@@ -2,23 +2,27 @@ from datetime import date
 from urllib.parse import quote as url_quote
 
 from django.contrib import messages
-from django.core.paginator import Paginator
-from django.views.decorators.http import require_http_methods
 from django.http import (
-    HttpResponseRedirect,
     Http404,
+    HttpResponse,
+    HttpResponseRedirect,
 )
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
 from common.http import hx_location_response, is_partial_request
+from common.pagination import paginate
+from labels.context import build_label_detail_context
+from labels.models import Label
 
 from .exceptions import DueDateInPastError, ScheduledDateInPastError
-
 from .forms import TaskForm
 from .models import Task
 from .selectors import (
+    OVERDUE_TASKS_LIMIT,
     SORTABLE_FIELDS,
+    get_overdue_tasks_count_for_user,
     get_overdue_tasks_for_user,
     get_task_for_user,
     get_tasks_by_label,
@@ -32,10 +36,18 @@ from .services import (
     task_update_service,
     toggle_task_status_service,
 )
-from labels.models import Label
 
 ADD_TASK_TEMPLATE_NAME = "todo/partials/_add_task.html"
 TASKS_PER_PAGE = 25
+
+# ``origin`` values travel with every row's mutating form, so the views can
+# re-render exactly the region the request came from (and keep filters, sort
+# and pagination of that region intact).
+ORIGIN_DASHBOARD = "dashboard"
+ORIGIN_ALL_TASKS = "all_tasks"
+ORIGIN_LABEL_TASKS = "label_tasks"
+ORIGIN_LABEL_DETAIL = "label_detail"
+ORIGIN_TASK_DETAIL = "task_detail"
 
 
 def parse_date_param(value: str | None) -> date | None:
@@ -89,47 +101,177 @@ def parse_sort_param(value: str | None) -> tuple[str | None, str]:
     if not value:
         return None, "asc"
     sort_dir = "desc" if value.startswith("-") else "asc"
-    field = value[1:] if value.startswith("-") else value
+    field = value.removeprefix("-")
     if field not in SORTABLE_FIELDS:
         return None, "asc"
     return field, sort_dir
 
 
-def paginate_tasks(request, tasks, *, page_size: int = TASKS_PER_PAGE):
-    """Paginates a queryset and builds prev/next page URLs preserving GET params."""
-    paginator = Paginator(tasks, page_size)
-    page_obj = paginator.get_page(request.GET.get("page"))
-
-    def page_url(page_number: int) -> str | None:
-        if page_number < 1 or page_number > paginator.num_pages:
-            return None
-        params = request.GET.copy()
-        params["page"] = page_number
-        return f"?{params.urlencode()}"
-
-    return page_obj, page_url(page_obj.number - 1), page_url(page_obj.number + 1)
+def parse_origin(value: str | None) -> tuple[str, int | None]:
+    """Splits an ``origin`` value such as ``label_tasks:3`` into key and id."""
+    key, _, raw_pk = (value or "").partition(":")
+    return key, int(raw_pk) if raw_pk.isdigit() else None
 
 
-@require_http_methods(["GET"])
-def task_list_view(request):
-    today_tasks = get_today_tasks_for_user(user=request.user)
-    upcoming_tasks = get_upcoming_tasks_for_user(user=request.user)
-    overdue_tasks = get_overdue_tasks_for_user(user=request.user)
+def origin_value(key: str, pk: int | None = None) -> str:
+    """Builds an ``origin`` value for a list region."""
+    return f"{key}:{pk}" if pk is not None else key
 
-    today_page_obj, prev_page_url, next_page_url = paginate_tasks(request, today_tasks)
 
-    context = {
+# -- Context builders (shared by the pages and the region re-renders) -- #
+def dashboard_context(request) -> dict:
+    """Context for the home dashboard sections."""
+    today_page_obj, prev_page_url, next_page_url = paginate(
+        request, get_today_tasks_for_user(user=request.user), page_size=TASKS_PER_PAGE
+    )
+    return {
         "today_tasks": today_page_obj.object_list,
-        "upcoming_tasks": upcoming_tasks,
-        "overdue_tasks": overdue_tasks,
+        "upcoming_tasks": get_upcoming_tasks_for_user(user=request.user),
+        "upcoming_tasks_url": f"{reverse('all_tasks')}?sort=due_datetime",
+        "overdue_tasks": get_overdue_tasks_for_user(user=request.user),
+        "overdue_tasks_limit": OVERDUE_TASKS_LIMIT,
+        "overdue_tasks_total": get_overdue_tasks_count_for_user(user=request.user),
         "page_obj": today_page_obj,
         "prev_page_url": prev_page_url,
         "next_page_url": next_page_url,
         "page_base_url": reverse("home"),
-        "page_title": "My Tasks",
+        "origin": ORIGIN_DASHBOARD,
         "Status": Task.Status,
         "Priority": Task.Priority,
+        "page_title": "My Tasks",
     }
+
+
+def all_tasks_context(request, *, label=None) -> dict:
+    """Context for the task list region (all tasks, or the tasks of one label)."""
+    filters = {
+        "query": request.GET.get("q", "").strip() or None,
+        "status": parse_status_param(request.GET.get("status")),
+        "priority": parse_priority_param(request.GET.get("priority")),
+        "label_id": parse_label_param(request.user, request.GET.get("label")),
+        "due_from": parse_date_param(request.GET.get("due_from")),
+        "due_to": parse_date_param(request.GET.get("due_to")),
+    }
+    sort_by, sort_dir = parse_sort_param(request.GET.get("sort"))
+    filters_active = any(
+        request.GET.get(key, "").strip()
+        for key in ("q", "status", "priority", "label", "due_from", "due_to")
+    )
+
+    if label is None:
+        tasks = search_tasks_for_user(
+            user=request.user, **filters, sort_by=sort_by, sort_dir=sort_dir
+        )
+        page_base_url = reverse("all_tasks")
+        origin = ORIGIN_ALL_TASKS
+        page_title = "All Tasks"
+    else:
+        tasks = get_tasks_by_label(user=request.user, label_id=label.pk)
+        page_base_url = reverse("tasks_by_label", args=[label.pk])
+        origin = origin_value(ORIGIN_LABEL_TASKS, label.pk)
+        page_title = f"Tasks labeled '{label.name}'"
+
+    page_obj, prev_page_url, next_page_url = paginate(
+        request, tasks, page_size=TASKS_PER_PAGE
+    )
+
+    return {
+        "all_tasks": page_obj.object_list,
+        "page_obj": page_obj,
+        "prev_page_url": prev_page_url,
+        "next_page_url": next_page_url,
+        "page_base_url": page_base_url,
+        "filters_active": filters_active,
+        "show_filters": label is None,
+        "sort_by": sort_by,
+        "sort_dir": sort_dir,
+        "user_labels": Label.objects.filter(owner=request.user).order_by("name"),
+        "label": label,
+        "origin": origin,
+        "Status": Task.Status,
+        "Priority": Task.Priority,
+        "page_title": page_title,
+    }
+
+
+def task_detail_context(
+    request, task, *, editing: bool = False, form=None, selected_label_ids=None
+) -> dict:
+    """Context for the single-task view/form."""
+    if form is None:
+        form = TaskForm(instance=task, user=request.user)
+    if selected_label_ids is None:
+        selected_label_ids = list(task.labels.values_list("pk", flat=True))
+    return {
+        "task": task,
+        "form": form,
+        "editing": editing,
+        "user_labels": Label.objects.filter(owner=request.user),
+        "selected_label_ids": selected_label_ids,
+        "Status": Task.Status,
+        "Priority": Task.Priority,
+        "page_title": task.title,
+    }
+
+
+def render_task_region(request) -> HttpResponse:
+    """Re-render the list region a mutating request came from."""
+    key, pk = parse_origin(request.POST.get("origin"))
+
+    if key == ORIGIN_DASHBOARD:
+        return render(
+            request, "todo/partials/_dashboard_lists.html", dashboard_context(request)
+        )
+
+    if key == ORIGIN_LABEL_TASKS and pk is not None:
+        label = request.user.labels.filter(pk=pk).first()
+        if label is not None:
+            return render(
+                request,
+                "todo/partials/_tasks_region.html",
+                all_tasks_context(request, label=label),
+            )
+
+    if key == ORIGIN_LABEL_DETAIL and pk is not None:
+        label = request.user.labels.filter(pk=pk).first()
+        if label is not None:
+            return render(
+                request,
+                "labels/partials/_label_detail_tasks.html",
+                build_label_detail_context(user=request.user, label=label),
+            )
+
+    if key == ORIGIN_TASK_DETAIL and pk is not None:
+        task = Task.objects.filter(pk=pk, owner=request.user).first()
+        if task is not None:
+            return render(
+                request,
+                "todo/partials/_task_detail.html",
+                task_detail_context(request, task),
+            )
+
+    return render(
+        request, "todo/partials/_tasks_region.html", all_tasks_context(request)
+    )
+
+
+def region_redirect_url(request) -> str:
+    """Non-HTMX fallback target for a mutating request (POST/redirect/GET)."""
+    key, pk = parse_origin(request.POST.get("origin"))
+    if key == ORIGIN_DASHBOARD:
+        return reverse("home")
+    if key == ORIGIN_LABEL_TASKS and pk is not None:
+        return reverse("tasks_by_label", args=[pk])
+    if key == ORIGIN_LABEL_DETAIL and pk is not None:
+        return reverse("label_detail", args=[pk])
+    if key == ORIGIN_TASK_DETAIL and pk is not None:
+        return reverse("task_detail", args=[pk])
+    return reverse("all_tasks")
+
+
+@require_http_methods(["GET"])
+def task_list_view(request):
+    context = dashboard_context(request)
     if is_partial_request(request):
         return render(request, "todo/partials/_task_list.html", context)
     return render(request, "todo/task_list.html", context)
@@ -164,41 +306,27 @@ def task_add_partial_view(request):
                     owner=request.user,
                     labels=form.cleaned_data.get("labels"),
                 )
-            except (DueDateInPastError, ValueError) as e:
+            except (DueDateInPastError, ScheduledDateInPastError, ValueError) as e:
                 form.add_error(None, f"{e}")
-                context = {
-                    "form": form,
-                    "page_title": "Add New Task (Errors)",
-                    "user_labels": Label.objects.filter(owner=request.user),
-                    "selected_label_ids": [
-                        lbl.pk for lbl in form.cleaned_data.get("labels", [])
-                    ],
-                    "add_task_url": add_task_url,
-                    "next_url": next_url,
-                }
-                return render(request, template_name, context)
-
-            redirect_target = next_url or reverse("home")
-            if request.htmx:
-                response = hx_location_response(redirect_target)
-                messages.success(request, "Task added successfully")
-                return response
             else:
-                messages.success(request, "Task added successfully!")
+                redirect_target = next_url or reverse("home")
+                messages.success(request, "Task added successfully.")
+                if request.htmx:
+                    return hx_location_response(redirect_target)
                 return HttpResponseRedirect(redirect_target)
-        else:
-            if request.htmx:
-                context = {
-                    "form": form,
-                    "page_title": "Add New Task (Errors)",
-                    "user_labels": Label.objects.filter(owner=request.user),
-                    "selected_label_ids": [
-                        lbl.pk for lbl in form.cleaned_data.get("labels", [])
-                    ],
-                    "add_task_url": add_task_url,
-                    "next_url": next_url,
-                }
-                return render(request, template_name, context)
+
+        if request.htmx:
+            context = {
+                "form": form,
+                "page_title": "Add New Task",
+                "user_labels": Label.objects.filter(owner=request.user),
+                "selected_label_ids": [
+                    lbl.pk for lbl in form.cleaned_data.get("labels", [])
+                ],
+                "add_task_url": add_task_url,
+                "next_url": next_url,
+            }
+            return render(request, template_name, context)
 
     else:
         form = TaskForm(user=request.user)
@@ -228,16 +356,10 @@ def task_update_status_view(request, task_id):
     toggle_task_status_service(task=task)
 
     if request.htmx:
-        context = {
-            "task": task,
-            "Status": Task.Status,
-            "Priority": Task.Priority,
-        }
-        return render(request, "todo/partials/_task_list_item.html", context)
-    else:
-        # Fallback for non-HTMX requests (though this view is primarily for HTMX now)
-        messages.info(request, f"Task '{task.title}' status updated.")
-        return HttpResponseRedirect(reverse("all_tasks"))
+        return render_task_region(request)
+
+    messages.info(request, f"Task '{task.title}' status updated.")
+    return HttpResponseRedirect(region_redirect_url(request))
 
 
 @require_http_methods(request_method_list=["GET", "POST"])
@@ -247,7 +369,8 @@ def task_detail_view(request, task_id):
 
     Passing ``?mode=edit`` (or submitting the edit form via POST) switches the
     same layout into editable form mode. Successful updates drop back to view
-    mode, so the page always opens read-only until the user opts to edit.
+    mode and replace the ``?mode=edit`` URL, so reloading the page always opens
+    read-only until the user opts to edit again.
     """
     try:
         task = get_task_for_user(user=request.user, task_id=task_id)
@@ -297,17 +420,20 @@ def task_detail_view(request, task_id):
         else:
             selected_label_ids = [lbl.pk for lbl in form.cleaned_data.get("labels", [])]
 
-    context = {
-        "task": task,
-        "form": form,
-        "editing": editing,
-        "user_labels": Label.objects.filter(owner=request.user),
-        "selected_label_ids": selected_label_ids,
-        "Status": Task.Status,
-        "Priority": Task.Priority,
-    }
+    context = task_detail_context(
+        request,
+        task,
+        editing=editing,
+        form=form,
+        selected_label_ids=selected_label_ids,
+    )
     if is_partial_request(request):
-        return render(request, "todo/partials/_task_detail.html", context)
+        response = render(request, "todo/partials/_task_detail.html", context)
+        if request.method == "POST" and not editing:
+            # Leave edit mode in the address bar as well, so a reload shows the
+            # read-only view instead of the form again.
+            response["HX-Replace-Url"] = reverse("task_detail", args=[task.pk])
+        return response
     return render(request, "todo/task_detail.html", context)
 
 
@@ -321,45 +447,20 @@ def task_delete_view(request, task_id):
             return hx_location_response(reverse("home"))
         raise Http404
     messages.success(request, message="Task deleted successfully.")
-    return render(request, "partials/_messages_oob.html")
+
+    if request.htmx:
+        key, _ = parse_origin(request.POST.get("origin"))
+        if key == ORIGIN_TASK_DETAIL:
+            # The task no longer exists: leave its detail page.
+            return hx_location_response(reverse("home"))
+        return render_task_region(request)
+
+    return HttpResponseRedirect(region_redirect_url(request))
 
 
 @require_http_methods(request_method_list=["GET"])
 def all_tasks_view(request):
-    filters = {
-        "query": request.GET.get("q", "").strip() or None,
-        "status": parse_status_param(request.GET.get("status")),
-        "priority": parse_priority_param(request.GET.get("priority")),
-        "label_id": parse_label_param(request.user, request.GET.get("label")),
-        "due_from": parse_date_param(request.GET.get("due_from")),
-        "due_to": parse_date_param(request.GET.get("due_to")),
-    }
-    sort_by, sort_dir = parse_sort_param(request.GET.get("sort"))
-    filters_active = any(
-        request.GET.get(key, "").strip()
-        for key in ("q", "status", "priority", "label", "due_from", "due_to")
-    )
-
-    tasks = search_tasks_for_user(
-        user=request.user, **filters, sort_by=sort_by, sort_dir=sort_dir
-    )
-    page_obj, prev_page_url, next_page_url = paginate_tasks(request, tasks)
-
-    context = {
-        "all_tasks": page_obj.object_list,
-        "page_obj": page_obj,
-        "prev_page_url": prev_page_url,
-        "next_page_url": next_page_url,
-        "page_base_url": reverse("all_tasks"),
-        "filters_active": filters_active,
-        "show_filters": True,
-        "sort_by": sort_by,
-        "sort_dir": sort_dir,
-        "user_labels": Label.objects.filter(owner=request.user).order_by("name"),
-        "page_title": "All Tasks",
-        "Status": Task.Status,
-        "Priority": Task.Priority,
-    }
+    context = all_tasks_context(request)
     if is_partial_request(request):
         return render(
             request=request,
@@ -374,32 +475,9 @@ def all_tasks_view(request):
 
 
 @require_http_methods(["GET"])
-def refresh_task_labels_view(request):
-    user_labels = Label.objects.filter(owner=request.user)
-    form_labels = request.GET.get("form_labels", "")
-    selected_ids = [
-        int(chunk) for chunk in form_labels.split(",") if chunk.strip().isdecimal()
-    ]
-    context = {"user_labels": user_labels, "selected_ids": selected_ids}
-    return render(request, "todo/partials/_labels_selector.html", context)
-
-
-@require_http_methods(["GET"])
 def task_list_by_label_view(request, label_id):
-    tasks = get_tasks_by_label(user=request.user, label_id=label_id)
     label = get_object_or_404(request.user.labels, id=label_id)
-    page_obj, prev_page_url, next_page_url = paginate_tasks(request, tasks)
-
-    context = {
-        "all_tasks": page_obj.object_list,
-        "page_obj": page_obj,
-        "prev_page_url": prev_page_url,
-        "next_page_url": next_page_url,
-        "page_base_url": reverse("tasks_by_label", args=[label_id]),
-        "page_title": f"Tasks labeled '{label.name}'",
-        "Status": Task.Status,
-        "Priority": Task.Priority,
-    }
+    context = all_tasks_context(request, label=label)
     if is_partial_request(request):
         return render(
             request=request,

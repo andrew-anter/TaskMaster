@@ -1,0 +1,33 @@
+{% comment %}
+Preview region of the label detail page: the first few tasks carrying the
+label. Swapped as a whole when one of those tasks is completed or deleted, so
+the preview and its counters always match the server state.
+
+Context: ``label``, ``label_tasks``, ``label_task_count``, ``origin``.
+{% endcomment %}
+<div id="label-detail-tasks">
+    <div class="divider"></div>
+    <div>
+        <h3 class="label-text font-semibold uppercase tracking-wide text-base-content/70 mb-2">Tasks with this label</h3>
+        {% if label_tasks %}
+            {% for task in label_tasks %}
+                <div class="card my-2">
+                    {% include "todo/partials/_task_list_item.html" with task=task Status=Status Priority=Priority region="label-detail-tasks" origin=origin dom_prefix="label" %}
+                </div>
+            {% endfor %}
+            {% if label_task_count > label_tasks|length %}
+                <a href="{% url 'tasks_by_label' label.pk %}"
+                   hx-get="{% url 'tasks_by_label' label.pk %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="btn btn-ghost rounded-full normal-case gap-1 mt-3">
+                    <i class="nf nf-fa-arrow_right text-sm"></i>
+                    View all {{ label_task_count }} task{{ label_task_count|pluralize }}
+                </a>
+            {% endif %}
+        {% else %}
+            <p class="text-base-content/50 text-sm italic">No tasks have this label yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% include "partials/_messages_oob.html" %}

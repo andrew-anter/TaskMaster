@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 import pytest
 from django.test import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import User
 from tasks.models import Task
@@ -63,6 +66,18 @@ class TestTaskAddView:
         assert response.status_code == 200
         assert response.context["form"].errors
 
+    def test_invalid_form_wires_errors_to_the_field(self, client_logged_in):
+        response = client_logged_in.post(
+            reverse("task_add"),
+            {"title": "", "status": Task.Status.TODO, "priority": Task.Priority.MEDIUM},
+            HTTP_HX_REQUEST="true",
+        )
+
+        content = response.content.decode()
+        assert 'aria-invalid="true"' in content
+        assert 'aria-describedby="id_title_error"' in content
+        assert 'id="id_title_error"' in content
+
     def test_htmx_post_returns_partial(self, client_logged_in):
         data = {
             "title": "HTMX task",
@@ -105,6 +120,37 @@ class TestTaskDetailView:
         )
         assert response.status_code == 200
         assert response.context["editing"] is True
+
+    def test_htmx_update_drops_edit_mode_from_the_url(
+        self, client_logged_in, sample_task
+    ):
+        data = {
+            "title": "Renamed",
+            "description": "",
+            "status": Task.Status.TODO,
+            "priority": Task.Priority.MEDIUM,
+        }
+
+        response = client_logged_in.post(
+            reverse("task_detail", args=[sample_task.pk]) + "?mode=edit",
+            data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        assert response.status_code == 200
+        assert response.headers["HX-Replace-Url"] == reverse(
+            "task_detail", args=[sample_task.pk]
+        )
+
+    def test_htmx_invalid_post_keeps_edit_url(self, client_logged_in, sample_task):
+        response = client_logged_in.post(
+            reverse("task_detail", args=[sample_task.pk]),
+            {"title": "", "status": Task.Status.TODO, "priority": Task.Priority.MEDIUM},
+            HTTP_HX_REQUEST="true",
+        )
+
+        assert response.status_code == 200
+        assert "HX-Replace-Url" not in response.headers
 
     def test_post_invalid_form_returns_bound_errors(
         self, client_logged_in, sample_task
@@ -149,6 +195,44 @@ class TestTaskStatusToggleView:
         task.refresh_from_db()
         assert task.status == Task.Status.TODO
 
+    def test_htmx_toggle_rerenders_the_dashboard_region(self, client_logged_in, owner):
+        task = Task.objects.create(
+            owner=owner,
+            title="Late task",
+            due_datetime=timezone.now() - timedelta(days=1),
+        )
+
+        response = client_logged_in.post(
+            reverse("update_task_status", args=[task.pk]),
+            {"origin": "dashboard"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        content = response.content.decode()
+        assert response.status_code == 200
+        assert 'id="dashboard-lists"' in content
+        # Completed tasks may not linger in the overdue section.
+        assert ">Overdue<" not in content
+        assert f'id="overdue-{task.pk}-item"' not in content
+
+    def test_completed_row_leaves_a_status_filtered_list(self, client_logged_in, owner):
+        task = task_add_service(
+            title="Todo only",
+            description="",
+            owner=owner,
+        )
+        url = f"{reverse('update_task_status', args=[task.pk])}?status=TODO"
+
+        response = client_logged_in.post(
+            url, {"origin": "all_tasks"}, HTTP_HX_REQUEST="true"
+        )
+
+        content = response.content.decode()
+        assert response.status_code == 200
+        assert 'id="all-tasks-list"' in content
+        assert "Todo only" not in content
+        assert "No tasks match your search" in content
+
     def test_other_user_cannot_toggle_task(self, sample_task):
         """Regression: the toggle view must scope tasks to their owner."""
         other_user = User.objects.create_user(username="intruder", password="pass1234")
@@ -181,11 +265,47 @@ class TestTaskStatusToggleView:
 
 
 class TestTaskDeleteView:
-    def test_post_deletes_task(self, client_logged_in, sample_task):
+    def test_post_deletes_task_and_redirects(self, client_logged_in, sample_task):
         task_id = sample_task.pk
-        response = client_logged_in.post(reverse("task_delete", args=[task_id]))
-        assert response.status_code == 200
+        response = client_logged_in.post(
+            reverse("task_delete", args=[task_id]), {"origin": "dashboard"}
+        )
+        assert response.status_code == 302
+        assert response.headers["Location"] == reverse("home")
         assert not Task.objects.filter(pk=task_id).exists()
+
+    def test_htmx_delete_rerenders_the_origin_region(self, client_logged_in, owner):
+        task = task_add_service(
+            title="Delete me",
+            description="",
+            owner=owner,
+            due_datetime=timezone.now() + timedelta(hours=1),
+        )
+
+        response = client_logged_in.post(
+            reverse("task_delete", args=[task.pk]),
+            {"origin": "dashboard"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        content = response.content.decode()
+        assert response.status_code == 200
+        assert 'id="dashboard-lists"' in content
+        assert "Delete me" not in content
+        assert "Task deleted successfully." in content
+
+    def test_htmx_delete_from_detail_page_navigates_home(
+        self, client_logged_in, sample_task
+    ):
+        response = client_logged_in.post(
+            reverse("task_delete", args=[sample_task.pk]),
+            {"origin": f"task_detail:{sample_task.pk}"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        assert response.status_code == 200
+        assert "HX-Location" in response.headers
+        assert not Task.objects.filter(pk=sample_task.pk).exists()
 
     def test_other_user_cannot_delete_task(self, sample_task):
         other_user = User.objects.create_user(username="intruder", password="pass1234")
@@ -196,17 +316,6 @@ class TestTaskDeleteView:
 
         assert response.status_code == 404
         assert Task.objects.filter(pk=sample_task.pk).exists()
-
-
-class TestRefreshTaskLabelsView:
-    def test_invalid_form_labels_param_is_ignored(self, client_logged_in):
-        # ``²`` is a Unicode digit that ``isdigit()`` accepts but ``int()`` rejects.
-        response = client_logged_in.get(
-            reverse("refresh_task_labels") + "?form_labels=abc,7,garbage,%C2%B2"
-        )
-
-        assert response.status_code == 200
-        assert response.context["selected_ids"] == [7]
 
 
 class TestAllTasksView:

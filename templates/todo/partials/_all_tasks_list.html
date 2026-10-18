@@ -1,146 +1,120 @@
-<div class="flex flex-wrap justify-between items-center gap-3 p-4">
-        <h1 class="text-3xl lg:text-4xl font-bold text-base-content">
-            Good {% now "A" as current_greeting %}
-            {% if current_greeting == "AM" %}
-                morning
-            {% else %}
-                afternoon
-            {% endif %}
-            , {{ request.user.first_name|default:request.user.username|capfirst }}
-        </h1>
-    </div>
-    <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">{{ page_title }}</h2>
-    {% if show_filters %}
-    <div class="pb-2">
-        <form hx-get="{% url 'all_tasks' %}"
-              hx-target="#all-tasks-list"
-              hx-select="#all-tasks-list"
-              hx-swap="outerHTML"
-              hx-trigger="input changed delay:300ms, change"
-              hx-replace-url="true"
-              hx-indicator="#search-indicator"
-              class="card bg-base-100 shadow-sm p-4">
-            <div class="flex flex-wrap gap-3 items-end">
-                <label class="form-control flex-1 min-w-[220px]">
-                    <div class="label pb-1">
-                        <span class="label-text">Search</span>
-                    </div>
-                    <input type="search"
-                           name="q"
-                           value="{{ request.GET.q }}"
-                           placeholder="Search tasks..."
-                           class="input w-full" />
-                </label>
-                <label class="form-control">
-                    <div class="label pb-1">
-                        <span class="label-text">Status</span>
-                    </div>
-                    <select name="status" class="select w-full">
-                        <option value="">All statuses</option>
-                        {% for value, label in Status.choices %}
-                            <option value="{{ value }}" {% if request.GET.status|upper == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="form-control">
-                    <div class="label pb-1">
-                        <span class="label-text">Priority</span>
-                    </div>
-                    <select name="priority" class="select w-full">
-                        <option value="">All priorities</option>
-                        {% for value, label in Priority.choices %}
-                            <option value="{{ value }}" {% if request.GET.priority == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="form-control">
-                    <div class="label pb-1">
-                        <span class="label-text">Label</span>
-                    </div>
-                    <select name="label" class="select w-full">
-                        <option value="">All labels</option>
-                        {% for lbl in user_labels %}
-                            <option value="{{ lbl.id }}" {% if request.GET.label == lbl.id|stringformat:"s" %}selected{% endif %}>{{ lbl.name }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="form-control">
-                    <div class="label pb-1">
-                        <span class="label-text">Due from</span>
-                    </div>
-                    <input type="date"
-                           name="due_from"
-                           value="{{ request.GET.due_from }}"
-                           class="input" />
-                </label>
-                <label class="form-control">
-                    <div class="label pb-1">
-                        <span class="label-text">Due to</span>
-                    </div>
-                    <input type="date"
-                           name="due_to"
-                           value="{{ request.GET.due_to }}"
-                           class="input" />
-                </label>
-                <label class="form-control">
-                    <div class="label pb-1">
-                        <span class="label-text">Sort by</span>
-                    </div>
-                    <select name="sort" class="select w-full">
-                        <option value="">Default order</option>
-                        <option value="due_datetime" {% if request.GET.sort == "due_datetime" %}selected{% endif %}>Due date (soonest first)</option>
-                        <option value="-due_datetime" {% if request.GET.sort == "-due_datetime" %}selected{% endif %}>Due date (latest first)</option>
-                        <option value="priority" {% if request.GET.sort == "priority" %}selected{% endif %}>Priority (high to low)</option>
-                        <option value="-priority" {% if request.GET.sort == "-priority" %}selected{% endif %}>Priority (low to high)</option>
-                        <option value="status" {% if request.GET.sort == "status" %}selected{% endif %}>Status</option>
-                        <option value="-created_at" {% if request.GET.sort == "-created_at" %}selected{% endif %}>Newest first</option>
-                        <option value="title" {% if request.GET.sort == "title" %}selected{% endif %}>Title (A-Z)</option>
-                    </select>
-                </label>
-                <span id="search-indicator" class="htmx-indicator loading loading-spinner loading-md"></span>
-            </div>
-        </form>
-    </div>
-    {% endif %}
-    <div id="all-tasks-list" class="flex flex-col mb-6">
-        {% if all_tasks %}
-            {% for task_item in all_tasks %}
-                <div class="card my-2">
-                    {% include "todo/partials/_task_list_item.html" with task=task_item Status=Status Priority=Priority %}
-                </div>
-            {% endfor %}
-        {% else %}
-            {# Using DaisyUI alert for a nicer "no tasks" message #}
-            <div role="alert" class="alert alert-info shadow-sm m-4">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     class="stroke-current shrink-0 w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                    </path>
-                </svg>
-                {% if filters_active %}
-                    <span>No tasks match your search. Try adjusting the filters.</span>
-                {% else %}
-                    <span>No tasks have been created yet. Start by creating some!</span>
-                {% endif %}
-            </div>
-        {% endif %}
-        {% include "todo/partials/_pagination.html" with pagination_target="#all-tasks-list" %}
-    </div>
-    {# "Quick Actions" Section #}
-    <h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Quick Actions</h2>
-    <div class="flex justify-start">
-        <div class="flex flex-1 gap-3 flex-wrap px-4 py-3">
-            <a hx-get="{% url 'task_add' %}?next={{ request.path|urlencode }}"
-               hx-target="#main-content"
-               hx-push-url="true"
-               class="btn btn-primary rounded-full normal-case">
-                <span class="truncate">Add Task</span>
-            </a>
-        </div>
-    </div>
+{% comment %}
+All-tasks page body (HTMX partial and page body): greeting, filter bar, task
+list region and quick actions.
 
-<div id="toast-container" hx-swap-oob="afterbegin">
-    {% include "partials/_messages.html" %}
+Context: filter inputs are read back from ``request.GET``.
+{% endcomment %}
+<div class="flex flex-wrap justify-between items-center gap-3 p-4">
+    <h1 class="text-3xl lg:text-4xl font-bold text-base-content">
+        Good {% now "G" as current_hour %}{% if current_hour|add:"0" < 12 %}morning{% elif current_hour|add:"0" < 18 %}afternoon{% else %}evening{% endif %}, {{ request.user.first_name|default:request.user.username|capfirst }}
+    </h1>
 </div>
+<h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">{{ page_title }}</h2>
+{% if show_filters %}
+<div class="pb-2">
+    <form id="tasks-filter-form"
+          hx-get="{% url 'all_tasks' %}"
+          hx-target="#all-tasks-list"
+          hx-select="#all-tasks-list"
+          hx-swap="outerHTML"
+          hx-trigger="input changed delay:300ms, change"
+          hx-replace-url="true"
+          hx-indicator="#search-indicator"
+          class="card bg-base-100 shadow-sm p-4">
+        <div class="flex flex-wrap gap-3 items-end">
+            <label class="flex-1 min-w-[220px]">
+                <div class="label pb-1">
+                    <span class="label-text">Search</span>
+                </div>
+                <input type="search"
+                       name="q"
+                       value="{{ request.GET.q }}"
+                       placeholder="Search tasks..."
+                       class="input w-full" />
+            </label>
+            <label>
+                <div class="label pb-1">
+                    <span class="label-text">Status</span>
+                </div>
+                <select name="status" class="select w-full">
+                    <option value="">All statuses</option>
+                    {% for value, label in Status.choices %}
+                        <option value="{{ value }}" {% if request.GET.status|upper == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <div class="label pb-1">
+                    <span class="label-text">Priority</span>
+                </div>
+                <select name="priority" class="select w-full">
+                    <option value="">All priorities</option>
+                    {% for value, label in Priority.choices %}
+                        <option value="{{ value }}" {% if request.GET.priority == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <div class="label pb-1">
+                    <span class="label-text">Label</span>
+                </div>
+                <select name="label" class="select w-full">
+                    <option value="">All labels</option>
+                    {% for lbl in user_labels %}
+                        <option value="{{ lbl.id }}" {% if request.GET.label == lbl.id|stringformat:"s" %}selected{% endif %}>{{ lbl.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <div class="label pb-1">
+                    <span class="label-text">Due from</span>
+                </div>
+                <input type="date"
+                       name="due_from"
+                       value="{{ request.GET.due_from }}"
+                       class="input" />
+            </label>
+            <label>
+                <div class="label pb-1">
+                    <span class="label-text">Due to</span>
+                </div>
+                <input type="date"
+                       name="due_to"
+                       value="{{ request.GET.due_to }}"
+                       class="input" />
+            </label>
+            <label>
+                <div class="label pb-1">
+                    <span class="label-text">Sort by</span>
+                </div>
+                <select name="sort" class="select w-full">
+                    <option value="">Default order</option>
+                    <option value="due_datetime" {% if request.GET.sort == "due_datetime" %}selected{% endif %}>Due date (soonest first)</option>
+                    <option value="-due_datetime" {% if request.GET.sort == "-due_datetime" %}selected{% endif %}>Due date (latest first)</option>
+                    <option value="priority" {% if request.GET.sort == "priority" %}selected{% endif %}>Priority (high to low)</option>
+                    <option value="-priority" {% if request.GET.sort == "-priority" %}selected{% endif %}>Priority (low to high)</option>
+                    <option value="status" {% if request.GET.sort == "status" %}selected{% endif %}>Status</option>
+                    <option value="-created_at" {% if request.GET.sort == "-created_at" %}selected{% endif %}>Newest first</option>
+                    <option value="title" {% if request.GET.sort == "title" %}selected{% endif %}>Title (A-Z)</option>
+                </select>
+            </label>
+            <span id="search-indicator" class="htmx-indicator loading loading-spinner loading-md"></span>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% include "todo/partials/_tasks_region.html" %}
+{# "Quick Actions" Section #}
+<h2 class="text-2xl font-bold tracking-tight px-4 pb-3 pt-5 text-base-content">Quick Actions</h2>
+<div class="flex justify-start">
+    <div class="flex flex-1 gap-3 flex-wrap px-4 py-3">
+        <a href="{% url 'task_add' %}?next={{ request.path|urlencode }}"
+           hx-get="{% url 'task_add' %}?next={{ request.path|urlencode }}"
+           hx-target="#main-content"
+           hx-push-url="true"
+           class="btn btn-primary rounded-full normal-case">
+            <span class="truncate">Add Task</span>
+        </a>
+    </div>
+</div>
+{% include "partials/_page_title.html" %}

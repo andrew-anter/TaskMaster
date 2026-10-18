@@ -1,46 +1,50 @@
 {% load color_utils %}
-<div class="flex flex-wrap gap-2" id="labels-selector">
-    {% for label in user_labels %}
-        {% with contrast=label.color|contrast_color %}
-            <label class="cursor-pointer" style="margin: 0;">
-                <input type="checkbox"
-                       name="labels"
-                       value="{{ label.pk }}"
-                       class="hidden"
-                       {% if label.pk in selected_ids %}checked{% endif %}
-                       onchange="this.parentElement.classList.toggle('label-selected', this.checked)">
-                <span class="badge badge-lg font-medium px-3 py-3 transition-all duration-150 label-badge"
-                      style="background-color: {{ label.color }}; color: {{ contrast }}; border: 2px solid transparent;">
-                    {{ label.name }}
-                </span>
-            </label>
-        {% endwith %}
-    {% endfor %}
-</div>
-<script>
-(function() {
-    function syncBadgeStyles() {
-        document.querySelectorAll('#labels-selector input[type="checkbox"]').forEach(function(cb) {
-            var badge = cb.nextElementSibling;
-            if (cb.checked) {
-                badge.style.border = '2px solid oklch(85% 0.199 91.936)';
-                badge.style.boxShadow = '0 0 0 1px oklch(85% 0.199 91.936)';
-            } else {
-                badge.style.border = '2px solid transparent';
-                badge.style.boxShadow = 'none';
-            }
-        });
-    }
-    syncBadgeStyles();
-    document.getElementById('labels-selector')?.addEventListener('change', syncBadgeStyles);
+{% comment %}
+Label picker (checkbox list styled as colour badges).
 
-    document.body.addEventListener('labelCreated', function() {
-        var container = document.getElementById('labels-selector');
-        if (!container) return;
-        var checked = container.querySelectorAll('input[type="checkbox"]:checked');
-        var ids = Array.from(checked).map(function(cb) { return cb.value; }).join(',');
-        var url = "{% url 'refresh_task_labels' %}?form_labels=" + ids;
-        htmx.ajax('GET', url, {target: '#labels-selector', swap: 'outerHTML'});
-    });
-})();
-</script>
+Rendered inline in the task form and returned out-of-band by the inline create
+endpoint (``oob=True``), so creating a label mid-form refreshes the picker with
+the new label ticked. With many labels a filter box appears.
+
+Accessibility: the checkbox itself is ``sr-only`` (focusable) and drives the
+badge styling through the ``peer-*`` variants, so the picker is keyboard and
+screen-reader usable.
+{% endcomment %}
+<div id="labels-selector" {% if oob %}hx-swap-oob="true"{% endif %} x-data="{ labelQuery: '' }">
+    {% if user_labels %}
+        {% if user_labels|length > 6 %}
+            <div class="mb-2">
+                <label class="label pb-1" for="label-filter-input">
+                    <span class="label-text text-xs">Filter labels</span>
+                </label>
+                <input type="search"
+                       id="label-filter-input"
+                       x-model="labelQuery"
+                       placeholder="Type to filter…"
+                       class="input input-sm w-full">
+            </div>
+        {% endif %}
+        <div class="flex flex-wrap gap-2">
+            {% for label in user_labels %}
+                <label class="cursor-pointer"
+                       style="margin: 0;"
+                       x-show="labelQuery === '' || '{{ label.name|lower|escapejs }}'.includes(labelQuery.toLowerCase())">
+                    <input type="checkbox"
+                           name="labels"
+                           value="{{ label.pk }}"
+                           class="peer sr-only"
+                           {% if label.pk in selected_ids %}checked{% endif %}>
+                    <span class="badge badge-lg font-medium px-3 py-3 transition-all duration-150 peer-checked:ring-2 peer-checked:ring-primary peer-checked:ring-offset-1 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-primary"
+                          style="background-color: {{ label.color }}; color: {{ label.color|contrast_color }}; border: 2px solid transparent;">
+                        {{ label.name }}
+                    </span>
+                </label>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="flex flex-col items-center gap-2 py-4 text-base-content/60">
+            <i class="nf nf-fa-tag text-2xl"></i>
+            <span class="text-sm">No labels yet. Create one to get started!</span>
+        </div>
+    {% endif %}
+</div>

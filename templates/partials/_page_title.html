@@ -1,0 +1,9 @@
+{% comment %}
+Out-of-band document title for HTMX partial responses (see ``base.html``).
+
+Keeps the browser tab, history entries and bookmarks in sync with the content
+that HTMX swapped into ``#main-content``.
+{% endcomment %}
+{% if request.htmx and not request.htmx.boosted %}
+    <title id="page-title" hx-swap-oob="true">{{ page_title }} - TaskMaster</title>
+{% endif %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Page not found - TaskMaster{% endblock title %}
+
+{% block content %}
+<div class="flex flex-col w-full items-center justify-center py-10 md:py-16">
+  <div class="card w-full md:w-[520px] max-w-md bg-base-100 shadow-xl p-6 md:p-8 text-center">
+    <i class="nf nf-cod-error text-4xl text-warning" aria-hidden="true"></i>
+    <h1 class="text-2xl font-bold text-base-content mt-4">We couldn't find that page</h1>
+    <p class="text-sm text-base-content/70 mt-3">
+      The address may be mistyped, or the task, label or notification it pointed to no longer exists.
+    </p>
+    <div class="flex flex-wrap justify-center gap-2 mt-6">
+      <a href="{% url 'home' %}"
+         hx-get="{% url 'home' %}"
+         hx-target="#main-content"
+         hx-push-url="true"
+         class="btn btn-primary rounded-full normal-case">Back to My Tasks</a>
+      <a href="{% url 'all_tasks' %}"
+         hx-get="{% url 'all_tasks' %}"
+         hx-target="#main-content"
+         hx-push-url="true"
+         class="btn btn-ghost rounded-full normal-case">All Tasks</a>
+    </div>
+  </div>
+</div>
+{% endblock content %}
