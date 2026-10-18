@@ -1,17 +1,19 @@
-import pytest
-from django.utils import timezone
 from datetime import datetime
 
+import pytest
+from django.utils import timezone
+
+from labels.models import Label
 from notifications.models import Notification
 from notifications.services import notify
 
-from ..exceptions import DueDateInPastError
+from ..exceptions import DueDateInPastError, ScheduledDateInPastError
 from ..models import Task
 from ..services import (
     task_add_service,
-    toggle_task_status_service,
-    task_update_service,
     task_delete_service,
+    task_update_service,
+    toggle_task_status_service,
 )
 
 
@@ -38,6 +40,18 @@ class TestAddTaskService:
             task_add_service(**invalid_data)
 
         # Assert for side effects (that no task was created)
+        assert Task.objects.count() == 0
+
+    def test_create_task_with_invalid_scheduled_date(self, valid_task_data):
+        """A scheduled date in the past is rejected on create, as on update."""
+        invalid_data = {
+            **valid_task_data,
+            "scheduled_date": timezone.localdate() - timezone.timedelta(days=1),
+        }
+
+        with pytest.raises(ScheduledDateInPastError):
+            task_add_service(**invalid_data)
+
         assert Task.objects.count() == 0
 
     def test_create_defaults_status_to_todo(self, valid_task_data):
@@ -250,6 +264,30 @@ class TestUpdateTaskService:
         assert task.due_datetime == original_due
         assert task.scheduled_date == original_scheduled
         assert updated is True
+
+    def test_unchanged_labels_report_no_update(self, owner):
+        """Re-submitting the same labels is a no-op, not a change."""
+        label = Label.objects.create(name="Same", color="#111111", owner=owner)
+        task = Task.objects.create(owner=owner, title="Labelled")
+        task.labels.set([label.pk])
+
+        task, updated = task_update_service(
+            task_id=task.pk, user=owner, labels=[label.pk]
+        )
+
+        assert updated is False
+
+    def test_changing_labels_reports_update(self, owner):
+        """Adding a label counts as a change."""
+        label = Label.objects.create(name="New", color="#222222", owner=owner)
+        task = Task.objects.create(owner=owner, title="Labelled")
+
+        task, updated = task_update_service(
+            task_id=task.pk, user=owner, labels=[label.pk]
+        )
+
+        assert updated is True
+        assert list(task.labels.values_list("pk", flat=True)) == [label.pk]
 
     def test_invalid_status_raises_even_when_unchanged(self, owner):
         """A stored invalid status is still rejected on a no-op update."""

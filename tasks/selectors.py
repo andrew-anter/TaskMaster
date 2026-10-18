@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 from django.conf import settings
-from django.db.models import Case, Q, QuerySet, Value, When
+from django.db.models import Case, F, Q, QuerySet, Value, When
 from django.utils import timezone
 
 from .models import Task
@@ -62,14 +62,43 @@ def get_all_tasks_for_user(*, user: User) -> QuerySet[Task]:
     return Task.objects.filter(owner=user)
 
 
+UPCOMING_TASKS_LIMIT = 5
+
+
+def default_task_order() -> list:
+    """
+    Sensible "no sort selected" ordering for task lists.
+
+    Open tasks come before completed ones, then the soonest due date (tasks
+    without a due date last), then highest priority first. ``Meta.ordering``
+    stays untouched: it is part of the API contract.
+    """
+    completed_last = Case(
+        When(status=Task.Status.COMPLETED, then=Value(1)),
+        default=Value(0),
+    )
+    priority_rank = Case(
+        When(priority=Task.Priority.HIGH, then=Value(1)),
+        When(priority=Task.Priority.MEDIUM, then=Value(2)),
+        When(priority=Task.Priority.LOW, then=Value(3)),
+        default=Value(4),
+    )
+    return [
+        completed_last.asc(),
+        F("due_datetime").asc(nulls_last=True),
+        priority_rank.asc(),
+    ]
+
+
 def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
     """
-    Retrieves the next 5 upcoming tasks for a user that are due in the future.
+    Retrieves the next 5 upcoming tasks for a user beyond today.
 
-    This is useful for a "dashboard" or "agenda" view. It filters for tasks
-    with a due date at or after now (so overdue tasks live in their own
-    section), orders them chronologically, and takes the top 5 most imminent
-    tasks.
+    Tasks due today (and overdue ones) belong to their own dashboard sections,
+    so this queryset deliberately starts at tomorrow: the dashboard sections
+    stay disjoint and no task is rendered twice. Tasks that only carry a
+    ``scheduled_date`` in the future are listed after the due-dated ones, so
+    they no longer disappear from the dashboard entirely.
 
     Args:
         user: The user whose upcoming tasks are to be retrieved.
@@ -77,10 +106,13 @@ def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
     Returns:
         A limited and ordered QuerySet of the 5 nearest upcoming tasks.
     """
-    tasks = get_all_tasks_for_user(user=user)
-    return tasks.filter(
-        due_datetime__isnull=False, due_datetime__gte=timezone.now()
-    ).order_by("due_datetime")[:5]
+    today = timezone.localdate()
+    tasks = get_all_tasks_for_user(user=user).filter(
+        Q(due_datetime__date__gt=today) | Q(scheduled_date__gt=today)
+    )
+    return tasks.order_by(
+        F("due_datetime").asc(nulls_last=True), "scheduled_date"
+    )[:UPCOMING_TASKS_LIMIT]
 
 
 def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
@@ -105,13 +137,24 @@ def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
     )
 
 
+def _overdue_queryset(*, user: User) -> QuerySet[Task]:
+    """Overdue = incomplete tasks whose due date has passed."""
+    now = timezone.now()
+    return (
+        get_all_tasks_for_user(user=user)
+        .filter(due_datetime__isnull=False, due_datetime__lt=now)
+        .exclude(status=Task.Status.COMPLETED)
+    )
+
+
 def get_overdue_tasks_for_user(*, user: User) -> QuerySet[Task]:
     """
     Retrieves a user's incomplete tasks whose due date is in the past.
 
     Completed tasks are excluded (they should not be nagged as overdue). The
     result is capped at ``OVERDUE_TASKS_LIMIT`` oldest-overdue-first so the
-    dashboard stays bounded even with a large backlog.
+    dashboard stays bounded even with a large backlog. Use
+    ``get_overdue_tasks_count_for_user`` for the uncapped total.
 
     Args:
         user: The user whose overdue tasks are to be retrieved.
@@ -119,20 +162,24 @@ def get_overdue_tasks_for_user(*, user: User) -> QuerySet[Task]:
     Returns:
         A limited QuerySet of overdue tasks, ordered by due date (oldest first).
     """
-    tasks = get_all_tasks_for_user(user=user)
-    now = timezone.now()
-    return (
-        tasks.filter(due_datetime__isnull=False, due_datetime__lt=now)
-        .exclude(status=Task.Status.COMPLETED)
-        .order_by("due_datetime")[:OVERDUE_TASKS_LIMIT]
-    )
+    return _overdue_queryset(user=user).order_by("due_datetime")[:OVERDUE_TASKS_LIMIT]
+
+
+def get_overdue_tasks_count_for_user(*, user: User) -> int:
+    """Total number of overdue tasks for ``user`` (ignoring the display cap)."""
+    return _overdue_queryset(user=user).count()
 
 
 def get_tasks_by_label(*, user: User, label_id: int) -> QuerySet[Task]:
     """
-    Retrieves all tasks for a user that have a specific label.
+    Retrieves all tasks for a user that have a specific label, in the
+    default list order (open first, then soonest due).
     """
-    return get_all_tasks_for_user(user=user).filter(labels__id=label_id)
+    return (
+        get_all_tasks_for_user(user=user)
+        .filter(labels__id=label_id)
+        .order_by(*default_task_order())
+    )
 
 
 def search_tasks_for_user(
@@ -191,6 +238,8 @@ def search_tasks_for_user(
     if due_to:
         tasks = tasks.filter(due_datetime__date__lte=due_to)
 
+    if sort_by is None:
+        tasks = tasks.order_by(*default_task_order())
     if sort_by == "priority":
         rank = Case(
             When(priority=Task.Priority.HIGH, then=Value(1)),

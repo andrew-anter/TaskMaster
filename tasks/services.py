@@ -8,6 +8,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
 
+from notifications.models import Notification
+from notifications.selectors import invalidate_unread_notifications_count
+
 from .exceptions import DueDateInPastError, ScheduledDateInPastError
 from .models import Task
 from .reminder_types import (
@@ -17,8 +20,6 @@ from .reminder_types import (
     TYPE_SCHEDULED_TODAY,
 )
 from .selectors import get_task_for_user
-from notifications.models import Notification
-from notifications.selectors import invalidate_unread_notifications_count
 
 User = settings.AUTH_USER_MODEL
 
@@ -117,11 +118,14 @@ def task_add_service(
 
     Raises:
         DueDateInPastError: If the provided due_datetime is in the past.
+        ScheduledDateInPastError: If the provided scheduled_date is in the past.
         ValueError: If ``status`` or ``priority`` is not a valid choice.
     """
     today = timezone.now().date()
     if due_datetime and due_datetime.date() < today:
         raise DueDateInPastError("Due date cannot be in the past.")
+    if scheduled_date and scheduled_date < today:
+        raise ScheduledDateInPastError("The scheduled date cannot be in the past.")
     if status not in Task.Status.values:
         raise ValueError(f"'{status}' is not a valid status.")
     if priority not in Task.Priority.values:
@@ -256,8 +260,10 @@ def task_update_service(
         updated = True
 
     if labels is not None:
-        task.labels.set(labels)
-        updated = True
+        current_label_ids = set(task.labels.values_list("pk", flat=True))
+        if set(labels) != current_label_ids:
+            task.labels.set(labels)
+            updated = True
 
     reminders_stale = any(
         field in fields_to_update
