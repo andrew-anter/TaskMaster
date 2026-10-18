@@ -1,8 +1,21 @@
-from django import forms
-
-
-from django.contrib.auth.forms import AuthenticationForm
 from allauth.account.forms import ResetPasswordForm, ResetPasswordKeyForm, SignupForm
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+
+AUTOCOMPLETE_BY_FIELD = {
+    "username": "username",
+    "email": "email",
+    "password1": "new-password",
+    "password2": "new-password",
+}
+
+
+def add_autocomplete_hints(form: forms.BaseForm) -> None:
+    """Hint password managers/browser autofill for the fields the form has."""
+    for name, value in AUTOCOMPLETE_BY_FIELD.items():
+        field = form.fields.get(name)
+        if field is not None:
+            field.widget.attrs.setdefault("autocomplete", value)
 
 
 class CustomLoginForm(AuthenticationForm):
@@ -13,6 +26,7 @@ class CustomLoginForm(AuthenticationForm):
             attrs={
                 "class": login_input_classes,
                 "placeholder": "Email or Username",
+                "autocomplete": "username",
                 "autofocus": True,
             }
         )
@@ -22,6 +36,7 @@ class CustomLoginForm(AuthenticationForm):
             attrs={
                 "class": login_input_classes,
                 "placeholder": "Password",
+                "autocomplete": "current-password",
             }
         )
     )
@@ -34,6 +49,7 @@ class CustomRegisterForm(SignupForm):
             attrs={
                 "class": login_input_classes,
                 "placeholder": "Username",
+                "autocomplete": "username",
                 "autofocus": True,
             }
         )
@@ -44,10 +60,14 @@ class CustomRegisterForm(SignupForm):
             attrs={
                 "class": login_input_classes,
                 "placeholder": "Email",
-                "autofocus": True,
+                "autocomplete": "email",
             }
         )
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        add_autocomplete_hints(self)
 
 
 class CustomResetPasswordForm(ResetPasswordForm):
@@ -56,6 +76,7 @@ class CustomResetPasswordForm(ResetPasswordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["email"].widget.attrs["class"] = self.input_classes
+        add_autocomplete_hints(self)
 
 
 class CustomResetPasswordKeyForm(ResetPasswordKeyForm):
@@ -65,3 +86,4 @@ class CustomResetPasswordKeyForm(ResetPasswordKeyForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = self.input_classes
+        add_autocomplete_hints(self)

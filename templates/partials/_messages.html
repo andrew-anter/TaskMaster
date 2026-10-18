@@ -31,8 +31,11 @@
                 {% endif %}
                 <span>{{ message }}</span>
             </div>
-            <button @click="show = false" class="btn btn-ghost btn-xs btn-circle" title="Dismiss">
-                <i class="nf nf-md-close text-lg"></i>
+            <button @click="show = false"
+                    class="btn btn-ghost btn-xs btn-circle"
+                    title="Dismiss"
+                    aria-label="Dismiss message">
+                <i class="nf nf-md-close text-lg" aria-hidden="true"></i>
             </button>
         </div>
     {% endfor %}

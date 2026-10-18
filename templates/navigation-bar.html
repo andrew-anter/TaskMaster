@@ -1,20 +1,25 @@
 {% load static %}
 <div class="flex items-center gap-1 lg:gap-2 ml-2 lg:ml-4">
     {% if request.user.is_authenticated %}
-        <button class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case"
-                hx-get="{% url 'home' %}"
-                hx-target="#main-content"
-                hx-push-url="true">My Tasks</button>
-        <button class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case"
-                hx-get="{% url 'all_tasks' %}"
-                hx-target="#main-content"
-                hx-push-url="true">All Tasks</button>
-        <button class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case"
-                hx-get="{% url 'label_list' %}"
-                hx-target="#main-content"
-                hx-push-url="true">Labels</button>
+        <a href="{% url 'home' %}"
+           hx-get="{% url 'home' %}"
+           hx-target="#main-content"
+           hx-push-url="true"
+           class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case">My Tasks</a>
+        <a href="{% url 'all_tasks' %}"
+           hx-get="{% url 'all_tasks' %}"
+           hx-target="#main-content"
+           hx-push-url="true"
+           class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case">All Tasks</a>
+        <a href="{% url 'label_list' %}"
+           hx-get="{% url 'label_list' %}"
+           hx-target="#main-content"
+           hx-push-url="true"
+           class="btn btn-ghost btn-xs sm:btn-sm rounded-full normal-case">Labels</a>
         {# Add Task Button #}
-        <button class="btn btn-primary btn-xs sm:btn-sm btn-circle"
+        <button type="button"
+                data-nav-add-task
+                class="btn btn-primary btn-xs sm:btn-sm btn-circle"
                 x-data
                 @click="const url = '{% url 'task_add' %}?next=' + encodeURIComponent(window.location.pathname + window.location.search); history.pushState(null, '', '{% url 'task_add' %}'); htmx.ajax('GET', url, {target: '#main-content', swap: 'innerHTML'});"
                 title="Add Task"
@@ -52,11 +57,13 @@
                      aria-label="Account menu">
                     <i class="nf nf-fa-user text-sm sm:text-lg"></i>
                 </div>
-                <ul tabindex="0"
-                    class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
-                    <li><a hx-post="{% url 'logout' %}"
-   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Logout</a></li>
-                </ul>
+                <div tabindex="0"
+                     class="menu menu-sm dropdown-content mt-3 z-[50] p-2 shadow bg-base-100 rounded-box w-52">
+                    <form method="post" action="{% url 'logout' %}" hx-post="{% url 'logout' %}" data-close-dropdown>
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost btn-sm w-full justify-start normal-case">Logout</button>
+                    </form>
+                </div>
             </div>
         {% endblock user_profile %}
     {% else %}
@@ -65,12 +72,14 @@
         <a href="{% url 'register' %}"
            class="btn btn-primary btn-xs sm:btn-sm rounded-full normal-case">Sign up</a>
     {% endif %}
-    <button class="btn btn-ghost btn-xs sm:btn-sm btn-circle"
+    <button type="button"
+            class="btn btn-ghost btn-xs sm:btn-sm btn-circle"
             x-data
             x-cloak
             @click="$store.theme.toggle()"
-            title="Toggle theme"
-            aria-label="Toggle theme">
+            :title="$store.theme.current === 'customBumblebee' ? 'Switch to dark theme' : 'Switch to light theme'"
+            :aria-pressed="$store.theme.current === 'customBumblebeeDark'"
+            aria-label="Toggle dark theme">
         <i class="nf nf-fa-sun text-sm sm:text-lg"
            x-show="$store.theme.current === 'customBumblebee'"
            aria-hidden="true"></i>
