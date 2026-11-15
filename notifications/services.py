@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from functools import partial
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
