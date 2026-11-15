@@ -1,6 +1,7 @@
+from allauth.account.fields import EmailField
 from allauth.account.forms import ResetPasswordForm, ResetPasswordKeyForm, SignupForm
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, UsernameField
 
 AUTOCOMPLETE_BY_FIELD = {
     "username": "username",
@@ -21,7 +22,7 @@ def add_autocomplete_hints(form: forms.BaseForm) -> None:
 class CustomLoginForm(AuthenticationForm):
     login_input_classes = "input input-bordered w-full h-14 p-[15px] text-base"
 
-    username = forms.CharField(
+    username = UsernameField(
         widget=forms.TextInput(
             attrs={
                 "class": login_input_classes,
@@ -32,13 +33,15 @@ class CustomLoginForm(AuthenticationForm):
         )
     )
     password = forms.CharField(
+        # Django's own login field: passwords may legitimately have edge spaces.
+        strip=False,
         widget=forms.PasswordInput(
             attrs={
                 "class": login_input_classes,
                 "placeholder": "Password",
                 "autocomplete": "current-password",
             }
-        )
+        ),
     )
 
 
@@ -55,14 +58,17 @@ class CustomRegisterForm(SignupForm):
         )
     )
 
-    email = forms.CharField(
+    # allauth's field: EmailValidator + max_length, and lowercases the value.
+    email = EmailField(
+        max_length=254,
         widget=forms.TextInput(
             attrs={
+                "type": "email",
                 "class": login_input_classes,
                 "placeholder": "Email",
                 "autocomplete": "email",
             }
-        )
+        ),
     )
 
     def __init__(self, *args, **kwargs):

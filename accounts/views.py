@@ -102,6 +102,10 @@ def register_view(request: HttpRequest) -> HttpResponse:
 def logout_view(request: HttpRequest) -> HttpResponse:
     logout(request=request)
 
-    response = HttpResponse()
-    response["HX-Location"] = reverse("login")
-    return response
+    location = reverse("login")
+    if request.headers.get("HX-Request") == "true":
+        response = HttpResponse()
+        response["HX-Location"] = location
+        return response
+    # Without htmx the HX-Location header is ignored; send the browser away.
+    return HttpResponseRedirect(location)

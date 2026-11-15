@@ -1,5 +1,6 @@
-.PHONY: run dev test lint format typecheck security deps css css-build css-watch \
-        migrations migrate migrate-full cachetable shell check worker beat worker-beat
+.PHONY: run dev test lint lint-check format format-check typecheck security deps \
+        css css-build css-watch migrations migrate migrate-full cachetable shell \
+        check worker beat worker-beat help
 
 dev: ## Run server + Celery worker/beat with eager tasks (full local dev)
 	@trap 'kill 0' INT TERM; \
@@ -25,14 +26,20 @@ test: ## Run the test suite
 lint: ## Lint and fix issues with ruff
 	uv run ruff check . --fix
 
+lint-check: ## Check lint without modifying files
+	uv run ruff check .
+
 format: ## Format code with ruff
 	uv run ruff format .
+
+format-check: ## Check formatting without modifying files
+	uv run ruff format --check .
 
 typecheck: ## Run basedpyright type checking
 	uv run basedpyright .
 
-security: ## Run bandit security checks
-	uv run bandit -r . -x ./.venv -c pyproject.toml
+security: ## Run bandit security checks (test fixtures excluded)
+	uv run bandit -r . -x ./.venv,./tasks/tests,./labels/tests,./notifications/tests,./common/tests,./accounts/tests.py -c pyproject.toml
 
 deps: ## Scan dependencies for vulnerabilities
 	osv-scanner scan -r .
@@ -59,7 +66,7 @@ cachetable: ## Create the database cache table
 shell: ## Open the Django shell
 	uv run python manage.py shell
 
-check: lint format typecheck test ## Run all checks (lint, format, typecheck, test)
+check: lint-check format-check typecheck test ## Run all checks (read-only)
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'

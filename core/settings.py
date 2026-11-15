@@ -1,7 +1,9 @@
 import os
+import secrets
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -15,13 +17,28 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR, "core", ".env"))
 
 
-SECRET_KEY = env("SECRET_KEY")  # type: ignore[reportArgumentType]
+SECRET_KEY = env("SECRET_KEY", default="")  # type: ignore[reportArgumentType]
 DEBUG = env.bool("DEBUG", default=False)  # type: ignore[reportArgumentType]
 
-if DEBUG:
-    import django_stubs_ext
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "SECRET_KEY must be set when DEBUG is False. Generate one with: "
+            'python -c "from django.core.management.utils import '
+            'get_random_secret_key; print(get_random_secret_key())"'
+        )
+    # Ephemeral per-process key: dev needs no configuration, and unlike a
+    # checked-in placeholder it can never leak into a production deployment.
+    SECRET_KEY = secrets.token_urlsafe(50)
 
-    django_stubs_ext.monkeypatch()
+if DEBUG:
+    try:
+        import django_stubs_ext
+    except ImportError:
+        # Dev-only dependency, absent from the --no-dev container image.
+        pass
+    else:
+        django_stubs_ext.monkeypatch()
 
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
@@ -75,9 +92,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -106,6 +123,10 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     X_FRAME_OPTIONS = "DENY"
 
+# Only enable when a reverse proxy overwrites X-Forwarded-For; otherwise the
+# header is client-supplied and would let clients choose their lockout bucket.
+TRUST_X_FORWARDED_FOR = env.bool("TRUST_X_FORWARDED_FOR", default=False)  # type: ignore[reportArgumentType]
+
 ROOT_URLCONF = "core.urls"
 AUTH_USER_MODEL = "accounts.User"
 
@@ -119,7 +140,7 @@ AUTHENTICATION_BACKENDS = [
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ["templates/"],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -172,27 +193,41 @@ CACHES = {
 }
 
 if not DEBUG:
+    CACHE_MAX_ENTRIES = env.int("CACHE_MAX_ENTRIES", default=10000)  # type: ignore[reportArgumentType]
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.db.DatabaseCache",
             "LOCATION": "cache_table",
             "TIMEOUT": env.int("CACHE_TIMEOUT", default=300),  # type: ignore[reportArgumentType]
             "OPTIONS": {
-                "MAX_ENTRIES": 1000,
+                "MAX_ENTRIES": CACHE_MAX_ENTRIES,
             },
         },
         "notifications": {
             "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-            "LOCATION": "cache_table",
+            # Own table: culling notification keys must not evict other keys.
+            "LOCATION": "notifications_cache_table",
             "TIMEOUT": env.int("CACHE_TIMEOUT", default=300),  # type: ignore[reportArgumentType]
             "OPTIONS": {
-                "MAX_ENTRIES": 1000,
+                "MAX_ENTRIES": CACHE_MAX_ENTRIES,
             },
         },
     }
 
+# Login lockout counters need atomic increments: Redis INCR when a cache server
+# is configured, otherwise a copy of the default backend (LocMemCache in dev).
+REDIS_CACHE_URL = env("REDIS_CACHE_URL", default="")  # type: ignore[reportArgumentType]
+if REDIS_CACHE_URL:
+    CACHES["lockout"] = {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_CACHE_URL,
+    }
+else:
+    CACHES["lockout"] = {**CACHES["default"]}
+
 # Session configuration
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+# cached_db keeps sessions readable when the cache entry is evicted.
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 SESSION_CACHE_ALIAS = "default"
 SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE", default=1209600)  # type: ignore[reportArgumentType]  # 2 weeks
 SESSION_SAVE_EVERY_REQUEST = True
@@ -337,12 +372,19 @@ PASSWORD_HASHERS = [
 
 # Account security settings
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
+# `*` marks a field required; email is validated by allauth's EmailField.
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_FORMS = {
-    "reset_password": "accounts.forms.CustomResetPasswordForm",
-    "reset_password_from_key": "accounts.forms.CustomResetPasswordKeyForm",
+    "reset_password": "accounts.forms.CustomResetPasswordForm",  # nosec B105 (form path, not a secret)
+    "reset_password_from_key": "accounts.forms.CustomResetPasswordKeyForm",  # nosec B105 (form path, not a secret)
 }
+# Replaces allauth's whole default, so keep both components: the per-IP cap
+# stops credential stuffing across usernames, the per-key cap stops one account.
 ACCOUNT_RATE_LIMITS = {
-    "login_failed": env("ACCOUNT_LOGIN_ATTEMPTS_LIMIT", default="5/5m"),  # type: ignore[reportArgumentType]
+    "login_failed": env(
+        "ACCOUNT_LOGIN_ATTEMPTS_LIMIT",
+        default="10/m/ip,5/5m",  # type: ignore[reportArgumentType]
+    ),
 }
 
 # Logging Configuration
@@ -410,10 +452,9 @@ LOGGING = {
 if not DEBUG:
     LOGGING["handlers"]["file"] = {
         "level": "INFO",
-        "class": "logging.handlers.RotatingFileHandler",
+        # Rotation delegated to logrotate; safe for multi-process deployments.
+        "class": "logging.handlers.WatchedFileHandler",
         "filename": str(LOG_DIR / "django.log"),
-        "maxBytes": 1024 * 1024 * 5,  # 5 MB
-        "backupCount": 5,
         "formatter": "verbose",
     }
     LOGGING["loggers"]["django"]["handlers"].append("file")
