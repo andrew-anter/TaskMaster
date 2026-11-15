@@ -1,143 +1,194 @@
 # TaskMaster
 
-A task management web application built with Django. It features a clean,
-HTMX-powered single-page feel, color-coded labels, searchable/filterable task
-lists, in-app notifications, task reminders, and a REST API — all wrapped in a
-modern Tailwind CSS + daisyUI interface with light/dark themes.
+A full-stack task management application built with Django and HTMX — color-coded
+labels, searchable and filterable task lists, automatic reminders, in-app
+notifications, and a REST API, wrapped in a Tailwind CSS v4 + daisyUI interface
+with light and dark themes.
+
+[![CI](https://github.com/andrew-anter/TaskMaster/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/andrew-anter/TaskMaster/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.13-blue)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/django-5.2-092E20)](https://www.djangoproject.com/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
+![TaskMaster dashboard](docs/screenshots/dashboard-light.png)
+
+## Highlights
+
+- **Service/selector architecture** — business rules live in transactional,
+  keyword-only service functions; reads go through permission-checked selectors
+  that raise instead of returning `None`. Views and the API orchestrate, never
+  duplicate logic.
+- **HTMX-first frontend** — every mutation re-renders exactly the region it came
+  from (dashboard, filtered list, label page, or task detail), with full-page
+  fallbacks when JavaScript is unavailable.
+- **Generic notification subsystem** — any app can emit notifications through
+  `notify()` / `notify_bulk()` with database-enforced dedupe keys, a cached
+  unread badge invalidated on every write path, and retention cleanup.
+- **Celery reminders** — a periodic sweep generates overdue / due-today /
+  due-soon / scheduled-today reminders, idempotent at the database level and
+  isolated per user so one failure never starves the rest.
+- **Multi-tenant safety** — ownership is enforced in the service layer for tasks
+  and labels alike; the API cannot attach another user's labels.
+- **Quality gates** — pytest (service, view, and API levels), Ruff lint +
+  format, basedpyright, and bandit all run in CI on every push and PR.
 
 ## Features
 
-- **Task management** — create, view, update, and delete tasks with a title,
-  description, status, priority, due date, scheduled date, and labels. A quick
-  status toggle marks tasks done/undone from the list, and inline editing on
-  the detail page keeps you in place.
-- **My Tasks dashboard** — an at-a-glance home page splitting today's,
-  upcoming, and overdue tasks.
-- **Search, filters & pagination** — filter the full task list by keyword,
-  status, priority, label, and due-date range; sort by any field; and page
-  through results with the browser's back/forward buttons working as expected.
-- **Labels** — create color-coded labels and assign multiple to each task;
-  click any label to see all its tasks.
-- **Notifications** — a navbar bell with a live unread badge, a quick dropdown
-  panel, and a full notifications page. Automatic task reminders are
-  generated when tasks are overdue, due today, due within 24 hours, or
-  scheduled for today.
-- **User accounts** — register, log in/out with your username or email,
-  password reset, with optional Google sign-in via django-allauth.
-- **REST API** — full CRUD API at `/tasks/api/v1/` using Django REST
-  Framework (Session + Basic auth).
-- **Light/dark themes** — toggle between a light and dark theme; your choice
-  is remembered.
+- **Tasks** — title, description, status, priority, due date & time, scheduled
+  date, and multiple labels; quick done/undone toggle; inline editing on the
+  detail page.
+- **My Tasks dashboard** — today's, upcoming, and overdue sections that never
+  render the same task twice.
+- **Search, filters & pagination** — keyword, status, priority, label, and
+  due-date range filters with sortable columns and back/forward-friendly URLs.
+- **Labels** — color-coded, unique per user, assignable from the task form via
+  an inline create-and-pick flow.
+- **Notifications** — navbar bell with a live unread badge, dropdown panel, full
+  list page, mark-one / mark-all read.
+- **Accounts** — register, log in with username or email, password reset,
+  optional Google sign-in (django-allauth), and brute-force login lockout.
+- **REST API** — paginated CRUD at `/tasks/api/v1/` with Session or Basic auth.
+- **Light/dark themes** — persisted per browser.
 
-## Tech Stack
+## Screenshots
 
-- **Backend:** Python 3.13, Django 5, SQLite (dev) / PostgreSQL (production)
-- **Frontend:** HTMX, Alpine.js, Tailwind CSS v4, daisyUI
-- **Async jobs:** Celery + Valkey/Redis (task reminders, notification cleanup)
-- **Tooling:** `uv`, Ruff, BasedPyright, bandit, osv-scanner, pytest
+| All tasks & filters | Task detail |
+|---|---|
+| ![All tasks](docs/screenshots/all-tasks.png) | ![Task detail](docs/screenshots/task-detail.png) |
 
-## Prerequisites
+| Labels | Notifications | Dark theme |
+|---|---|---|
+| ![Labels](docs/screenshots/labels.png) | ![Notifications](docs/screenshots/notifications.png) | ![Dark theme](docs/screenshots/dashboard-dark.png) |
 
-- Python 3.13+
-- [`uv`](https://docs.astral.sh/uv/) — install with `pip install uv`
+## Tech stack
 
-## Setup & Run
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.13, Django 5.2, Django REST Framework |
+| Frontend | HTMX, Alpine.js, Tailwind CSS v4, daisyUI |
+| Auth | django-allauth (username/email + Google), Argon2 hashing |
+| Async jobs | Celery + Redis/Valkey (reminders, retention cleanup) |
+| Database | SQLite (dev) / PostgreSQL (production) |
+| Tooling | uv, Ruff, basedpyright, bandit, pytest, GitHub Actions |
 
-1. **Clone and enter the project:**
+## Architecture
 
-   ```bash
-   git clone https://github.com/andrew-anter/TaskMaster.git
-   cd TaskMaster
-   ```
-
-2. **Install dependencies:**
-
-   ```bash
-   uv sync
-   ```
-
-3. **Configure environment variables:**
-
-   ```bash
-   cp core/.env.example core/.env
-   ```
-
-   The defaults work out of the box for local development. Set a real
-   `SECRET_KEY` in `core/.env` when deploying. Leave `GOOGLE_CLIENT_ID` and
-   `GOOGLE_SECRET` empty unless you want Google login.
-
-4. **Apply database migrations:**
-
-   ```bash
-   uv run python manage.py migrate
-   ```
-
-5. **Build the frontend CSS** (required after a fresh clone — the compiled
-   CSS is not committed):
-
-   ```bash
-   ./build-css.sh build
-   ```
-
-6. **Start the development environment:**
-
-   ```bash
-   make dev
-   ```
-
-   This starts the Django development server along with the Celery worker and beat scheduler for task reminders.
-
-   Open <http://127.0.0.1:8000/> and register an account to get started.
-
-### Optional: Seed demo data
-
-Populate the database with demo users, labels, and tasks (100 users, 50
-labels, 100,000 tasks, and reminder notifications by default):
-
-```bash
-uv run python manage.py seed_data
+```mermaid
+flowchart LR
+    Browser["Browser (HTMX + Alpine)"] -->|HTML partials| Views[Django views]
+    Browser -->|JSON| API[DRF API]
+    Views --> Services["services.py — writes & validation"]
+    API --> Services
+    Views --> Selectors["selectors.py — permission-checked reads"]
+    API --> Selectors
+    Services --> DB[(SQLite / PostgreSQL)]
+    Selectors --> DB
+    Beat[Celery beat] --> Sweep[Reminder sweep]
+    Sweep --> Notify["notifications.notify_many"]
+    Notify --> DB
+    Beat --> Cleanup[Retention cleanup]
+    Cleanup --> DB
 ```
 
-Customize the counts or make the output deterministic:
-
-```bash
-uv run python manage.py seed_data --users 50 --labels 20 --tasks 50000 --seed 42
+```
+tasks/          Core task management (models, services, selectors, views, API, Celery reminders)
+labels/         Color-coded labels (class-based service/selector)
+notifications/  Generic notification subsystem (emitter API, signals, retention, UI)
+accounts/       Authentication, registration, login lockout
+common/         Shared HTTP helpers, pagination, middleware
+core/           Settings, URLs, Celery app
+templates/      Server-rendered pages + HTMX partials
+docs/           Design specs and screenshots
 ```
 
-Remove previously seeded data and re-seed:
+## Quickstart
+
+**Prerequisites:** Python 3.13+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-uv run python manage.py seed_data --flush
+git clone https://github.com/andrew-anter/TaskMaster.git
+cd TaskMaster
+uv sync
+cp core/.env.example core/.env   # defaults work out of the box for local dev
+uv run python manage.py migrate
+./build-css.sh build             # compiled CSS is not committed
+make dev                         # Django + Celery worker/beat (eager, no broker needed)
+```
+
+Open <http://127.0.0.1:8000/> and register an account.
+
+In development an empty `SECRET_KEY` is replaced by an ephemeral per-process
+key; production (`DEBUG=False`) refuses to start without a real one.
+
+### Demo data
+
+Seed 100 users, 50 labels, and 100,000 tasks with realistic dates, plus
+reminder notifications:
+
+```bash
+uv run python manage.py seed_data --password 'demo-pass-123'
+```
+
+`--password` is opt-in and gives every seeded user a usable password — log in
+as **`seed_user_1`** with the password you passed to explore the app at demo
+scale. Re-running the command is idempotent for users and labels (it only adds
+tasks); `--flush` removes all seeded data first. Tune the volume with
+`--users / --labels / --tasks`, and make it deterministic with `--seed 42`.
+
+## Docker
+
+```bash
+docker build -t taskmaster .
+docker run --rm -p 8000:8000 -e SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" taskmaster
+```
+
+The entrypoint applies migrations and creates the cache tables on startup.
+When running worker/beat containers from the same image, set
+`RUN_MIGRATIONS=0` there so only the web container migrates:
+
+```bash
+docker run --rm -e RUN_MIGRATIONS=0 -e CELERY_BROKER_URL=redis://host:6379/0 taskmaster celery -A core worker -B -l info
+```
+
+## REST API
+
+Authenticated with Session or Basic auth; throttled at 100/hour (anonymous)
+and 1000/hour (authenticated).
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/tasks/api/v1/` | List your tasks — paginated, 50 per page |
+| POST | `/tasks/api/v1/` | Create a task — `201` with the created task; `400` on past dates or another user's labels |
+| GET | `/tasks/api/v1/<pk>/` | Retrieve one task |
+| PATCH | `/tasks/api/v1/<pk>/` | Partial update — `200` with the task, bodyless `304` when nothing changed |
+| DELETE | `/tasks/api/v1/<pk>/` | Delete — `204` |
+| POST | `/tasks/api/v1/<pk>/toggle/` | Toggle TODO ↔ COMPLETED |
+
+```bash
+curl -u seed_user_1:demo-pass-123 http://127.0.0.1:8000/tasks/api/v1/
 ```
 
 ## Development
 
-```bash
-# Run the test suite
-uv run pytest
+| Command | Purpose |
+|---|---|
+| `make dev` | Server + Celery worker/beat with eager tasks |
+| `make test` | Run the pytest suite |
+| `make lint` / `make format` | Ruff with autofix / formatter |
+| `make lint-check` / `make format-check` | Read-only checks (used by CI) |
+| `make typecheck` | basedpyright |
+| `make security` | bandit (test fixtures excluded) |
+| `make check` | All read-only checks + tests |
+| `make css` | Rebuild Tailwind CSS after template changes |
+| `make worker-beat` | Celery worker + beat against a real broker |
 
-# Lint & format
-uv run ruff check . --fix
-uv run ruff format .
+Tests cover services, views, and the API directly — including ownership
+boundaries, dedupe races, dashboard disjointness, lockout behavior, and
+notification cache invalidation. Configuration lives in `core/.env`
+(see `core/.env.example` for every variable: database, broker, cache,
+throttling, retention windows, proxy trust, Google OAuth, email).
 
-# Type checking
-uv run basedpyright .
+## License
 
-# Security & dependency checks
-uv run bandit -r . -x ./.venv -c pyproject.toml
-osv-scanner scan -r .
-
-# Rebuild Tailwind CSS after template/form changes
-./build-css.sh build      # production build
-./build-css.sh watch      # auto-rebuild while developing
-```
-
-Useful `make` targets: `make dev`, `make test`, `make lint`, `make format`,
-`make typecheck`, `make security`, `make deps`, `make css`, `make migrate`,
-`make run`, and `make worker-beat`. Run `make help` to list them all.
-
-## REST API
-
-The API lives at `/tasks/api/v1/` (e.g. `GET /tasks/api/v1/` lists your
-tasks) and is authenticated with Session or Basic auth. Endpoint definitions
-are in `tasks/api.py`.
+[MIT](LICENSE) © Andrew Anter
