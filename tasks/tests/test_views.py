@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
+from labels.models import Label
 from tasks.models import Task
 from tasks.services import task_add_service
 
@@ -77,6 +78,23 @@ class TestTaskAddView:
         assert 'aria-invalid="true"' in content
         assert 'aria-describedby="id_title_error"' in content
         assert 'id="id_title_error"' in content
+
+    def test_invalid_non_htmx_post_keeps_selected_labels(self, client_logged_in, owner):
+        label = Label.objects.create(name="Work", color="#000000", owner=owner)
+
+        response = client_logged_in.post(
+            reverse("task_add"),
+            {
+                "title": "",
+                "status": Task.Status.TODO,
+                "priority": Task.Priority.MEDIUM,
+                "labels": [label.pk],
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.context["form"].errors
+        assert response.context["selected_label_ids"] == [label.pk]
 
     def test_htmx_post_returns_partial(self, client_logged_in):
         data = {
@@ -166,6 +184,47 @@ class TestTaskDetailView:
         assert response.status_code == 200
         assert response.context["form"].errors
         assert response.context["editing"] is True
+
+    @staticmethod
+    def _edit_payload(task):
+        return {
+            "title": "Renamed",
+            "description": "",
+            "status": task.status,
+            "priority": task.priority,
+        }
+
+    def test_post_after_concurrent_delete_returns_404(
+        self, client_logged_in, sample_task, monkeypatch
+    ):
+        def raise_missing(**kwargs):
+            raise Task.DoesNotExist
+
+        monkeypatch.setattr("tasks.views.task_update_service", raise_missing)
+
+        response = client_logged_in.post(
+            reverse("task_detail", args=[sample_task.pk]),
+            self._edit_payload(sample_task),
+        )
+
+        assert response.status_code == 404
+
+    def test_htmx_post_after_concurrent_delete_navigates_home(
+        self, client_logged_in, sample_task, monkeypatch
+    ):
+        def raise_missing(**kwargs):
+            raise Task.DoesNotExist
+
+        monkeypatch.setattr("tasks.views.task_update_service", raise_missing)
+
+        response = client_logged_in.post(
+            reverse("task_detail", args=[sample_task.pk]),
+            self._edit_payload(sample_task),
+            HTTP_HX_REQUEST="true",
+        )
+
+        assert response.status_code == 200
+        assert "HX-Location" in response.headers
 
 
 class TestTaskStatusToggleView:
@@ -347,8 +406,6 @@ class TestTaskListView:
 
 class TestTaskListByLabelView:
     def test_get_renders(self, client_logged_in, owner):
-        from labels.models import Label
-
         label = Label.objects.create(name="TestLabel", color="#000000", owner=owner)
         task_add_service(
             title="Labeled task",
@@ -362,8 +419,6 @@ class TestTaskListByLabelView:
         assert response.status_code == 200
 
     def test_other_user_label_returns_404(self, client_logged_in, owner):
-        from labels.models import Label
-
         other_user = User.objects.create_user(username="other", password="pass1234")
         label = Label.objects.create(name="Private", color="#000000", owner=other_user)
         response = client_logged_in.get(reverse("tasks_by_label", args=[label.pk]))

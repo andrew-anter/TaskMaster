@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 
 from celery import shared_task
@@ -18,6 +19,8 @@ from .reminder_types import (
 )
 
 DUE_SOON_WINDOW = timedelta(hours=24)
+
+logger = logging.getLogger(__name__)
 
 
 def _as_aware(value) -> datetime | None:
@@ -68,30 +71,39 @@ def generate_reminder_notifications() -> int:
     Generate reminder notifications for every user's incomplete tasks.
 
     Idempotent: dedupe keys (enforced unique at the database level) guarantee
-    each (user, task, type) reminder is created at most once. Returns the
-    number of notifications created.
+    each (user, task, type) reminder is created at most once. A failure while
+    handling one user is logged and skipped so every other user still gets
+    their sweep; the next run regenerates the skipped reminders. Returns the
+    number of reminder entries submitted (the bulk insert may drop concurrent
+    duplicates).
     """
     now = timezone.now()
-    created = 0
+    submitted = 0
 
     for user in User.objects.exclude(is_active=False).iterator():
-        tasks = Task.objects.filter(owner=user).exclude(status=Task.Status.COMPLETED)
+        try:
+            tasks = Task.objects.filter(owner=user).exclude(
+                status=Task.Status.COMPLETED
+            )
 
-        entries = []
-        for task in tasks.iterator():
-            for type_key, message in task_reminder_specs(task=task, now=now):
-                entries.append(
-                    {
-                        "recipient": user,
-                        "type": type_key,
-                        "message": message,
-                        "link": reverse("task_detail", args=[task.pk]),
-                        "target": task,
-                        "dedupe_key": f"{type_key}:{task.pk}",
-                    }
-                )
+            entries = []
+            for task in tasks.iterator():
+                for type_key, message in task_reminder_specs(task=task, now=now):
+                    entries.append(
+                        {
+                            "recipient": user,
+                            "type": type_key,
+                            "message": message,
+                            "link": reverse("task_detail", args=[task.pk]),
+                            "target": task,
+                            "dedupe_key": f"{type_key}:{task.pk}",
+                        }
+                    )
 
-        if entries:
-            created += notify_many(entries=entries)
+            if entries:
+                submitted += notify_many(entries=entries)
+        except Exception:
+            # One user's write must not starve everyone after them in the sweep.
+            logger.exception("Reminder sweep failed for user %s", user.pk)
 
-    return created
+    return submitted

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -94,8 +94,10 @@ class Command(BaseCommand):
     help = (
         "Seed the database with demo data: users, labels, and tasks. "
         "Skips users/labels that already exist (identifiable by the "
-        "'%s' / '%s' prefixes); re-running without --flush creates "
-        "additional tasks." % (SEED_USERNAME_PREFIX, SEED_LABEL_PREFIX)
+        f"'{SEED_USERNAME_PREFIX}' / '{SEED_LABEL_PREFIX}' prefixes); "
+        "re-running without --flush creates additional tasks. Pass "
+        "--password to give every seeded user a usable password so the "
+        "demo accounts can log in."
     )
 
     def add_arguments(self, parser):
@@ -116,10 +118,18 @@ class Command(BaseCommand):
         parser.add_argument(
             "--seed", type=int, default=None, help="Seed for the random generator."
         )
+        parser.add_argument(
+            "--password",
+            default=None,
+            help=(
+                "Password to set on every seeded user (new and previously "
+                "seeded), so the demo accounts can log in."
+            ),
+        )
 
     @transaction.atomic
     def handle(self, *args, **options):
-        rng = random.Random(options["seed"])
+        rng = random.Random(options["seed"])  # nosec B311 - demo data, not security
         n_users, n_labels, n_tasks = (
             options["users"],
             options["labels"],
@@ -127,10 +137,19 @@ class Command(BaseCommand):
         )
         batch_size = options["batch_size"]
 
+        if n_users < 1:
+            raise CommandError("--users must be at least 1.")
+        if n_labels < 0:
+            raise CommandError("--labels must be 0 or greater.")
+        if n_tasks < 0:
+            raise CommandError("--tasks must be 0 or greater.")
+        if batch_size < 1:
+            raise CommandError("--batch-size must be at least 1.")
+
         if options["flush"]:
             self._flush()
 
-        users = self._create_users(rng, n_users)
+        users = self._create_users(rng, n_users, password=options["password"])
         self._create_labels(rng, n_labels, users)
         labels_by_owner = {user.pk: [] for user in users}
         for owner_id, label_id in Label.objects.filter(
@@ -161,8 +180,9 @@ class Command(BaseCommand):
             dedupe_keys=[f"welcome:{user.pk}" for user in users],
         )
         self.stdout.write(
-            f"  Created {reminder_count + welcome_count} notifications"
-            f" ({reminder_count} task reminders, {welcome_count} welcome)."
+            f"  Generated {reminder_count + welcome_count} notifications"
+            f" (duplicates skipped; {reminder_count} task reminders,"
+            f" {welcome_count} welcome)."
         )
 
     def _flush(self) -> None:
@@ -182,51 +202,63 @@ class Command(BaseCommand):
                 target_object_id__in=task_ids,
             )
         ).delete()
-        Task.objects.filter(pk__in=task_ids).delete()
+        # Notifications are already gone at this point, so skip the per-row
+        # post_delete receivers: a normal .delete() runs the generic-foreign-key
+        # cascade lookup once per seeded task (100k on a full seed).
+        tasks_to_delete = Task.objects.filter(pk__in=task_ids)
+        tasks_to_delete._raw_delete(  # type: ignore[reportAttributeAccessIssue]
+            tasks_to_delete.db
+        )
         Label.objects.filter(name__startswith=SEED_LABEL_PREFIX).delete()
         deleted, _ = User.objects.filter(pk__in=user_ids).delete()
         self.stdout.write(
             f"Flushed {deleted} previously seeded users (and their data)."
         )
 
-    def _create_users(self, rng: random.Random, n_users: int) -> list[User]:
-        existing = set(
-            User.objects.filter(username__startswith=SEED_USERNAME_PREFIX).values_list(
-                "username", flat=True
-            )
-        )
-        users = []
+    def _create_users(
+        self, rng: random.Random, n_users: int, *, password: str | None = None
+    ) -> list[User]:
+        seeded = User.objects.filter(username__startswith=SEED_USERNAME_PREFIX)
+        existing = set(seeded.values_list("username", flat=True))
+
+        new_users: list[User] = []
         i = 0
-        while len(users) < n_users:
+        while len(existing) + len(new_users) < n_users:
             i += 1
             username = f"{SEED_USERNAME_PREFIX}{i}"
             if username in existing:
                 continue
-            users.append(
-                User(
-                    username=username,
-                    first_name=rng.choice(
-                        ["Alice", "Bob", "Carol", "Dave", "Eve", "Frank"]
-                    ),
-                    last_name=f"User {i}",
-                )
+            user = User(
+                username=username,
+                first_name=rng.choice(
+                    ["Alice", "Bob", "Carol", "Dave", "Eve", "Frank"]
+                ),
+                last_name=f"User {i}",
             )
-        if users:
-            User.objects.bulk_create(users)
-        return list(
-            User.objects.filter(username__startswith=SEED_USERNAME_PREFIX).order_by(
-                "id"
-            )
-        )
+            if password:
+                user.set_password(password)
+            new_users.append(user)
+        if new_users:
+            User.objects.bulk_create(new_users)
+
+        users = list(seeded.order_by("id"))
+        if password:
+            # Previously seeded users need a hash too; one UPDATE per row is
+            # fine, but bulk_update keeps the 100-user seed to a single query.
+            previously_seeded = [u for u in users if u.username in existing]
+            for user in previously_seeded:
+                user.set_password(password)
+            if previously_seeded:
+                User.objects.bulk_update(previously_seeded, ["password"])
+        return users
 
     def _create_labels(
         self, rng: random.Random, n_labels: int, users: list[User]
     ) -> list[Label]:
+        seeded = Label.objects.filter(name__startswith=SEED_LABEL_PREFIX)
         existing = {
             (owner_id, name)
-            for owner_id, name in Label.objects.filter(
-                name__startswith=SEED_LABEL_PREFIX
-            ).values_list("owner_id", "name")
+            for owner_id, name in seeded.values_list("owner_id", "name")
         }
         colors = [
             "#EF4444",
@@ -240,9 +272,10 @@ class Command(BaseCommand):
             "#A855F7",
             "#EC4899",
         ]
-        labels = []
+        labels: list[Label] = []
+        missing = n_labels - seeded.count()
         i = 0
-        while len(labels) < n_labels:
+        while len(labels) < missing:
             i += 1
             name = f"{SEED_LABEL_PREFIX}{i}"
             owner = users[i % len(users)]
@@ -251,9 +284,7 @@ class Command(BaseCommand):
             labels.append(Label(name=name, color=rng.choice(colors), owner=owner))
         if labels:
             Label.objects.bulk_create(labels)
-        return list(
-            Label.objects.filter(name__startswith=SEED_LABEL_PREFIX).order_by("id")
-        )
+        return list(seeded.order_by("id"))
 
     def _create_tasks(
         self,

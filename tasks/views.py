@@ -315,27 +315,19 @@ def task_add_partial_view(request):
                     return hx_location_response(redirect_target)
                 return HttpResponseRedirect(redirect_target)
 
-        if request.htmx:
-            context = {
-                "form": form,
-                "page_title": "Add New Task",
-                "user_labels": Label.objects.filter(owner=request.user),
-                "selected_label_ids": [
-                    lbl.pk for lbl in form.cleaned_data.get("labels", [])
-                ],
-                "add_task_url": add_task_url,
-                "next_url": next_url,
-            }
-            return render(request, template_name, context)
-
+        # The picker renders its checked state from ``selected_ids``, not from
+        # the bound widget, so every re-render (HTMX or the plain form
+        # fallback) must recompute it from the submitted form.
+        selected_label_ids = [lbl.pk for lbl in form.cleaned_data.get("labels", [])]
     else:
         form = TaskForm(user=request.user)
+        selected_label_ids = []
 
     context = {
         "form": form,
         "page_title": "Add New Task",
         "user_labels": Label.objects.filter(owner=request.user),
-        "selected_label_ids": [],
+        "selected_label_ids": selected_label_ids,
         "add_task_url": add_task_url,
         "next_url": next_url,
     }
@@ -352,7 +344,7 @@ def task_update_status_view(request, task_id):
         messages.error(request, "No task associated with this id.")
         if request.htmx:
             return hx_location_response(reverse("home"))
-        raise Http404
+        raise Http404 from None
     toggle_task_status_service(task=task)
 
     if request.htmx:
@@ -378,7 +370,7 @@ def task_detail_view(request, task_id):
         messages.error(request, "No task associated with this id.")
         if request.htmx:
             return hx_location_response(reverse("home"))
-        raise Http404
+        raise Http404 from None
 
     editing = request.method == "POST" or request.GET.get("mode") == "edit"
 
@@ -409,6 +401,13 @@ def task_detail_view(request, task_id):
                 form.add_error("scheduled_date", f"{e}")
             except ValueError as e:
                 form.add_error(None, f"{e}")
+            except Task.DoesNotExist:
+                # The task was deleted between this view's fetch and the
+                # service's ownership re-check.
+                messages.error(request, "No task associated with this id.")
+                if request.htmx:
+                    return hx_location_response(reverse("home"))
+                raise Http404 from None
             else:
                 if success:
                     messages.success(request, "Task updated successfully.")
@@ -445,7 +444,7 @@ def task_delete_view(request, task_id):
         messages.error(request, "No task associated with this id.")
         if request.htmx:
             return hx_location_response(reverse("home"))
-        raise Http404
+        raise Http404 from None
     messages.success(request, message="Task deleted successfully.")
 
     if request.htmx:

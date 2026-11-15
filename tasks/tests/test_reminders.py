@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 import pytest
 from django.utils import timezone
@@ -6,6 +7,7 @@ from django.utils import timezone
 from accounts.models import User
 from notifications.models import Notification
 from notifications.selectors import get_unread_notifications_count
+from notifications.services import notify_many
 
 from ..models import Task
 from ..reminder_types import (
@@ -167,6 +169,33 @@ class TestGenerateReminderNotifications:
         notification = Notification.objects.get(recipient=user)
         assert notification.link == f"/tasks/task/{task.pk}/"
         assert notification.target == task
+
+    def test_one_user_failure_does_not_stop_the_sweep(
+        self, frozen_now, monkeypatch, caplog
+    ):
+        failing = User.objects.create_user(username="reminder-failing")
+        healthy = User.objects.create_user(username="reminder-healthy")
+        for owner in (failing, healthy):
+            make_task(
+                owner,
+                title=f"Task for {owner.username}",
+                due_datetime=FIXED_NOW + datetime.timedelta(hours=3),
+            )
+
+        def flaky_notify_many(*, entries):
+            if entries[0]["recipient"].pk == failing.pk:
+                raise RuntimeError("database is locked")
+            return notify_many(entries=entries)
+
+        monkeypatch.setattr("tasks.tasks.notify_many", flaky_notify_many)
+
+        with caplog.at_level(logging.ERROR, logger="tasks.tasks"):
+            submitted = generate_reminder_notifications()
+
+        assert submitted == 1
+        assert Notification.objects.filter(recipient=failing).count() == 0
+        assert Notification.objects.filter(recipient=healthy).count() == 1
+        assert f"Reminder sweep failed for user {failing.pk}" in caplog.text
 
 
 @pytest.mark.django_db
