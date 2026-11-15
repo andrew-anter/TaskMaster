@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING, Iterable
 
 from django.contrib.contenttypes.models import ContentType
@@ -12,6 +13,18 @@ from .selectors import invalidate_unread_notifications_count
 
 if TYPE_CHECKING:
     from accounts.models import User
+
+
+def invalidate_unread_count_on_commit(*, user_id: int) -> None:
+    """Drop the cached unread count for ``user_id`` once the write commits.
+
+    Deferring to commit keeps a concurrent badge poll from re-caching a count
+    read from the pre-commit snapshot for the whole cache TTL. In autocommit
+    mode there is no open transaction, so ``on_commit`` runs immediately.
+    """
+    transaction.on_commit(
+        partial(invalidate_unread_notifications_count, user_id=user_id)
+    )
 
 
 def _resolve_target(
@@ -100,7 +113,7 @@ def notify(
     except IntegrityError:
         # Lost a race against a concurrent insert with the same dedupe_key.
         return None
-    invalidate_unread_notifications_count(user_id=recipient.pk)
+    invalidate_unread_count_on_commit(user_id=recipient.pk)
     return notification
 
 
@@ -123,7 +136,9 @@ def notify_bulk(
     ``recipients`` and gives each notification an idempotency key.
 
     Returns:
-        The number of notifications created.
+        The number of notification rows submitted for insert (see
+        :func:`notify_many`): an upper bound on rows actually created, since
+        rows whose ``dedupe_key`` already exists are skipped.
     """
     recipients = list(recipients)
     if not recipients:
@@ -161,7 +176,11 @@ def notify_many(*, entries: Iterable[dict]) -> int:
     duplicates cannot raise.
 
     Returns:
-        The number of notifications created.
+        The number of notification rows submitted for insert. This is an
+        upper bound on rows actually created: ``bulk_create`` with
+        ``ignore_conflicts`` returns its input, so keys claimed by a
+        concurrent writer are still counted even though the database
+        skipped them.
     """
     entry_list = [dict(entry) for entry in entries]
     if not entry_list:
@@ -186,7 +205,7 @@ def notify_many(*, entries: Iterable[dict]) -> int:
         existing_pairs = {(recipient_id, key) for recipient_id, key in pairs}
 
     notifications: list[Notification] = []
-    for index, entry in enumerate(entry_list):
+    for entry in entry_list:
         key = entry.get("dedupe_key", "")
         recipient = entry["recipient"]
         if key and (recipient.pk, key) in existing_pairs:
@@ -205,7 +224,7 @@ def notify_many(*, entries: Iterable[dict]) -> int:
     created = Notification.objects.bulk_create(notifications, ignore_conflicts=True)
     if created:
         for recipient_id in {entry["recipient"].pk for entry in entry_list}:
-            invalidate_unread_notifications_count(user_id=recipient_id)
+            invalidate_unread_count_on_commit(user_id=recipient_id)
     return created.__len__()
 
 
@@ -216,7 +235,7 @@ def mark_notification_read(*, recipient: User, notification_id: int) -> Notifica
     if notification.read_at is None:
         notification.read_at = timezone.now()
         notification.save(update_fields=["read_at"])
-    invalidate_unread_notifications_count(user_id=recipient.pk)
+    invalidate_unread_count_on_commit(user_id=recipient.pk)
     return notification
 
 
@@ -227,5 +246,5 @@ def mark_all_notifications_read(*, recipient: User) -> int:
         recipient=recipient, read_at__isnull=True
     ).update(read_at=timezone.now())
     if updated:
-        invalidate_unread_notifications_count(user_id=recipient.pk)
+        invalidate_unread_count_on_commit(user_id=recipient.pk)
     return updated

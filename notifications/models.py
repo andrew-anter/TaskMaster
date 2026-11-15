@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -44,12 +46,14 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]
-        indexes = [
+        ordering: ClassVar[list[str]] = ["-created_at"]
+        indexes: ClassVar[list] = [
             models.Index(fields=["recipient", "read_at"]),
             models.Index(fields=["recipient", "-created_at"]),
+            # Every task delete/complete/edit filters notifications by target.
+            models.Index(fields=["target_content_type", "target_object_id"]),
         ]
-        constraints = [
+        constraints: ClassVar[list] = [
             models.UniqueConstraint(
                 fields=["recipient", "dedupe_key"],
                 condition=~Q(dedupe_key=""),

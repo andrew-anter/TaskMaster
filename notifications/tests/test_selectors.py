@@ -1,10 +1,14 @@
 import pytest
+from django.test import TestCase
 
 from ..selectors import (
     get_notifications_for_user,
     get_unread_notifications_count,
 )
 from ..services import mark_all_notifications_read, notify
+
+# Django ships this as a TestCase classmethod (absent from django-stubs).
+capture_on_commit_callbacks = TestCase.captureOnCommitCallbacks  # type: ignore[reportAttributeAccessIssue]
 
 
 @pytest.mark.django_db
@@ -31,14 +35,19 @@ class TestNotificationSelectors:
 
     def test_unread_count(self, user):
         assert get_unread_notifications_count(user=user) == 0
-        notify(recipient=user, type="t", message="x")
-        notify(recipient=user, type="t", message="y")
+        with capture_on_commit_callbacks(execute=True):
+            notify(recipient=user, type="t", message="x")
+            notify(recipient=user, type="t", message="y")
         assert get_unread_notifications_count(user=user) == 2
 
     def test_unread_count_cache_tracks_writes(self, user):
-        # Warm the cache, then verify writes invalidate it immediately.
+        # Warm the cache, then verify writes invalidate it once they commit.
         assert get_unread_notifications_count(user=user) == 0
-        notify(recipient=user, type="t", message="x")
+
+        with capture_on_commit_callbacks(execute=True):
+            notify(recipient=user, type="t", message="x")
         assert get_unread_notifications_count(user=user) == 1
-        mark_all_notifications_read(recipient=user)
+
+        with capture_on_commit_callbacks(execute=True):
+            mark_all_notifications_read(recipient=user)
         assert get_unread_notifications_count(user=user) == 0

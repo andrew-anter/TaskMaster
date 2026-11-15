@@ -206,11 +206,10 @@ class TestNotificationConstraint:
         Notification.objects.create(
             recipient=user, type="a", message="x", dedupe_key="same"
         )
-        with pytest.raises(IntegrityError):
-            with transaction.atomic():
-                Notification.objects.create(
-                    recipient=user, type="a", message="y", dedupe_key="same"
-                )
+        with pytest.raises(IntegrityError), transaction.atomic():
+            Notification.objects.create(
+                recipient=user, type="a", message="y", dedupe_key="same"
+            )
 
     def test_empty_dedupe_keys_are_not_constrained(self, user):
         Notification.objects.create(recipient=user, type="a", message="x")

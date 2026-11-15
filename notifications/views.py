@@ -112,7 +112,7 @@ def mark_notification_read_view(request, notification_id):
             recipient=request.user, notification_id=notification_id
         )
     except Notification.DoesNotExist:
-        raise Http404("Notification not found")
+        raise Http404("Notification not found") from None
     destination = notification.link
     if not destination or not url_has_allowed_host_and_scheme(
         destination,

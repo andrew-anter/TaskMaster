@@ -1,8 +1,12 @@
 import pytest
+from django.test import TestCase
 from django.urls import reverse
 
 from ..selectors import get_unread_notifications_count
 from ..services import notify
+
+# Django ships this as a TestCase classmethod (absent from django-stubs).
+capture_on_commit_callbacks = TestCase.captureOnCommitCallbacks  # type: ignore[reportAttributeAccessIssue]
 
 
 @pytest.fixture
@@ -72,7 +76,9 @@ class TestNotificationViews:
         notify(recipient=user, type="t", message="x")
         notify(recipient=user, type="t", message="y")
 
-        response = client_logged_in.post(reverse("notifications_mark_all_read"))
+        # Run the deferred cache invalidation so this exercises the real path.
+        with capture_on_commit_callbacks(execute=True):
+            response = client_logged_in.post(reverse("notifications_mark_all_read"))
 
         assert response.status_code == 200
         assert get_unread_notifications_count(user=user) == 0
@@ -81,9 +87,10 @@ class TestNotificationViews:
     def test_mark_all_read_from_page_returns_list_partial(self, client_logged_in, user):
         notify(recipient=user, type="t", message="x")
 
-        response = client_logged_in.post(
-            reverse("notifications_mark_all_read"), {"source": "page"}
-        )
+        with capture_on_commit_callbacks(execute=True):
+            response = client_logged_in.post(
+                reverse("notifications_mark_all_read"), {"source": "page"}
+            )
 
         assert response.status_code == 200
         assert b'id="notifications-list"' in response.content
