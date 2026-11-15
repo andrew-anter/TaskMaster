@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Count
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -17,7 +19,8 @@ from .services import LabelService
 @require_http_methods(["GET"])
 def label_list_view(request):
     selector = LabelSelector(user=request.user)
-    labels = selector.get_labels()
+    # Annotated per request so the partial does not issue a COUNT per row.
+    labels = selector.get_labels().annotate(task_count=Count("tasks"))
     context = {
         "labels": labels,
         "page_title": "Manage Labels",
@@ -42,7 +45,7 @@ def label_detail_view(request, pk):
         messages.error(request, "No label associated with this id.")
         if request.htmx:
             return hx_location_response(reverse("label_list"))
-        raise Http404
+        raise Http404 from None
 
     editing = request.method == "POST" or request.GET.get("mode") == "edit"
     update_succeeded = False
@@ -119,47 +122,6 @@ def label_create_view(request):
     return render(request, "labels/label_form.html", context)
 
 
-@require_http_methods(["GET", "POST"])
-def label_update_view(request, pk):
-    try:
-        label = LabelSelector(user=request.user).get_label(pk=pk)
-    except Label.DoesNotExist:
-        messages.error(request, "No label associated with this id.")
-        if request.htmx:
-            return hx_location_response(reverse("label_list"))
-        raise Http404
-
-    if request.method == "POST":
-        form = LabelForm(request.POST, instance=label, user=request.user)
-        if form.is_valid():
-            service = LabelService(user=request.user)
-            try:
-                service.update_label(
-                    pk=pk,
-                    name=form.cleaned_data["name"],
-                    color=form.cleaned_data["color"],
-                )
-            except DuplicateLabelError as e:
-                form.add_error("name", f"{e}")
-            else:
-                messages.success(request, "Label updated successfully")
-                if request.htmx:
-                    return hx_location_response(reverse("label_list"))
-                return HttpResponseRedirect(reverse("label_list"))
-    else:
-        form = LabelForm(instance=label, user=request.user)
-
-    context = {
-        "form": form,
-        "label": label,
-        "page_title": "Update Label",
-        "label_colors": LABEL_COLORS,
-    }
-    if is_partial_request(request):
-        return render(request, "labels/label_form_partial.html", context)
-    return render(request, "labels/label_form.html", context)
-
-
 @require_http_methods(["POST"])
 def label_delete_view(request, pk):
     service = LabelService(user=request.user)
@@ -169,7 +131,7 @@ def label_delete_view(request, pk):
         messages.error(request, "No label associated with this id.")
         if request.htmx:
             return hx_location_response(reverse("label_list"))
-        raise Http404
+        raise Http404 from None
     messages.success(request, "Label deleted successfully")
     if request.htmx:
         return hx_location_response(reverse("label_list"))
@@ -202,6 +164,9 @@ def inline_label_create_view(request):
             label = service.create_label(name=name, color=color)
         except DuplicateLabelError as e:
             error = f"{e}"
+        except DjangoValidationError as e:
+            # e.g. a tampered name longer than the model's max_length.
+            error = " ".join(e.messages)
         else:
             checked_ids.append(label.pk)
 

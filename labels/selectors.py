@@ -22,11 +22,5 @@ class LabelSelector:
     def get_label(self, pk: int) -> Label:
         return Label.objects.get(pk=pk, owner=self.user)
 
-    def get_labels(self, ids: set[int] | None = None) -> QuerySet[Label]:
-        queryset = Label.objects.filter(owner=self.user)
-        if ids is not None:
-            queryset = queryset.filter(pk__in=ids)
-        return queryset
-
-    def get_labels_for_task(self, task_id: int) -> QuerySet[Label]:
-        return Label.objects.filter(tasks__pk=task_id, owner=self.user)
+    def get_labels(self) -> QuerySet[Label]:
+        return Label.objects.filter(owner=self.user).order_by("name")

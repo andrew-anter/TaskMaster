@@ -1,4 +1,5 @@
 import pytest
+
 from labels.models import Label
 
 
@@ -15,12 +16,13 @@ class TestLabelSelector:
         for label in labels:
             assert label in fetched_labels
 
-    def test_get_labels_for_task(self, label_selector, task, labels):
-        labels_from_selector = label_selector.get_labels_for_task(task_id=task.pk)
+    def test_get_labels_ordered_by_name(self, user, label_selector):
+        for name in ("zeta", "alpha", "beta"):
+            Label.objects.create(name=name, color="#000000", owner=user)
 
-        assert labels_from_selector.count() == len(labels)
-        for label in labels:
-            assert label in labels_from_selector
+        names = list(label_selector.get_labels().values_list("name", flat=True))
+
+        assert names == ["alpha", "beta", "zeta"]
 
     def test_get_label_belongs_to_other_user(
         self, label_selector, labels, django_user_model

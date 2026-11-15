@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django import forms
 from django.core.exceptions import ValidationError
 
@@ -52,8 +54,8 @@ class LabelForm(forms.ModelForm):
 
     class Meta:
         model = Label
-        fields = ["name", "color"]
-        widgets = {
+        fields: ClassVar[list[str]] = ["name", "color"]
+        widgets: ClassVar[dict] = {
             "name": forms.TextInput(
                 attrs={
                     "class": "input w-full",

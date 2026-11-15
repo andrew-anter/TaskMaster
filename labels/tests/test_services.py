@@ -1,4 +1,6 @@
 import pytest
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 
 from accounts.models import User
 from labels.exceptions import DuplicateLabelError
@@ -16,15 +18,13 @@ class TestLabelService:
         assert label.color == "#123456"
         assert label.owner == user
 
-    def test_create_label_for_task(self, user, task):
+    def test_create_label_with_overlong_name_is_rejected(self, user):
         service = LabelService(user=user)
-        label = service.create_label_for_task(
-            name="Task Label", color="#654321", task=task
-        )
 
-        assert label.name == "Task Label"
-        assert task.labels.filter(id=label.pk).exists()
-        assert label.owner == user
+        with pytest.raises(DjangoValidationError):
+            service.create_label(name="x" * 51, color="#123456")
+
+        assert not Label.objects.filter(owner=user).exists()
 
     def test_update_label(self, user):
         service = LabelService(user=user)
@@ -53,6 +53,44 @@ class TestLabelService:
             service.create_label(name="duplicated", color="#111111")
 
         assert Label.objects.filter(owner=user).count() == 1
+
+    def test_create_label_translates_integrity_error_to_duplicate(
+        self, user, monkeypatch
+    ):
+        service = LabelService(user=user)
+        service.create_label(name="Raced", color="#000000")
+
+        # Simulate losing the pre-check race: skip both the service check and
+        # model validation so the INSERT itself hits the unique constraint.
+        monkeypatch.setattr(service, "_check_name_is_free", lambda *a, **k: None)
+        monkeypatch.setattr(Label, "full_clean", lambda self, *a, **k: None)
+
+        with pytest.raises(DuplicateLabelError):
+            service.create_label(name="Raced", color="#111111")
+
+        assert Label.objects.filter(owner=user, name="Raced").count() == 1
+
+    def test_update_label_translates_integrity_error_to_duplicate(
+        self, user, monkeypatch
+    ):
+        service = LabelService(user=user)
+        service.create_label(name="Raced", color="#000000")
+        label = service.create_label(name="Other", color="#111111")
+
+        monkeypatch.setattr(service, "_check_name_is_free", lambda *a, **k: None)
+        monkeypatch.setattr(Label, "full_clean", lambda self, *a, **k: None)
+
+        with pytest.raises(DuplicateLabelError):
+            service.update_label(pk=label.pk, name="Raced")
+
+        label.refresh_from_db()
+        assert label.name == "Other"
+
+    def test_database_rejects_duplicate_name_for_owner(self, user):
+        LabelService(user=user).create_label(name="Unique", color="#000000")
+
+        with pytest.raises(IntegrityError), transaction.atomic():
+            Label.objects.create(name="Unique", color="#111111", owner=user)
 
     def test_another_users_label_name_is_free(self, user):
         other = User.objects.create_user(username="other")

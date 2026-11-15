@@ -1,6 +1,8 @@
 import re
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from accounts.models import User
@@ -35,6 +37,44 @@ class TestLabelListView:
         labels = list(response.context["labels"])
         assert len(labels) == 1
         assert labels[0].name == "Mine"
+
+    def test_list_ordered_by_name(self, client_logged_in, user):
+        for name in ("zeta", "alpha", "beta"):
+            Label.objects.create(name=name, color="#111111", owner=user)
+
+        response = client_logged_in.get(reverse("label_list"))
+
+        names = [label.name for label in response.context["labels"]]
+        assert names == ["alpha", "beta", "zeta"]
+
+    def test_shows_task_count(self, client_logged_in, user, task):
+        label = Label.objects.create(name="Counted", color="#111111", owner=user)
+        task.labels.add(label)
+
+        response = client_logged_in.get(reverse("label_list"))
+
+        assert b"1 task" in response.content
+
+    def test_task_count_does_not_issue_a_query_per_label(
+        self, client_logged_in, user, task
+    ):
+        counted = Label.objects.create(name="Counted", color="#111111", owner=user)
+        task.labels.add(counted)
+        for name in ("Alpha", "Beta", "Gamma"):
+            Label.objects.create(name=name, color="#222222", owner=user)
+
+        with CaptureQueriesContext(connection) as queries:
+            response = client_logged_in.get(reverse("label_list"))
+
+        assert response.status_code == 200
+        label_queries = [
+            query["sql"]
+            for query in queries.captured_queries
+            if 'FROM "labels_label"' in query["sql"]
+        ]
+        # One aggregate query for the whole page, not one per label row.
+        assert len(label_queries) == 1
+        assert "COUNT(" in label_queries[0].upper()
 
 
 class TestLabelCreateView:
@@ -89,39 +129,6 @@ class TestLabelDetailView:
         label = Label.objects.create(name="Private", color="#000000", owner=other_user)
         response = client_logged_in.get(reverse("label_detail", args=[label.pk]))
         assert response.status_code == 404
-
-
-class TestLabelUpdateView:
-    def test_get_renders_form(self, client_logged_in, sample_label):
-        response = client_logged_in.get(reverse("label_update", args=[sample_label.pk]))
-        assert response.status_code == 200
-        assert "form" in response.context
-
-    def test_missing_label_returns_404(self, client_logged_in):
-        response = client_logged_in.get(reverse("label_update", args=[99999]))
-        assert response.status_code == 404
-
-    def test_duplicate_name_is_rejected(self, client_logged_in, user, sample_label):
-        Label.objects.create(name="Taken", color="#111111", owner=user)
-
-        response = client_logged_in.post(
-            reverse("label_update", args=[sample_label.pk]),
-            {"name": "Taken", "color": "#3B82F6"},
-        )
-
-        assert response.status_code == 200
-        assert response.context["form"].errors["name"]
-        sample_label.refresh_from_db()
-        assert sample_label.name == "Work"
-
-    def test_post_updates_label(self, client_logged_in, sample_label):
-        data = {"name": "Updated Label", "color": "#F59E0B"}
-        response = client_logged_in.post(
-            reverse("label_update", args=[sample_label.pk]), data
-        )
-        assert response.status_code in (200, 302)
-        sample_label.refresh_from_db()
-        assert sample_label.name == "Updated Label"
 
 
 class TestLabelDeleteView:
@@ -225,4 +232,20 @@ class TestInlineLabelCreateView:
         response = client_logged_in.post(reverse("inline_label_create"), data)
         assert response.status_code == 200
         assert b"Enter a label name." in response.content
+        assert not Label.objects.filter(owner=user).exists()
+
+    def test_post_overlong_name_shows_error_and_stores_nothing(
+        self, client_logged_in, user
+    ):
+        long_name = "x" * 51
+
+        response = client_logged_in.post(
+            reverse("inline_label_create"), {"name": long_name, "color": "#8B5CF6"}
+        )
+
+        content = response.content.decode()
+        assert response.status_code == 200
+        assert "at most 50 characters" in content
+        # The typed name survives the error so the user can fix it.
+        assert f'value="{long_name}"' in content
         assert not Label.objects.filter(owner=user).exists()

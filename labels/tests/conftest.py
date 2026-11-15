@@ -1,10 +1,10 @@
 import pytest
 
 from accounts.models import User
+from tasks.services import task_add_service
 
 from ..selectors import LabelSelector
 from ..services import LabelService
-from tasks.services import task_add_service
 
 
 @pytest.fixture
@@ -25,16 +25,12 @@ def label_service(user):
 
 
 @pytest.fixture
-def labels(task, label_service):
+def labels(label_service):
     label_data = [
-        {"name": "Urgent", "color": "FF0000"},  # Red
-        {"name": "Backend", "color": "0000FF"},  # Blue
+        {"name": "Urgent", "color": "#EF4444"},
+        {"name": "Backend", "color": "#3B82F6"},
     ]
-    created_labels = [
-        label_service.create_label_for_task(task=task, **data) for data in label_data
-    ]
-
-    return created_labels
+    return [label_service.create_label(**data) for data in label_data]
 
 
 @pytest.fixture
