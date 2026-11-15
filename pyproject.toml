@@ -1,8 +1,7 @@
 [project]
 name = "TaskMaster"
 version = "0.0.1"
-description = """Web-based Task Management application that makes use heavily of django full stack
-ability"""
+description = "A Django + HTMX task management application with labels, reminders, in-app notifications, and a REST API."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -33,6 +32,17 @@ reportAssignmentType = "error"
 [tool.django-stubs]
 django_settings_module = "core.settings"
 
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+# Explicit rule set so lint behaviour does not drift with ruff releases.
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# Django ships mutable class attributes in generated migrations; RUF012 is noise there.
+"**/migrations/*.py" = ["RUF012"]
+
 
 [dependency-groups]
 dev = [
@@ -55,5 +65,14 @@ python_files = ["test_*.py", "*_test.py", "*/tests/*.py", "*/tests.py"]
 norecursedirs = [".git", ".venv", "tmp", "node_modules", "staticfiles", ".pytest_cache"]
 
 [tool.bandit]
-exclude_dirs = [".venv", ".git", "staticfiles", "typings", "src", "node_modules"]
+exclude_dirs = [
+	".venv",
+	".git",
+	"staticfiles",
+	"typings",
+	"src",
+	"node_modules",
+	"tmp",
+	"reports",
+]
 skips = ["B101"]

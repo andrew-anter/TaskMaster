@@ -29,6 +29,10 @@ celerybeat-schedule
 celerybeat-schedule-shm
 celerybeat-schedule-wal
 
+# Testing
+.coverage
+htmlcov/
+
 # Tooling
 tailwindcss
 daisyui.js

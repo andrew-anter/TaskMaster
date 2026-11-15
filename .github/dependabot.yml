@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  # Keep pinned GitHub Actions tags current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+
+  # uv.lock is generated from pyproject.toml, so the pip ecosystem covers it.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
