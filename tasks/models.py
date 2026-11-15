@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -45,6 +47,6 @@ class Task(models.Model):
         return self.due_datetime < timezone.now()
 
     class Meta:
-        ordering = ["status", "priority", "due_datetime"]
+        ordering: ClassVar[list[str]] = ["status", "priority", "due_datetime"]
         verbose_name = "To-Do Item"
         verbose_name_plural = "To-Do Items"

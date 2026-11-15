@@ -1,7 +1,10 @@
+from typing import ClassVar
+
 from django import forms
 
-from .models import Task
 from labels.models import Label
+
+from .models import Task
 
 FORM_FIELD_CLASSES = "input w-full"
 SELECT_FIELD_CLASSES = "select w-full"
@@ -28,7 +31,7 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = [
+        fields: ClassVar[list[str]] = [
             "title",
             "description",
             "due_datetime",
@@ -38,7 +41,7 @@ class TaskForm(forms.ModelForm):
             "labels",
         ]
 
-        widgets = {
+        widgets: ClassVar[dict] = {
             "title": forms.TextInput(
                 attrs={
                     "class": FORM_FIELD_CLASSES,
@@ -77,7 +80,9 @@ class TaskForm(forms.ModelForm):
             ),
             "labels": forms.CheckboxSelectMultiple(),
         }
-        labels = {  # Using more concise labels that Django's form rendering can use by default
+        labels: ClassVar[
+            dict[str, str]
+        ] = {  # Using more concise labels that Django's form rendering can use by default
             "title": "Task Title",
             "description": "Description",
             "due_datetime": "Due Date & Time",

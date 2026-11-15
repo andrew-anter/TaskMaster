@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils import timezone
 
 from .models import Task
+from .services import clear_reminder_notifications_for_tasks
 
 
 @admin.register(Task)
@@ -59,11 +60,15 @@ class TaskAdmin(admin.ModelAdmin):
 
     @admin.action(description="Mark selected as Completed")
     def mark_as_completed(self, request, queryset):
+        pks = list(queryset.values_list("pk", flat=True))
         queryset.update(status=Task.Status.COMPLETED, modified_at=timezone.now())
+        # Bulk updates bypass the service layer, so completed tasks would keep
+        # their "Overdue"/"Due Today" reminders until retention cleanup.
+        clear_reminder_notifications_for_tasks(pks=pks)
 
-    actions = [
+    actions = (
         "mark_as_todo",
         "mark_as_in_progress",
         "mark_as_on_hold",
         "mark_as_completed",
-    ]
+    )

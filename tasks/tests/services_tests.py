@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 
 import pytest
 from django.utils import timezone
@@ -10,11 +10,17 @@ from notifications.services import notify
 from ..exceptions import DueDateInPastError, ScheduledDateInPastError
 from ..models import Task
 from ..services import (
+    clear_reminder_notifications_for_tasks,
     task_add_service,
     task_delete_service,
     task_update_service,
     toggle_task_status_service,
 )
+
+
+def earlier_today() -> datetime:
+    """Today at 00:00 (aware): always earlier than "now" but never yesterday."""
+    return timezone.make_aware(datetime.combine(timezone.now().date(), time.min))
 
 
 @pytest.mark.django_db
@@ -40,6 +46,23 @@ class TestAddTaskService:
             task_add_service(**invalid_data)
 
         # Assert for side effects (that no task was created)
+        assert Task.objects.count() == 0
+
+    def test_create_accepts_a_time_earlier_today(self, valid_task_data):
+        """The due-date rule is date-level: only days before today are rejected."""
+        early = earlier_today()
+
+        task_item = task_add_service(**{**valid_task_data, "due_datetime": early})
+
+        assert task_item.due_datetime == early
+
+    def test_create_rejects_yesterday_due_date(self, valid_task_data):
+        """A due date on a past day is rejected on create."""
+        yesterday = timezone.now() - timezone.timedelta(days=1)
+
+        with pytest.raises(DueDateInPastError):
+            task_add_service(**{**valid_task_data, "due_datetime": yesterday})
+
         assert Task.objects.count() == 0
 
     def test_create_task_with_invalid_scheduled_date(self, valid_task_data):
@@ -93,6 +116,17 @@ class TestToggleTaskStatusService:
         task.refresh_from_db()
 
         assert task.status == Task.Status.COMPLETED
+
+    def test_toggle_refreshes_modified_at(self, todo_task):
+        """``save(update_fields=...)`` must name the ``auto_now`` field itself."""
+        task = todo_task
+        stale = timezone.now() - timezone.timedelta(days=30)
+        Task.objects.filter(pk=task.pk).update(modified_at=stale)
+
+        toggle_task_status_service(task=task)
+
+        task.refresh_from_db()
+        assert task.modified_at > stale
 
     def test_toggle_advances_in_progress_to_completed(self, in_progress_task):
         """
@@ -218,6 +252,47 @@ class TestUpdateTaskService:
         assert task.title == ""
         assert updated is True
 
+    def test_update_accepts_a_time_earlier_today(self, task_for_testing):
+        """Editing shares the create rule: only past days are rejected."""
+        task = task_for_testing
+        early = earlier_today()
+
+        task, updated = task_update_service(
+            task_id=task.pk,
+            user=task.owner,
+            due_datetime=early,
+        )
+
+        assert updated is True
+        assert task.due_datetime == early
+
+    def test_update_rejects_yesterday_due_date(self, task_for_testing):
+        """A due date on a past day is rejected on update, as on create."""
+        task = task_for_testing
+
+        with pytest.raises(DueDateInPastError):
+            task_update_service(
+                task_id=task.pk,
+                user=task.owner,
+                due_datetime=timezone.now() - timezone.timedelta(days=1),
+            )
+
+    def test_update_refreshes_modified_at(self, task_for_testing):
+        """``save(update_fields=...)`` must name the ``auto_now`` field itself."""
+        task = task_for_testing
+        stale = timezone.now() - timezone.timedelta(days=30)
+        Task.objects.filter(pk=task.pk).update(modified_at=stale)
+
+        task, updated = task_update_service(
+            task_id=task.pk,
+            user=task.owner,
+            title="Fresh title",
+        )
+
+        assert updated is True
+        task.refresh_from_db()
+        assert task.modified_at > stale
+
     def test_clear_due_datetime_with_none(self, task_for_testing):
         """Passing ``None`` explicitly clears the due datetime."""
         task = task_for_testing
@@ -288,6 +363,21 @@ class TestUpdateTaskService:
 
         assert updated is True
         assert list(task.labels.values_list("pk", flat=True)) == [label.pk]
+
+    def test_label_change_refreshes_modified_at(self, owner):
+        """An m2m-only edit still stamps the task row's ``modified_at``."""
+        label = Label.objects.create(name="Stamp", color="#444444", owner=owner)
+        task = Task.objects.create(owner=owner, title="Labelled")
+        stale = timezone.now() - timezone.timedelta(days=30)
+        Task.objects.filter(pk=task.pk).update(modified_at=stale)
+
+        task, updated = task_update_service(
+            task_id=task.pk, user=owner, labels=[label.pk]
+        )
+
+        assert updated is True
+        task.refresh_from_db()
+        assert task.modified_at > stale
 
     def test_invalid_status_raises_even_when_unchanged(self, owner):
         """A stored invalid status is still rejected on a no-op update."""
@@ -370,7 +460,7 @@ class TestUpdateTaskService:
         task = task_for_testing
         original_title = task.title
 
-        task, updated = task_update_service(
+        task, _ = task_update_service(
             task_id=task.pk,
             user=task.owner,
             title=None,
@@ -384,7 +474,7 @@ class TestUpdateTaskService:
         task = task_for_testing
         original_description = task.description
 
-        task, updated = task_update_service(
+        task, _ = task_update_service(
             task_id=task.pk,
             user=task.owner,
             description=None,
@@ -403,3 +493,25 @@ class TestDeleteTaskService:
         task_delete_service(user=user, task_id=task_id)
         with pytest.raises(Task.DoesNotExist):
             Task.objects.get(pk=task_id)
+
+
+@pytest.mark.django_db
+class TestClearReminderNotificationsForTasks:
+    def test_clears_reminders_for_the_given_tasks_only(self, owner):
+        """Bulk completion must drop reminders without touching other tasks."""
+        first = Task.objects.create(owner=owner, title="First")
+        second = Task.objects.create(owner=owner, title="Second")
+        untouched = Task.objects.create(owner=owner, title="Untouched")
+        for task in (first, second, untouched):
+            notify(
+                recipient=owner,
+                type="task_overdue",
+                message="Overdue reminder",
+                target=task,
+            )
+
+        deleted = clear_reminder_notifications_for_tasks(pks=[first.pk, second.pk])
+
+        assert deleted == 2
+        remaining = Notification.objects.values_list("target_object_id", flat=True)
+        assert list(remaining) == [untouched.pk]

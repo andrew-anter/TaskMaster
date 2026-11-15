@@ -245,6 +245,17 @@ class TestTodayTasksSelector:
         assert task not in get_today_tasks_for_user(user=owner)
         assert task in get_overdue_tasks_for_user(user=owner)
 
+    def test_overdue_task_scheduled_today_stays_in_overdue_only(self, owner):
+        task = Task.objects.create(
+            owner=owner,
+            title="Overdue, rescheduled to today",
+            due_datetime=timezone.now() - timedelta(days=2),
+            scheduled_date=timezone.localdate(),
+        )
+
+        assert task not in get_today_tasks_for_user(user=owner)
+        assert task in get_overdue_tasks_for_user(user=owner)
+
 
 class TestUpcomingTasksSelector:
     def test_includes_tasks_scheduled_beyond_today(self, owner):
@@ -283,12 +294,43 @@ class TestUpcomingTasksSelector:
 
         assert upcoming == [due_later, scheduled_only]
 
+    def test_completed_tasks_are_not_upcoming(self, owner):
+        """Completed tasks must not crowd open ones out of the 5 slots."""
+        make_task(
+            owner,
+            title="Done",
+            status=Task.Status.COMPLETED,
+            due_datetime=timezone.now() + timedelta(days=2),
+        )
+
+        assert list(get_upcoming_tasks_for_user(user=owner)) == []
+
+    def test_dual_date_task_scheduled_today_is_not_upcoming(self, owner):
+        """A future due date does not make a task scheduled for today upcoming."""
+        make_task(
+            owner,
+            title="Due Friday, scheduled today",
+            due_datetime=timezone.now() + timedelta(days=2),
+            scheduled_date=timezone.localdate(),
+        )
+
+        assert list(get_upcoming_tasks_for_user(user=owner)) == []
+
+    def test_dual_date_overdue_task_is_not_upcoming(self, owner):
+        """A future scheduled date does not make an overdue task upcoming."""
+        Task.objects.create(
+            owner=owner,
+            title="Overdue, rescheduled later",
+            due_datetime=timezone.now() - timedelta(days=2),
+            scheduled_date=timezone.localdate() + timedelta(days=4),
+        )
+
+        assert list(get_upcoming_tasks_for_user(user=owner)) == []
+
 
 class TestDefaultTaskOrder:
     def test_open_tasks_come_before_completed_ones(self, owner):
-        completed = make_task(
-            owner, title="Completed", status=Task.Status.COMPLETED
-        )
+        completed = make_task(owner, title="Completed", status=Task.Status.COMPLETED)
         open_task = make_task(owner, title="Open")
 
         titles = [task.title for task in search_tasks_for_user(user=owner)]
@@ -304,9 +346,10 @@ class TestDefaultTaskOrder:
         )
         open_task = make_task(owner, title="Open labelled", labels=[sample_label.pk])
 
-        titles = [task.title for task in get_tasks_by_label(
-            user=owner, label_id=sample_label.pk
-        )]
+        titles = [
+            task.title
+            for task in get_tasks_by_label(user=owner, label_id=sample_label.pk)
+        ]
 
         assert titles == [open_task.title, completed.title]
 
@@ -314,9 +357,7 @@ class TestDefaultTaskOrder:
         make_task(owner, title="Alpha", status=Task.Status.COMPLETED)
         make_task(owner, title="Beta", status=Task.Status.TODO)
 
-        result = search_tasks_for_user(
-            user=owner, sort_by="title", sort_dir="asc"
-        )
+        result = search_tasks_for_user(user=owner, sort_by="title", sort_dir="asc")
 
         assert [task.title for task in result] == ["Alpha", "Beta"]
 
@@ -327,9 +368,7 @@ ALL_TASKS_URL = reverse("all_tasks")
 class TestAllTasksSearchFiltersView:
     def test_clear_filters_only_shown_when_filtering(self, client_logged_in):
         unfiltered = client_logged_in.get(ALL_TASKS_URL).content.decode()
-        filtered = client_logged_in.get(
-            ALL_TASKS_URL + "?status=TODO"
-        ).content.decode()
+        filtered = client_logged_in.get(ALL_TASKS_URL + "?status=TODO").content.decode()
 
         assert "Clear filters" not in unfiltered
         assert "Clear filters" in filtered
@@ -501,6 +540,19 @@ class TestHomePagination:
             title="Overdue",
             due_datetime=now - timedelta(hours=1),
         )
+        # Dual-date tasks used to be rendered in two dashboard sections at once.
+        make_task(
+            owner,
+            title="Due later, scheduled today",
+            due_datetime=now + timedelta(days=2),
+            scheduled_date=timezone.localdate(),
+        )
+        Task.objects.create(
+            owner=owner,
+            title="Overdue, rescheduled later",
+            due_datetime=now - timedelta(days=2),
+            scheduled_date=timezone.localdate() + timedelta(days=4),
+        )
 
         response = client_logged_in.get(HOME_URL)
 
@@ -512,6 +564,8 @@ class TestHomePagination:
         assert upcoming_ids.isdisjoint(today_ids)
         assert upcoming_ids.isdisjoint(overdue_ids)
         assert today_ids.isdisjoint(overdue_ids)
+        # Every task here belongs to exactly one section, so none is upcoming.
+        assert upcoming_ids == set()
 
     def test_every_dashboard_row_id_is_unique(self, client_logged_in, owner):
         """Regression: duplicated row ids made toggles hit the wrong section."""

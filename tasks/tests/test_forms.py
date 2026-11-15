@@ -1,7 +1,8 @@
 import pytest
+from django import forms
 
 from accounts.models import User
-from labels.forms import LabelForm, LABEL_COLORS
+from labels.forms import LABEL_COLORS, LabelForm
 from labels.models import Label
 from tasks.forms import TaskForm
 from tasks.models import Task
@@ -48,7 +49,9 @@ class TestTaskForm:
         Label.objects.create(name="Mine", color="#000000", owner=user)
         Label.objects.create(name="Theirs", color="#111111", owner=other_user)
         form = TaskForm(user=user)
-        label_ids = list(form.fields["labels"].queryset.values_list("pk", flat=True))
+        labels_field = form.fields["labels"]
+        assert isinstance(labels_field, forms.ModelMultipleChoiceField)
+        label_ids = list(labels_field.queryset.values_list("pk", flat=True))
         assert len(label_ids) == 1
 
     def test_valid_datetime_fields(self, user):

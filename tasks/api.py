@@ -1,7 +1,8 @@
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from django.http import HttpRequest
 from rest_framework import serializers, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,7 +22,7 @@ from .services import (
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields: list[str] = [
+        fields: ClassVar[list[str]] = [
             "id",
             "title",
             "description",
@@ -36,32 +37,45 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class BaseAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
+
+
+class TaskPageNumberPagination(PageNumberPagination):
+    """Bounded page size for the task list (labels are prefetched per page)."""
+
+    page_size = 50
 
 
 class ListCreateApiView(BaseAPIView):
     def get(self, request: HttpRequest) -> Response:
         user = request.user
         tasks = get_all_tasks_for_user(user=user)
-        data = TaskSerializer(instance=tasks, many=True).data
-        return Response(data)
+        paginator = TaskPageNumberPagination()
+        page = paginator.paginate_queryset(tasks, request, view=self)
+        data = TaskSerializer(instance=page, many=True).data
+        return paginator.get_paginated_response(data)
 
     def post(self, request) -> Response:
         user = request.user
         serializer = TaskSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = cast(dict[str, Any], serializer.validated_data)
-        task_add_service(
-            title=data["title"],
-            description=data.get("description"),
-            status=data.get("status", Task.Status.TODO),
-            priority=data.get("priority", Task.Priority.MEDIUM),
-            due_datetime=data.get("due_datetime"),
-            scheduled_date=data.get("scheduled_date"),
-            owner=user,
-            labels=data.get("labels"),
+        try:
+            task = task_add_service(
+                title=data["title"],
+                description=data.get("description"),
+                status=data.get("status", Task.Status.TODO),
+                priority=data.get("priority", Task.Priority.MEDIUM),
+                due_datetime=data.get("due_datetime"),
+                scheduled_date=data.get("scheduled_date"),
+                owner=user,
+                labels=data.get("labels"),
+            )
+        except (ValueError, DueDateInPastError, ScheduledDateInPastError) as e:
+            return Response(data={"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            TaskSerializer(instance=task).data, status=status.HTTP_201_CREATED
         )
-        return Response(status=status.HTTP_201_CREATED)
 
 
 class DetailUpdateDeleteTaskApiView(BaseAPIView):
@@ -111,11 +125,8 @@ class DetailUpdateDeleteTaskApiView(BaseAPIView):
         if updated:
             response_serializer = TaskSerializer(instance=task)
             return Response(data=response_serializer.data, status=status.HTTP_200_OK)
-        else:
-            response_serializer = TaskSerializer(instance=task)
-            return Response(
-                data=response_serializer.data, status=status.HTTP_304_NOT_MODIFIED
-            )
+        # RFC 9110 forbids content in a 304, so return it without a body.
+        return Response(status=status.HTTP_304_NOT_MODIFIED)
 
     def delete(self, request, pk: int) -> Response:
         user = request.user

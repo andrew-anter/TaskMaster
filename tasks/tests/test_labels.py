@@ -1,7 +1,10 @@
 import pytest
-from tasks.services import task_add_service, task_update_service
-from tasks.selectors import get_tasks_by_label
+
+from accounts.models import User
 from labels.models import Label
+from tasks.models import Task
+from tasks.selectors import get_tasks_by_label
+from tasks.services import task_add_service, task_update_service
 
 
 @pytest.mark.django_db
@@ -20,6 +23,74 @@ class TestTaskLabels:
         assert task.labels.count() == 2
         assert label1 in task.labels.all()
         assert label2 in task.labels.all()
+
+    def test_add_accepts_label_instances(self, owner):
+        """The web form passes ``Label`` instances, not primary keys."""
+        label = Label.objects.create(name="L1", color="#111111", owner=owner)
+
+        task = task_add_service(
+            title="Task with labels",
+            description="Desc",
+            owner=owner,
+            labels=[label],
+        )
+
+        assert list(task.labels.all()) == [label]
+
+    def test_duplicate_label_pks_are_deduplicated(self, owner):
+        """Repeating a pk must not look like a missing label."""
+        label = Label.objects.create(name="L1", color="#111111", owner=owner)
+
+        task = task_add_service(
+            title="Task with labels",
+            description="Desc",
+            owner=owner,
+            labels=[label.pk, label.pk],
+        )
+
+        assert task.labels.count() == 1
+
+    def test_add_with_foreign_label_raises(self, owner):
+        """Another user's label cannot be attached to a task."""
+        other = User.objects.create_user(username="labelintruder", password="pass12345")
+        foreign = Label.objects.create(name="Theirs", color="#333333", owner=other)
+
+        with pytest.raises(ValueError):
+            task_add_service(
+                title="Sneaky",
+                description="",
+                owner=owner,
+                labels=[foreign.pk],
+            )
+
+        assert not Task.objects.filter(owner=owner).exists()
+
+    def test_update_with_foreign_label_raises(self, owner, task_for_testing):
+        """Another user's label cannot be attached through an update either."""
+        other = User.objects.create_user(username="labelintruder", password="pass12345")
+        foreign = Label.objects.create(name="Theirs", color="#333333", owner=other)
+
+        with pytest.raises(ValueError):
+            task_update_service(
+                task_id=task_for_testing.pk, user=owner, labels=[foreign.pk]
+            )
+
+        assert task_for_testing.labels.count() == 0
+
+    def test_update_accepts_label_instances_as_no_change(self, owner):
+        """A form QuerySet of unchanged labels is a no-op, not a change."""
+        label = Label.objects.create(name="L1", color="#111111", owner=owner)
+        task = Task.objects.create(owner=owner, title="Labelled")
+        task.labels.set([label.pk])
+
+        task, updated = task_update_service(
+            task_id=task.pk,
+            user=owner,
+            labels=Label.objects.filter(owner=owner),
+        )
+
+        assert updated is False
+        assert list(task.labels.values_list("pk", flat=True)) == [label.pk]
 
     def test_update_task_labels(self, owner, task_for_testing):
         label1 = Label.objects.create(name="L1", color="#111111", owner=owner)

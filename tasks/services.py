@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date, datetime
 from enum import Enum
 
@@ -8,6 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
 
+from labels.models import Label
 from notifications.models import Notification
 from notifications.selectors import invalidate_unread_notifications_count
 
@@ -41,14 +43,61 @@ UNSET = _Unset.VALUE
 """Default marker for optional update arguments: ``None`` clears, ``UNSET`` skips."""
 
 
-def _clear_task_reminder_notifications(task: Task) -> None:
-    """Delete generated reminder notifications for a task (so they regenerate)."""
-    deleted = Notification.objects.filter(
+def _due_date_in_past(due_datetime: datetime) -> bool:
+    """
+    Report whether ``due_datetime`` falls on a day before today.
+
+    Creation and updates share one date-level rule: a time earlier today is
+    still "today", so it is accepted (the dashboard only calls a task overdue
+    once its day has passed).
+    """
+    if due_datetime.tzinfo is None:
+        due_datetime = timezone.make_aware(due_datetime)
+    return due_datetime.date() < timezone.now().date()
+
+
+def _validated_label_pks(*, labels: Iterable[Label | int], owner: User) -> list[int]:
+    """
+    Normalize ``labels`` to a sorted, deduplicated list of primary keys.
+
+    Callers pass ``Label`` instances (the web form's QuerySet) or plain primary
+    keys (the API), so both shapes are normalized before use. A single
+    ownership query enforces the tenant boundary before ``.set()`` runs.
+
+    Raises:
+        ValueError: If any label does not exist or belongs to another user.
+    """
+    pks = sorted({label.pk if isinstance(label, Label) else label for label in labels})
+    owned = set(
+        Label.objects.filter(pk__in=pks, owner=owner).values_list("pk", flat=True)
+    )
+    if owned != set(pks):
+        raise ValueError("One or more labels do not belong to this user.")
+    return pks
+
+
+def clear_reminder_notifications_for_tasks(*, pks: Iterable[int]) -> int:
+    """
+    Delete generated reminder notifications for several tasks at once.
+
+    Bulk admin actions bypass the per-task services, so they need this to stop
+    stale "Overdue"/"Due Today" reminders. Row-level deletes fire the central
+    ``post_delete`` signal, which invalidates the recipients' unread counts.
+
+    Returns:
+        The number of deleted notifications.
+    """
+    deleted, _ = Notification.objects.filter(
         target_content_type=ContentType.objects.get_for_model(Task),
-        target_object_id=task.pk,
+        target_object_id__in=list(pks),
         type__in=REMINDER_NOTIFICATION_TYPES,
     ).delete()
-    if deleted[0]:
+    return deleted
+
+
+def _clear_task_reminder_notifications(task: Task) -> None:
+    """Delete generated reminder notifications for a task (so they regenerate)."""
+    if clear_reminder_notifications_for_tasks(pks=[task.pk]):
         invalidate_unread_notifications_count(user_id=task.owner.pk)
 
 
@@ -77,9 +126,7 @@ def priority_check(priority: int, task: Task) -> bool:
 
 def due_datetime_check(due_datetime: datetime, task: Task):
     if task.due_datetime != due_datetime:
-        if due_datetime.tzinfo is None:
-            due_datetime = timezone.make_aware(due_datetime)
-        if due_datetime < timezone.now():
+        if _due_date_in_past(due_datetime):
             raise DueDateInPastError("The due date cannot be in the past.")
         return True
     return False
@@ -95,7 +142,7 @@ def task_add_service(
     due_datetime: datetime | None = None,
     scheduled_date: date | None = None,
     owner: User,
-    labels: list[int] | None = None,
+    labels: Iterable[Label | int] | None = None,
 ) -> Task:
     """
     Creates a new task with the provided details.
@@ -111,7 +158,8 @@ def task_add_service(
         due_datetime: An optional datetime for when the task is due.
         scheduled_date: An optional date for when to work on the task.
         owner: The user who owns this task.
-        labels: An optional list of label IDs to associate with the task.
+        labels: An optional iterable of labels (``Label`` instances or primary
+            keys) to associate with the task; all must belong to ``owner``.
 
     Returns:
         The newly created Task instance.
@@ -119,10 +167,11 @@ def task_add_service(
     Raises:
         DueDateInPastError: If the provided due_datetime is in the past.
         ScheduledDateInPastError: If the provided scheduled_date is in the past.
-        ValueError: If ``status`` or ``priority`` is not a valid choice.
+        ValueError: If ``status`` or ``priority`` is not a valid choice, or a
+            label does not belong to ``owner``.
     """
     today = timezone.now().date()
-    if due_datetime and due_datetime.date() < today:
+    if due_datetime and _due_date_in_past(due_datetime):
         raise DueDateInPastError("Due date cannot be in the past.")
     if scheduled_date and scheduled_date < today:
         raise ScheduledDateInPastError("The scheduled date cannot be in the past.")
@@ -130,6 +179,9 @@ def task_add_service(
         raise ValueError(f"'{status}' is not a valid status.")
     if priority not in Task.Priority.values:
         raise ValueError(f"'{priority}' is not a valid priority.")
+    label_pks: list[int] = []
+    if labels is not None:
+        label_pks = _validated_label_pks(labels=labels, owner=owner)
 
     todo_item = Task.objects.create(
         title=title,
@@ -140,8 +192,8 @@ def task_add_service(
         scheduled_date=scheduled_date,
         owner=owner,
     )
-    if labels:
-        todo_item.labels.set(labels)
+    if label_pks:
+        todo_item.labels.set(label_pks)
     return todo_item
 
 
@@ -161,6 +213,10 @@ def toggle_task_status_service(*, task: Task) -> Task:
     Returns:
         The updated Task instance with the new status.
     """
+    # Re-read under a row lock so two concurrent toggles cannot both compute
+    # from the same status and lose one flip (SQLite ignores FOR UPDATE; the
+    # lock is effective on PostgreSQL).
+    task = Task.objects.select_for_update().get(pk=task.pk)
     if task.status == Task.Status.COMPLETED:
         task.status = Task.Status.TODO
     else:
@@ -168,7 +224,7 @@ def toggle_task_status_service(*, task: Task) -> Task:
         # A completed task should stop being nagged; the beat job will not
         # regenerate reminders for it.
         _clear_task_reminder_notifications(task)
-    task.save(update_fields=["status"])
+    task.save(update_fields=["status", "modified_at"])
     return task
 
 
@@ -181,9 +237,9 @@ def task_update_service(
     description: str | None = None,
     status: str | None = None,
     priority: int | None = None,
-    due_datetime: datetime | None | _Unset = UNSET,
-    scheduled_date: date | None | _Unset = UNSET,
-    labels: list[int] | None = None,
+    due_datetime: datetime | _Unset | None = UNSET,
+    scheduled_date: date | _Unset | None = UNSET,
+    labels: Iterable[Label | int] | None = None,
 ) -> tuple[Task, bool]:
     """
     Updates a task with the provided values, performing a partial update.
@@ -203,7 +259,8 @@ def task_update_service(
             ``UNSET`` (the default) leaves it unchanged.
         scheduled_date: The new scheduled date, if provided; ``None`` clears it,
             ``UNSET`` (the default) leaves it unchanged.
-        labels: The new list of label IDs, if provided.
+        labels: The new set of labels (``Label`` instances or primary keys), if
+            provided; all must belong to ``user``.
 
     Returns:
         A tuple containing:
@@ -212,12 +269,16 @@ def task_update_service(
 
     Raises:
         Task.DoesNotExist: If the task_id does not exist for the given user.
-        ValueError: If the provided status or priority is not a valid choice.
+        ValueError: If the provided status or priority is not a valid choice,
+            or a label does not belong to ``user``.
         DueDateInPastError: If the provided due_datetime is in the past.
         ScheduledDateInPastError: If the provided scheduled_date is in the past.
     """
 
     task = get_task_for_user(user=user, task_id=task_id)
+    label_pks: list[int] | None = None
+    if labels is not None:
+        label_pks = _validated_label_pks(labels=labels, owner=user)
 
     fields_to_update = []
     updated = False
@@ -256,13 +317,20 @@ def task_update_service(
             fields_to_update.append("scheduled_date")
 
     if fields_to_update:
+        # ``auto_now`` is only applied to the fields Django saves, so the
+        # timestamp must be named explicitly.
+        fields_to_update.append("modified_at")
         task.save(update_fields=fields_to_update)
         updated = True
 
-    if labels is not None:
+    if label_pks is not None:
         current_label_ids = set(task.labels.values_list("pk", flat=True))
-        if set(labels) != current_label_ids:
-            task.labels.set(labels)
+        if set(label_pks) != current_label_ids:
+            task.labels.set(label_pks)
+            if not fields_to_update:
+                # An m2m write does not touch the task row; stamp it so "last
+                # modified" and modified_at sorting stay accurate.
+                task.save(update_fields=["modified_at"])
             updated = True
 
     reminders_stale = any(

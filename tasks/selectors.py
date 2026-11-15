@@ -53,13 +53,16 @@ def get_all_tasks_for_user(*, user: User) -> QuerySet[Task]:
     This is the primary selector for fetching a user's entire set of tasks.
     Other selectors can build upon this to apply further filtering.
 
+    Labels are prefetched, so every list row (web partials and the API
+    serializer alike) costs no extra query.
+
     Args:
         user: The user whose tasks are to be retrieved.
 
     Returns:
         A lazy Django QuerySet containing all tasks for the given user.
     """
-    return Task.objects.filter(owner=user)
+    return Task.objects.filter(owner=user).prefetch_related("labels")
 
 
 UPCOMING_TASKS_LIMIT = 5
@@ -92,13 +95,15 @@ def default_task_order() -> list:
 
 def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
     """
-    Retrieves the next 5 upcoming tasks for a user beyond today.
+    Retrieves the next 5 open tasks for a user beyond today.
 
     Tasks due today (and overdue ones) belong to their own dashboard sections,
-    so this queryset deliberately starts at tomorrow: the dashboard sections
-    stay disjoint and no task is rendered twice. Tasks that only carry a
-    ``scheduled_date`` in the future are listed after the due-dated ones, so
-    they no longer disappear from the dashboard entirely.
+    so this queryset excludes them: the dashboard sections stay disjoint and
+    no task is rendered twice, even when a task carries both dates. Completed
+    tasks are excluded so they cannot crowd open ones out of the 5 slots.
+    Tasks that only carry a ``scheduled_date`` in the future are listed after
+    the due-dated ones, so they no longer disappear from the dashboard
+    entirely.
 
     Args:
         user: The user whose upcoming tasks are to be retrieved.
@@ -106,13 +111,20 @@ def get_upcoming_tasks_for_user(*, user: User) -> QuerySet[Task]:
     Returns:
         A limited and ordered QuerySet of the 5 nearest upcoming tasks.
     """
-    today = timezone.localdate()
-    tasks = get_all_tasks_for_user(user=user).filter(
-        Q(due_datetime__date__gt=today) | Q(scheduled_date__gt=today)
+    today = timezone.now().date()
+    now = timezone.now()
+    tasks = (
+        get_all_tasks_for_user(user=user)
+        .filter(Q(due_datetime__date__gt=today) | Q(scheduled_date__gt=today))
+        .exclude(status=Task.Status.COMPLETED)
+        # NULL-safe: Django keeps rows whose excluded column is NULL.
+        .exclude(scheduled_date=today)
+        .exclude(due_datetime__date=today)
+        .exclude(due_datetime__lt=now)
     )
-    return tasks.order_by(
-        F("due_datetime").asc(nulls_last=True), "scheduled_date"
-    )[:UPCOMING_TASKS_LIMIT]
+    return tasks.order_by(F("due_datetime").asc(nulls_last=True), "scheduled_date")[
+        :UPCOMING_TASKS_LIMIT
+    ]
 
 
 def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
@@ -122,6 +134,9 @@ def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
     Tasks are only included if they have an explicit due date or scheduled
     date falling on today; newly created tasks without such a date are not
     shown (they belong to "All Tasks", not today's agenda).
+
+    Overdue tasks that are also scheduled for today stay in the Overdue
+    section only, so the dashboard sections never render a task twice.
 
     Args:
         user: The user whose tasks for today are to be retrieved.
@@ -134,7 +149,7 @@ def get_today_tasks_for_user(*, user: User) -> QuerySet[Task]:
     now = timezone.now()
     return tasks.filter(
         Q(due_datetime__date=today, due_datetime__gte=now) | Q(scheduled_date=today)
-    )
+    ).exclude(due_datetime__lt=now)
 
 
 def _overdue_queryset(*, user: User) -> QuerySet[Task]:

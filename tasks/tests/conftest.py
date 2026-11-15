@@ -2,6 +2,7 @@ import pytest
 from django.utils import timezone
 
 from accounts.models import User
+
 from ..models import Task
 from ..services import task_add_service
 

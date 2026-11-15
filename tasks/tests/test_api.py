@@ -5,6 +5,8 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from accounts.models import User
+from labels.models import Label
 from tasks.models import Task
 from tasks.services import task_add_service
 
@@ -23,6 +25,16 @@ def auth_client(api_client, owner):
 
 
 @pytest.fixture
+def other_user():
+    return User.objects.create_user(username="intruder", password="testpass1234")
+
+
+@pytest.fixture
+def foreign_label(other_user):
+    return Label.objects.create(name="Theirs", color="#333333", owner=other_user)
+
+
+@pytest.fixture
 def sample_task(owner):
     return task_add_service(
         title="API task",
@@ -37,7 +49,20 @@ class TestListCreateApi:
     def test_list_tasks(self, auth_client, sample_task):
         response = auth_client.get(reverse("list-tasks-api"))
         assert response.status_code == 200
-        assert len(response.data) == 1
+        assert response.data["count"] == 1
+        assert [task["id"] for task in response.data["results"]] == [sample_task.pk]
+
+    def test_list_tasks_is_paginated(self, auth_client, owner):
+        Task.objects.bulk_create(
+            [Task(owner=owner, title=f"Bulk {i}") for i in range(55)]
+        )
+
+        response = auth_client.get(reverse("list-tasks-api"))
+
+        assert response.status_code == 200
+        assert response.data["count"] == 55
+        assert len(response.data["results"]) == 50
+        assert response.data["next"] is not None
 
     def test_create_task(self, auth_client, owner):
         data = {
@@ -49,6 +74,54 @@ class TestListCreateApi:
         response = auth_client.post(reverse("list-tasks-api"), data, format="json")
         assert response.status_code == 201
         assert Task.objects.filter(owner=owner, title="New API task").exists()
+
+    def test_create_returns_the_created_task(self, auth_client, owner):
+        response = auth_client.post(
+            reverse("list-tasks-api"), {"title": "With body"}, format="json"
+        )
+
+        assert response.status_code == 201
+        assert response.data["title"] == "With body"
+        assert response.data["status"] == Task.Status.TODO
+        assert Task.objects.filter(pk=response.data["id"], owner=owner).exists()
+
+    def test_create_with_past_due_date_returns_400(self, auth_client, owner):
+        past = timezone.now() - timedelta(days=1)
+
+        response = auth_client.post(
+            reverse("list-tasks-api"),
+            {"title": "Too late", "due_datetime": past.isoformat()},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "error" in response.data
+        assert not Task.objects.filter(owner=owner, title="Too late").exists()
+
+    def test_create_with_past_scheduled_date_returns_400(self, auth_client, owner):
+        past = timezone.localdate() - timedelta(days=1)
+
+        response = auth_client.post(
+            reverse("list-tasks-api"),
+            {"title": "Too late", "scheduled_date": past.isoformat()},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert not Task.objects.filter(owner=owner, title="Too late").exists()
+
+    def test_create_with_foreign_label_returns_400(
+        self, auth_client, owner, foreign_label
+    ):
+        response = auth_client.post(
+            reverse("list-tasks-api"),
+            {"title": "Sneaky", "labels": [foreign_label.pk]},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "error" in response.data
+        assert not Task.objects.filter(owner=owner, title="Sneaky").exists()
 
     def test_unauthenticated_list(self, api_client):
         response = api_client.get(reverse("list-tasks-api"))
@@ -82,6 +155,30 @@ class TestDetailUpdateDeleteApi:
         assert response.status_code == 200
         sample_task.refresh_from_db()
         assert sample_task.title == "Patched title"
+
+    def test_patch_with_foreign_label_returns_400(
+        self, auth_client, sample_task, foreign_label
+    ):
+        response = auth_client.patch(
+            reverse("task-detail-api", args=[sample_task.pk]),
+            {"labels": [foreign_label.pk]},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert "error" in response.data
+        sample_task.refresh_from_db()
+        assert sample_task.labels.count() == 0
+
+    def test_patch_without_changes_returns_bodyless_304(self, auth_client, sample_task):
+        response = auth_client.patch(
+            reverse("task-detail-api", args=[sample_task.pk]),
+            {"title": sample_task.title},
+            format="json",
+        )
+
+        assert response.status_code == 304
+        assert response.content == b""
 
     def test_patch_clears_due_datetime(self, auth_client, sample_task):
         sample_task.due_datetime = timezone.now() + timedelta(days=3)
