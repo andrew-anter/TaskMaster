@@ -51,6 +51,7 @@ class TestTaskForm:
         form = TaskForm(user=user)
         labels_field = form.fields["labels"]
         assert isinstance(labels_field, forms.ModelMultipleChoiceField)
+        assert labels_field.queryset is not None
         label_ids = list(labels_field.queryset.values_list("pk", flat=True))
         assert len(label_ids) == 1
 

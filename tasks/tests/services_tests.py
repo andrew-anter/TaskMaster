@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 import pytest
 from django.utils import timezone
@@ -39,7 +39,7 @@ class TestAddTaskService:
         and that no task is created.
         """
         invalid_data = valid_task_data.copy()
-        invalid_data["due_datetime"] = timezone.now() - timezone.timedelta(days=10)
+        invalid_data["due_datetime"] = timezone.now() - timedelta(days=10)
 
         # Act & Assert for the exception
         with pytest.raises(DueDateInPastError):
@@ -58,7 +58,7 @@ class TestAddTaskService:
 
     def test_create_rejects_yesterday_due_date(self, valid_task_data):
         """A due date on a past day is rejected on create."""
-        yesterday = timezone.now() - timezone.timedelta(days=1)
+        yesterday = timezone.now() - timedelta(days=1)
 
         with pytest.raises(DueDateInPastError):
             task_add_service(**{**valid_task_data, "due_datetime": yesterday})
@@ -69,7 +69,7 @@ class TestAddTaskService:
         """A scheduled date in the past is rejected on create, as on update."""
         invalid_data = {
             **valid_task_data,
-            "scheduled_date": timezone.localdate() - timezone.timedelta(days=1),
+            "scheduled_date": timezone.localdate() - timedelta(days=1),
         }
 
         with pytest.raises(ScheduledDateInPastError):
@@ -120,7 +120,7 @@ class TestToggleTaskStatusService:
     def test_toggle_refreshes_modified_at(self, todo_task):
         """``save(update_fields=...)`` must name the ``auto_now`` field itself."""
         task = todo_task
-        stale = timezone.now() - timezone.timedelta(days=30)
+        stale = timezone.now() - timedelta(days=30)
         Task.objects.filter(pk=task.pk).update(modified_at=stale)
 
         toggle_task_status_service(task=task)
@@ -274,13 +274,13 @@ class TestUpdateTaskService:
             task_update_service(
                 task_id=task.pk,
                 user=task.owner,
-                due_datetime=timezone.now() - timezone.timedelta(days=1),
+                due_datetime=timezone.now() - timedelta(days=1),
             )
 
     def test_update_refreshes_modified_at(self, task_for_testing):
         """``save(update_fields=...)`` must name the ``auto_now`` field itself."""
         task = task_for_testing
-        stale = timezone.now() - timezone.timedelta(days=30)
+        stale = timezone.now() - timedelta(days=30)
         Task.objects.filter(pk=task.pk).update(modified_at=stale)
 
         task, updated = task_update_service(
@@ -368,7 +368,7 @@ class TestUpdateTaskService:
         """An m2m-only edit still stamps the task row's ``modified_at``."""
         label = Label.objects.create(name="Stamp", color="#444444", owner=owner)
         task = Task.objects.create(owner=owner, title="Labelled")
-        stale = timezone.now() - timezone.timedelta(days=30)
+        stale = timezone.now() - timedelta(days=30)
         Task.objects.filter(pk=task.pk).update(modified_at=stale)
 
         task, updated = task_update_service(

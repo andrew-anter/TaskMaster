@@ -12,8 +12,8 @@ class ReadStateListFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return [
-            ("read", _("Read")),
-            ("unread", _("Unread")),
+            ("read", str(_("Read"))),
+            ("unread", str(_("Unread"))),
         ]
 
     def queryset(self, request, queryset):

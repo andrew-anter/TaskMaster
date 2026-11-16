@@ -9,8 +9,8 @@ updates:
     commit-message:
       prefix: "ci"
 
-  # uv.lock is generated from pyproject.toml, so the pip ecosystem covers it.
-  - package-ecosystem: "pip"
+  # uv ecosystem bumps pyproject.toml constraints and regenerates uv.lock.
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
