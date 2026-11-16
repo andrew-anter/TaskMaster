@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -469,14 +469,14 @@ wheels = [
 
 [[package]]
 name = "django-types"
-version = "0.21.0"
+version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "types-psycopg2" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/b2/53ecd0877fb35dce7ef6054855d6dd7a4c052dbd1b908ae23d05c0c69c5b/django_types-0.21.0.tar.gz", hash = "sha256:db9e3152019fa2824130f043339d2c77ef156f77cf4a8a8f0d91a1a94fc61b59", size = 164515, upload-time = "2025-06-14T15:35:25.883Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/7b/8e05b8631fa7de84038d4f24fa57e983107aff889a6d88a9c40a21e15d1c/django_types-0.24.0.tar.gz", hash = "sha256:af903de8b9ee963b7594459a7a20cb8eaaab176ae2b3244ecaa089e0c570b0d1", size = 208426, upload-time = "2026-04-22T22:19:01.999Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/f4/ebc5ea60ae7b840a48f3777905b859ebc68b60128b833debd8623acc5c58/django_types-0.21.0-py3-none-any.whl", hash = "sha256:4ebb09b045c69cc8c950a7fc0ba7d62d8e4f8f7599ac3adfad0b6a1f755f407a", size = 374446, upload-time = "2025-06-14T15:35:24.535Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/ab/f5c37ecc08c396df62579246597796697b58253c8b30206870e8d0f644d0/django_types-0.24.0-py3-none-any.whl", hash = "sha256:ddb478ca733e0dde5475118dd59ab340156980f9659fd92de2083326ae96100a", size = 379436, upload-time = "2026-04-22T22:19:03.368Z" },
 ]
 
 [[package]]
@@ -1098,7 +1098,7 @@ dev = [
     { name = "basedpyright", specifier = ">=1.30.0" },
     { name = "django-stubs", specifier = ">=6.1.2" },
     { name = "django-stubs-ext", specifier = ">=5.2.0" },
-    { name = "django-types", specifier = ">=0.21.0" },
+    { name = "django-types", specifier = ">=0.24.0" },
     { name = "playwright", specifier = ">=1.65.1" },
     { name = "pyopenssl", specifier = ">=26.4.0" },
     { name = "pytest", specifier = ">=9.2.0" },
