@@ -344,22 +344,36 @@ MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))  # type: ignore[
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost")  # type: ignore[reportArgumentType]
 
 # Email configuration
-EMAIL_BACKEND = env(
+_email_backend = env(
     "EMAIL_BACKEND",
-    default="django.core.mail.backends.console.EmailBackend",  # type: ignore[reportArgumentType]
+    default=(
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "django.core.mail.backends.smtp.EmailBackend"
+    ),  # type: ignore[reportArgumentType]
 )
+_mail_options: dict[str, str | int | bool] = {}
 if not DEBUG:
-    EMAIL_BACKEND = env(
-        "EMAIL_BACKEND",
-        default="django.core.mail.backends.smtp.EmailBackend",  # type: ignore[reportArgumentType]
-    )
-    EMAIL_HOST = env("EMAIL_HOST", default="localhost")  # type: ignore[reportArgumentType]
-    EMAIL_PORT = env.int("EMAIL_PORT", default=587)  # type: ignore[reportArgumentType]
-    EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")  # type: ignore[reportArgumentType]
-    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")  # type: ignore[reportArgumentType]
-    EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)  # type: ignore[reportArgumentType]
-    EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)  # type: ignore[reportArgumentType]
-    EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)  # type: ignore[reportArgumentType]
+    _mail_options = {
+        "host": env("EMAIL_HOST", default="localhost"),  # type: ignore[reportArgumentType]
+        "port": env.int("EMAIL_PORT", default=587),  # type: ignore[reportArgumentType]
+        "username": env("EMAIL_HOST_USER", default=""),  # type: ignore[reportArgumentType]
+        "password": env("EMAIL_HOST_PASSWORD", default=""),  # type: ignore[reportArgumentType]
+        "use_tls": env.bool("EMAIL_USE_TLS", default=True),  # type: ignore[reportArgumentType]
+        "use_ssl": env.bool("EMAIL_USE_SSL", default=False),  # type: ignore[reportArgumentType]
+        "timeout": env.int("EMAIL_TIMEOUT", default=10),  # type: ignore[reportArgumentType]
+    }
+MAILERS = {
+    "default": {
+        "BACKEND": _email_backend,
+        "OPTIONS": _mail_options,
+    },
+    "admin-logging": {
+        "BACKEND": _email_backend,
+        # Preserve AdminEmailHandler's previous fail-silent behavior.
+        "OPTIONS": {**_mail_options, "fail_silently": True},
+    },
+}
 
 # Password hashers - use strong hashers in production
 PASSWORD_HASHERS = [
@@ -423,6 +437,7 @@ LOGGING = {
             "level": "ERROR",
             "filters": ["require_debug_false"],
             "class": "django.utils.log.AdminEmailHandler",
+            "using": "admin-logging",
             "include_html": not DEBUG,
         },
     },

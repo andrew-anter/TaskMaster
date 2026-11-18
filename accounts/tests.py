@@ -1,4 +1,5 @@
 import pytest
+from django.core import mail
 from django.core.cache import caches
 from django.test import RequestFactory
 from django.urls import reverse
@@ -258,6 +259,20 @@ class TestAllauthSurface:
         response = client.get("/allauth/signup/")
         assert response.status_code == 302
         assert response.url == reverse("register")
+
+    def test_password_reset_sends_email(self, client):
+        User.objects.create_user(
+            username="resetme",
+            email="reset@example.com",
+            password="testpass1234",
+        )
+        response = client.post(
+            reverse("account_reset_password"),
+            {"email": "reset@example.com"},
+        )
+        assert response.status_code == 302
+        assert len(mail.outbox) == 1
+        assert mail.outbox[0].to == ["reset@example.com"]
 
 
 class TestRootRedirectView:
